@@ -1,0 +1,10 @@
+@extends('layout')
+@section('title',$mode==='login'?'Sign in':'Create account')
+@section('content')
+<div class="auth-layout"><div class="auth-intro"><span class="eyebrow">YOUR EVERYDAY STARTS HERE</span><h1>{{ $mode==='login'?'Good to see you again.':'Make yourself at home.' }}</h1><p>Save your favorites, find your fit,<br>and follow every order in one place.</p><div class="auth-art"><x-shirt color="#a1b2a1"/></div></div><div class="panel auth-card"><h2>{{ $mode==='login'?'Sign in':'Create your account' }}</h2><p class="muted">{{ $mode==='login'?'Welcome back to Zone One Tee’s.':'A few details, and you’re ready to shop.' }}</p><form method="post" class="stack" action="{{ $mode==='login'?route('login'):route('register') }}">@csrf
+@if($mode==='register')<label>Name<input name="name" autocomplete="name" required maxlength="100" value="{{ old('name') }}"></label>@endif
+<label>Email address<input name="email" type="email" autocomplete="email" required value="{{ old('email') }}"></label><label>Password<input name="password" type="password" autocomplete="{{ $mode==='login'?'current-password':'new-password' }}" required @if($mode==='register') minlength="10" @endif></label>
+@if($mode==='register')<label>Confirm password<input name="password_confirmation" type="password" autocomplete="new-password" required minlength="10"></label>@endif<button class="button dark">{{ $mode==='login'?'Sign in →':'Create account →' }}</button></form>
+<p>{{ $mode==='login'?'New here?':'Already have an account?' }} <a class="text-link" href="{{ $mode==='login'?route('register'):route('login') }}">{{ $mode==='login'?'Create an account':'Sign in' }}</a></p>
+@if(config('shop.demo'))<details class="demo-accounts"><summary>Local demo accounts</summary><p>admin@zoneone.test<br>staff@zoneone.test<br>customer@zoneone.test</p><p>Password: <code>ZoneOneDemo!2026</code></p></details>@endif</div></div>
+@endsection

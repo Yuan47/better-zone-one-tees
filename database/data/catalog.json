@@ -1,0 +1,1010 @@
+[
+  {
+    "name": "Everyday Cotton Tee",
+    "category": "Essentials",
+    "variants": [
+      {
+        "sku": "Z2-01-S-BLACK",
+        "size": "S",
+        "color": "Black",
+        "retail_price": 24900,
+        "wholesale_price": 19900,
+        "reseller_price": 17900
+      },
+      {
+        "sku": "Z2-01-S-IVORY",
+        "size": "S",
+        "color": "Ivory",
+        "retail_price": 24900,
+        "wholesale_price": 19900,
+        "reseller_price": 17900
+      },
+      {
+        "sku": "Z2-01-S-SAGE",
+        "size": "S",
+        "color": "Sage",
+        "retail_price": 24900,
+        "wholesale_price": 19900,
+        "reseller_price": 17900
+      },
+      {
+        "sku": "Z2-01-M-BLACK",
+        "size": "M",
+        "color": "Black",
+        "retail_price": 24900,
+        "wholesale_price": 19900,
+        "reseller_price": 17900
+      },
+      {
+        "sku": "Z2-01-M-IVORY",
+        "size": "M",
+        "color": "Ivory",
+        "retail_price": 24900,
+        "wholesale_price": 19900,
+        "reseller_price": 17900
+      },
+      {
+        "sku": "Z2-01-M-SAGE",
+        "size": "M",
+        "color": "Sage",
+        "retail_price": 24900,
+        "wholesale_price": 19900,
+        "reseller_price": 17900
+      },
+      {
+        "sku": "Z2-01-L-BLACK",
+        "size": "L",
+        "color": "Black",
+        "retail_price": 24900,
+        "wholesale_price": 19900,
+        "reseller_price": 17900
+      },
+      {
+        "sku": "Z2-01-L-IVORY",
+        "size": "L",
+        "color": "Ivory",
+        "retail_price": 24900,
+        "wholesale_price": 19900,
+        "reseller_price": 17900
+      },
+      {
+        "sku": "Z2-01-L-SAGE",
+        "size": "L",
+        "color": "Sage",
+        "retail_price": 24900,
+        "wholesale_price": 19900,
+        "reseller_price": 17900
+      },
+      {
+        "sku": "Z2-01-XL-BLACK",
+        "size": "XL",
+        "color": "Black",
+        "retail_price": 24900,
+        "wholesale_price": 19900,
+        "reseller_price": 17900
+      },
+      {
+        "sku": "Z2-01-XL-IVORY",
+        "size": "XL",
+        "color": "Ivory",
+        "retail_price": 24900,
+        "wholesale_price": 19900,
+        "reseller_price": 17900
+      },
+      {
+        "sku": "Z2-01-XL-SAGE",
+        "size": "XL",
+        "color": "Sage",
+        "retail_price": 24900,
+        "wholesale_price": 19900,
+        "reseller_price": 17900
+      },
+      {
+        "sku": "Z2-01-2XL-BLACK",
+        "size": "2XL",
+        "color": "Black",
+        "retail_price": 26900,
+        "wholesale_price": 21900,
+        "reseller_price": 19900
+      },
+      {
+        "sku": "Z2-01-2XL-IVORY",
+        "size": "2XL",
+        "color": "Ivory",
+        "retail_price": 26900,
+        "wholesale_price": 21900,
+        "reseller_price": 19900
+      },
+      {
+        "sku": "Z2-01-2XL-SAGE",
+        "size": "2XL",
+        "color": "Sage",
+        "retail_price": 26900,
+        "wholesale_price": 21900,
+        "reseller_price": 19900
+      }
+    ]
+  },
+  {
+    "name": "The Classic Crew",
+    "category": "Essentials",
+    "variants": [
+      {
+        "sku": "Z2-02-S-BLACK",
+        "size": "S",
+        "color": "Black",
+        "retail_price": 29900,
+        "wholesale_price": 23900,
+        "reseller_price": 21900
+      },
+      {
+        "sku": "Z2-02-S-IVORY",
+        "size": "S",
+        "color": "Ivory",
+        "retail_price": 29900,
+        "wholesale_price": 23900,
+        "reseller_price": 21900
+      },
+      {
+        "sku": "Z2-02-S-SAGE",
+        "size": "S",
+        "color": "Sage",
+        "retail_price": 29900,
+        "wholesale_price": 23900,
+        "reseller_price": 21900
+      },
+      {
+        "sku": "Z2-02-M-BLACK",
+        "size": "M",
+        "color": "Black",
+        "retail_price": 29900,
+        "wholesale_price": 23900,
+        "reseller_price": 21900
+      },
+      {
+        "sku": "Z2-02-M-IVORY",
+        "size": "M",
+        "color": "Ivory",
+        "retail_price": 29900,
+        "wholesale_price": 23900,
+        "reseller_price": 21900
+      },
+      {
+        "sku": "Z2-02-M-SAGE",
+        "size": "M",
+        "color": "Sage",
+        "retail_price": 29900,
+        "wholesale_price": 23900,
+        "reseller_price": 21900
+      },
+      {
+        "sku": "Z2-02-L-BLACK",
+        "size": "L",
+        "color": "Black",
+        "retail_price": 29900,
+        "wholesale_price": 23900,
+        "reseller_price": 21900
+      },
+      {
+        "sku": "Z2-02-L-IVORY",
+        "size": "L",
+        "color": "Ivory",
+        "retail_price": 29900,
+        "wholesale_price": 23900,
+        "reseller_price": 21900
+      },
+      {
+        "sku": "Z2-02-L-SAGE",
+        "size": "L",
+        "color": "Sage",
+        "retail_price": 29900,
+        "wholesale_price": 23900,
+        "reseller_price": 21900
+      },
+      {
+        "sku": "Z2-02-XL-BLACK",
+        "size": "XL",
+        "color": "Black",
+        "retail_price": 29900,
+        "wholesale_price": 23900,
+        "reseller_price": 21900
+      },
+      {
+        "sku": "Z2-02-XL-IVORY",
+        "size": "XL",
+        "color": "Ivory",
+        "retail_price": 29900,
+        "wholesale_price": 23900,
+        "reseller_price": 21900
+      },
+      {
+        "sku": "Z2-02-XL-SAGE",
+        "size": "XL",
+        "color": "Sage",
+        "retail_price": 29900,
+        "wholesale_price": 23900,
+        "reseller_price": 21900
+      },
+      {
+        "sku": "Z2-02-2XL-BLACK",
+        "size": "2XL",
+        "color": "Black",
+        "retail_price": 31900,
+        "wholesale_price": 25900,
+        "reseller_price": 23900
+      },
+      {
+        "sku": "Z2-02-2XL-IVORY",
+        "size": "2XL",
+        "color": "Ivory",
+        "retail_price": 31900,
+        "wholesale_price": 25900,
+        "reseller_price": 23900
+      },
+      {
+        "sku": "Z2-02-2XL-SAGE",
+        "size": "2XL",
+        "color": "Sage",
+        "retail_price": 31900,
+        "wholesale_price": 25900,
+        "reseller_price": 23900
+      }
+    ]
+  },
+  {
+    "name": "Relaxed Pocket Tee",
+    "category": "Essentials",
+    "variants": [
+      {
+        "sku": "Z2-03-S-BLACK",
+        "size": "S",
+        "color": "Black",
+        "retail_price": 34900,
+        "wholesale_price": 28900,
+        "reseller_price": 25900
+      },
+      {
+        "sku": "Z2-03-S-IVORY",
+        "size": "S",
+        "color": "Ivory",
+        "retail_price": 34900,
+        "wholesale_price": 28900,
+        "reseller_price": 25900
+      },
+      {
+        "sku": "Z2-03-S-SAGE",
+        "size": "S",
+        "color": "Sage",
+        "retail_price": 34900,
+        "wholesale_price": 28900,
+        "reseller_price": 25900
+      },
+      {
+        "sku": "Z2-03-M-BLACK",
+        "size": "M",
+        "color": "Black",
+        "retail_price": 34900,
+        "wholesale_price": 28900,
+        "reseller_price": 25900
+      },
+      {
+        "sku": "Z2-03-M-IVORY",
+        "size": "M",
+        "color": "Ivory",
+        "retail_price": 34900,
+        "wholesale_price": 28900,
+        "reseller_price": 25900
+      },
+      {
+        "sku": "Z2-03-M-SAGE",
+        "size": "M",
+        "color": "Sage",
+        "retail_price": 34900,
+        "wholesale_price": 28900,
+        "reseller_price": 25900
+      },
+      {
+        "sku": "Z2-03-L-BLACK",
+        "size": "L",
+        "color": "Black",
+        "retail_price": 34900,
+        "wholesale_price": 28900,
+        "reseller_price": 25900
+      },
+      {
+        "sku": "Z2-03-L-IVORY",
+        "size": "L",
+        "color": "Ivory",
+        "retail_price": 34900,
+        "wholesale_price": 28900,
+        "reseller_price": 25900
+      },
+      {
+        "sku": "Z2-03-L-SAGE",
+        "size": "L",
+        "color": "Sage",
+        "retail_price": 34900,
+        "wholesale_price": 28900,
+        "reseller_price": 25900
+      },
+      {
+        "sku": "Z2-03-XL-BLACK",
+        "size": "XL",
+        "color": "Black",
+        "retail_price": 34900,
+        "wholesale_price": 28900,
+        "reseller_price": 25900
+      },
+      {
+        "sku": "Z2-03-XL-IVORY",
+        "size": "XL",
+        "color": "Ivory",
+        "retail_price": 34900,
+        "wholesale_price": 28900,
+        "reseller_price": 25900
+      },
+      {
+        "sku": "Z2-03-XL-SAGE",
+        "size": "XL",
+        "color": "Sage",
+        "retail_price": 34900,
+        "wholesale_price": 28900,
+        "reseller_price": 25900
+      },
+      {
+        "sku": "Z2-03-2XL-BLACK",
+        "size": "2XL",
+        "color": "Black",
+        "retail_price": 36900,
+        "wholesale_price": 30900,
+        "reseller_price": 27900
+      },
+      {
+        "sku": "Z2-03-2XL-IVORY",
+        "size": "2XL",
+        "color": "Ivory",
+        "retail_price": 36900,
+        "wholesale_price": 30900,
+        "reseller_price": 27900
+      },
+      {
+        "sku": "Z2-03-2XL-SAGE",
+        "size": "2XL",
+        "color": "Sage",
+        "retail_price": 36900,
+        "wholesale_price": 30900,
+        "reseller_price": 27900
+      }
+    ]
+  },
+  {
+    "name": "Essential Polo",
+    "category": "Polos",
+    "variants": [
+      {
+        "sku": "Z2-04-S-BLACK",
+        "size": "S",
+        "color": "Black",
+        "retail_price": 49900,
+        "wholesale_price": 39900,
+        "reseller_price": 36900
+      },
+      {
+        "sku": "Z2-04-S-IVORY",
+        "size": "S",
+        "color": "Ivory",
+        "retail_price": 49900,
+        "wholesale_price": 39900,
+        "reseller_price": 36900
+      },
+      {
+        "sku": "Z2-04-S-SAGE",
+        "size": "S",
+        "color": "Sage",
+        "retail_price": 49900,
+        "wholesale_price": 39900,
+        "reseller_price": 36900
+      },
+      {
+        "sku": "Z2-04-M-BLACK",
+        "size": "M",
+        "color": "Black",
+        "retail_price": 49900,
+        "wholesale_price": 39900,
+        "reseller_price": 36900
+      },
+      {
+        "sku": "Z2-04-M-IVORY",
+        "size": "M",
+        "color": "Ivory",
+        "retail_price": 49900,
+        "wholesale_price": 39900,
+        "reseller_price": 36900
+      },
+      {
+        "sku": "Z2-04-M-SAGE",
+        "size": "M",
+        "color": "Sage",
+        "retail_price": 49900,
+        "wholesale_price": 39900,
+        "reseller_price": 36900
+      },
+      {
+        "sku": "Z2-04-L-BLACK",
+        "size": "L",
+        "color": "Black",
+        "retail_price": 49900,
+        "wholesale_price": 39900,
+        "reseller_price": 36900
+      },
+      {
+        "sku": "Z2-04-L-IVORY",
+        "size": "L",
+        "color": "Ivory",
+        "retail_price": 49900,
+        "wholesale_price": 39900,
+        "reseller_price": 36900
+      },
+      {
+        "sku": "Z2-04-L-SAGE",
+        "size": "L",
+        "color": "Sage",
+        "retail_price": 49900,
+        "wholesale_price": 39900,
+        "reseller_price": 36900
+      },
+      {
+        "sku": "Z2-04-XL-BLACK",
+        "size": "XL",
+        "color": "Black",
+        "retail_price": 49900,
+        "wholesale_price": 39900,
+        "reseller_price": 36900
+      },
+      {
+        "sku": "Z2-04-XL-IVORY",
+        "size": "XL",
+        "color": "Ivory",
+        "retail_price": 49900,
+        "wholesale_price": 39900,
+        "reseller_price": 36900
+      },
+      {
+        "sku": "Z2-04-XL-SAGE",
+        "size": "XL",
+        "color": "Sage",
+        "retail_price": 49900,
+        "wholesale_price": 39900,
+        "reseller_price": 36900
+      },
+      {
+        "sku": "Z2-04-2XL-BLACK",
+        "size": "2XL",
+        "color": "Black",
+        "retail_price": 51900,
+        "wholesale_price": 41900,
+        "reseller_price": 38900
+      },
+      {
+        "sku": "Z2-04-2XL-IVORY",
+        "size": "2XL",
+        "color": "Ivory",
+        "retail_price": 51900,
+        "wholesale_price": 41900,
+        "reseller_price": 38900
+      },
+      {
+        "sku": "Z2-04-2XL-SAGE",
+        "size": "2XL",
+        "color": "Sage",
+        "retail_price": 51900,
+        "wholesale_price": 41900,
+        "reseller_price": 38900
+      }
+    ]
+  },
+  {
+    "name": "Active Dri-Fit Tee",
+    "category": "Activewear",
+    "variants": [
+      {
+        "sku": "Z2-05-S-BLACK",
+        "size": "S",
+        "color": "Black",
+        "retail_price": 32900,
+        "wholesale_price": 26900,
+        "reseller_price": 24900
+      },
+      {
+        "sku": "Z2-05-S-IVORY",
+        "size": "S",
+        "color": "Ivory",
+        "retail_price": 32900,
+        "wholesale_price": 26900,
+        "reseller_price": 24900
+      },
+      {
+        "sku": "Z2-05-S-SAGE",
+        "size": "S",
+        "color": "Sage",
+        "retail_price": 32900,
+        "wholesale_price": 26900,
+        "reseller_price": 24900
+      },
+      {
+        "sku": "Z2-05-M-BLACK",
+        "size": "M",
+        "color": "Black",
+        "retail_price": 32900,
+        "wholesale_price": 26900,
+        "reseller_price": 24900
+      },
+      {
+        "sku": "Z2-05-M-IVORY",
+        "size": "M",
+        "color": "Ivory",
+        "retail_price": 32900,
+        "wholesale_price": 26900,
+        "reseller_price": 24900
+      },
+      {
+        "sku": "Z2-05-M-SAGE",
+        "size": "M",
+        "color": "Sage",
+        "retail_price": 32900,
+        "wholesale_price": 26900,
+        "reseller_price": 24900
+      },
+      {
+        "sku": "Z2-05-L-BLACK",
+        "size": "L",
+        "color": "Black",
+        "retail_price": 32900,
+        "wholesale_price": 26900,
+        "reseller_price": 24900
+      },
+      {
+        "sku": "Z2-05-L-IVORY",
+        "size": "L",
+        "color": "Ivory",
+        "retail_price": 32900,
+        "wholesale_price": 26900,
+        "reseller_price": 24900
+      },
+      {
+        "sku": "Z2-05-L-SAGE",
+        "size": "L",
+        "color": "Sage",
+        "retail_price": 32900,
+        "wholesale_price": 26900,
+        "reseller_price": 24900
+      },
+      {
+        "sku": "Z2-05-XL-BLACK",
+        "size": "XL",
+        "color": "Black",
+        "retail_price": 32900,
+        "wholesale_price": 26900,
+        "reseller_price": 24900
+      },
+      {
+        "sku": "Z2-05-XL-IVORY",
+        "size": "XL",
+        "color": "Ivory",
+        "retail_price": 32900,
+        "wholesale_price": 26900,
+        "reseller_price": 24900
+      },
+      {
+        "sku": "Z2-05-XL-SAGE",
+        "size": "XL",
+        "color": "Sage",
+        "retail_price": 32900,
+        "wholesale_price": 26900,
+        "reseller_price": 24900
+      },
+      {
+        "sku": "Z2-05-2XL-BLACK",
+        "size": "2XL",
+        "color": "Black",
+        "retail_price": 34900,
+        "wholesale_price": 28900,
+        "reseller_price": 26900
+      },
+      {
+        "sku": "Z2-05-2XL-IVORY",
+        "size": "2XL",
+        "color": "Ivory",
+        "retail_price": 34900,
+        "wholesale_price": 28900,
+        "reseller_price": 26900
+      },
+      {
+        "sku": "Z2-05-2XL-SAGE",
+        "size": "2XL",
+        "color": "Sage",
+        "retail_price": 34900,
+        "wholesale_price": 28900,
+        "reseller_price": 26900
+      }
+    ]
+  },
+  {
+    "name": "Weekend Oversized Tee",
+    "category": "Essentials",
+    "variants": [
+      {
+        "sku": "Z2-06-S-BLACK",
+        "size": "S",
+        "color": "Black",
+        "retail_price": 39900,
+        "wholesale_price": 32900,
+        "reseller_price": 29900
+      },
+      {
+        "sku": "Z2-06-S-IVORY",
+        "size": "S",
+        "color": "Ivory",
+        "retail_price": 39900,
+        "wholesale_price": 32900,
+        "reseller_price": 29900
+      },
+      {
+        "sku": "Z2-06-S-SAGE",
+        "size": "S",
+        "color": "Sage",
+        "retail_price": 39900,
+        "wholesale_price": 32900,
+        "reseller_price": 29900
+      },
+      {
+        "sku": "Z2-06-M-BLACK",
+        "size": "M",
+        "color": "Black",
+        "retail_price": 39900,
+        "wholesale_price": 32900,
+        "reseller_price": 29900
+      },
+      {
+        "sku": "Z2-06-M-IVORY",
+        "size": "M",
+        "color": "Ivory",
+        "retail_price": 39900,
+        "wholesale_price": 32900,
+        "reseller_price": 29900
+      },
+      {
+        "sku": "Z2-06-M-SAGE",
+        "size": "M",
+        "color": "Sage",
+        "retail_price": 39900,
+        "wholesale_price": 32900,
+        "reseller_price": 29900
+      },
+      {
+        "sku": "Z2-06-L-BLACK",
+        "size": "L",
+        "color": "Black",
+        "retail_price": 39900,
+        "wholesale_price": 32900,
+        "reseller_price": 29900
+      },
+      {
+        "sku": "Z2-06-L-IVORY",
+        "size": "L",
+        "color": "Ivory",
+        "retail_price": 39900,
+        "wholesale_price": 32900,
+        "reseller_price": 29900
+      },
+      {
+        "sku": "Z2-06-L-SAGE",
+        "size": "L",
+        "color": "Sage",
+        "retail_price": 39900,
+        "wholesale_price": 32900,
+        "reseller_price": 29900
+      },
+      {
+        "sku": "Z2-06-XL-BLACK",
+        "size": "XL",
+        "color": "Black",
+        "retail_price": 39900,
+        "wholesale_price": 32900,
+        "reseller_price": 29900
+      },
+      {
+        "sku": "Z2-06-XL-IVORY",
+        "size": "XL",
+        "color": "Ivory",
+        "retail_price": 39900,
+        "wholesale_price": 32900,
+        "reseller_price": 29900
+      },
+      {
+        "sku": "Z2-06-XL-SAGE",
+        "size": "XL",
+        "color": "Sage",
+        "retail_price": 39900,
+        "wholesale_price": 32900,
+        "reseller_price": 29900
+      },
+      {
+        "sku": "Z2-06-2XL-BLACK",
+        "size": "2XL",
+        "color": "Black",
+        "retail_price": 41900,
+        "wholesale_price": 34900,
+        "reseller_price": 31900
+      },
+      {
+        "sku": "Z2-06-2XL-IVORY",
+        "size": "2XL",
+        "color": "Ivory",
+        "retail_price": 41900,
+        "wholesale_price": 34900,
+        "reseller_price": 31900
+      },
+      {
+        "sku": "Z2-06-2XL-SAGE",
+        "size": "2XL",
+        "color": "Sage",
+        "retail_price": 41900,
+        "wholesale_price": 34900,
+        "reseller_price": 31900
+      }
+    ]
+  },
+  {
+    "name": "Everyday Kids Tee",
+    "category": "Kids",
+    "variants": [
+      {
+        "sku": "Z2-07-S-BLACK",
+        "size": "S",
+        "color": "Black",
+        "retail_price": 19900,
+        "wholesale_price": 15900,
+        "reseller_price": 13900
+      },
+      {
+        "sku": "Z2-07-S-IVORY",
+        "size": "S",
+        "color": "Ivory",
+        "retail_price": 19900,
+        "wholesale_price": 15900,
+        "reseller_price": 13900
+      },
+      {
+        "sku": "Z2-07-S-SAGE",
+        "size": "S",
+        "color": "Sage",
+        "retail_price": 19900,
+        "wholesale_price": 15900,
+        "reseller_price": 13900
+      },
+      {
+        "sku": "Z2-07-M-BLACK",
+        "size": "M",
+        "color": "Black",
+        "retail_price": 19900,
+        "wholesale_price": 15900,
+        "reseller_price": 13900
+      },
+      {
+        "sku": "Z2-07-M-IVORY",
+        "size": "M",
+        "color": "Ivory",
+        "retail_price": 19900,
+        "wholesale_price": 15900,
+        "reseller_price": 13900
+      },
+      {
+        "sku": "Z2-07-M-SAGE",
+        "size": "M",
+        "color": "Sage",
+        "retail_price": 19900,
+        "wholesale_price": 15900,
+        "reseller_price": 13900
+      },
+      {
+        "sku": "Z2-07-L-BLACK",
+        "size": "L",
+        "color": "Black",
+        "retail_price": 19900,
+        "wholesale_price": 15900,
+        "reseller_price": 13900
+      },
+      {
+        "sku": "Z2-07-L-IVORY",
+        "size": "L",
+        "color": "Ivory",
+        "retail_price": 19900,
+        "wholesale_price": 15900,
+        "reseller_price": 13900
+      },
+      {
+        "sku": "Z2-07-L-SAGE",
+        "size": "L",
+        "color": "Sage",
+        "retail_price": 19900,
+        "wholesale_price": 15900,
+        "reseller_price": 13900
+      },
+      {
+        "sku": "Z2-07-XL-BLACK",
+        "size": "XL",
+        "color": "Black",
+        "retail_price": 19900,
+        "wholesale_price": 15900,
+        "reseller_price": 13900
+      },
+      {
+        "sku": "Z2-07-XL-IVORY",
+        "size": "XL",
+        "color": "Ivory",
+        "retail_price": 19900,
+        "wholesale_price": 15900,
+        "reseller_price": 13900
+      },
+      {
+        "sku": "Z2-07-XL-SAGE",
+        "size": "XL",
+        "color": "Sage",
+        "retail_price": 19900,
+        "wholesale_price": 15900,
+        "reseller_price": 13900
+      },
+      {
+        "sku": "Z2-07-2XL-BLACK",
+        "size": "2XL",
+        "color": "Black",
+        "retail_price": 21900,
+        "wholesale_price": 17900,
+        "reseller_price": 15900
+      },
+      {
+        "sku": "Z2-07-2XL-IVORY",
+        "size": "2XL",
+        "color": "Ivory",
+        "retail_price": 21900,
+        "wholesale_price": 17900,
+        "reseller_price": 15900
+      },
+      {
+        "sku": "Z2-07-2XL-SAGE",
+        "size": "2XL",
+        "color": "Sage",
+        "retail_price": 21900,
+        "wholesale_price": 17900,
+        "reseller_price": 15900
+      }
+    ]
+  },
+  {
+    "name": "Classic Piqu\u00e9 Polo",
+    "category": "Polos",
+    "variants": [
+      {
+        "sku": "Z2-08-S-BLACK",
+        "size": "S",
+        "color": "Black",
+        "retail_price": 54900,
+        "wholesale_price": 44900,
+        "reseller_price": 41900
+      },
+      {
+        "sku": "Z2-08-S-IVORY",
+        "size": "S",
+        "color": "Ivory",
+        "retail_price": 54900,
+        "wholesale_price": 44900,
+        "reseller_price": 41900
+      },
+      {
+        "sku": "Z2-08-S-SAGE",
+        "size": "S",
+        "color": "Sage",
+        "retail_price": 54900,
+        "wholesale_price": 44900,
+        "reseller_price": 41900
+      },
+      {
+        "sku": "Z2-08-M-BLACK",
+        "size": "M",
+        "color": "Black",
+        "retail_price": 54900,
+        "wholesale_price": 44900,
+        "reseller_price": 41900
+      },
+      {
+        "sku": "Z2-08-M-IVORY",
+        "size": "M",
+        "color": "Ivory",
+        "retail_price": 54900,
+        "wholesale_price": 44900,
+        "reseller_price": 41900
+      },
+      {
+        "sku": "Z2-08-M-SAGE",
+        "size": "M",
+        "color": "Sage",
+        "retail_price": 54900,
+        "wholesale_price": 44900,
+        "reseller_price": 41900
+      },
+      {
+        "sku": "Z2-08-L-BLACK",
+        "size": "L",
+        "color": "Black",
+        "retail_price": 54900,
+        "wholesale_price": 44900,
+        "reseller_price": 41900
+      },
+      {
+        "sku": "Z2-08-L-IVORY",
+        "size": "L",
+        "color": "Ivory",
+        "retail_price": 54900,
+        "wholesale_price": 44900,
+        "reseller_price": 41900
+      },
+      {
+        "sku": "Z2-08-L-SAGE",
+        "size": "L",
+        "color": "Sage",
+        "retail_price": 54900,
+        "wholesale_price": 44900,
+        "reseller_price": 41900
+      },
+      {
+        "sku": "Z2-08-XL-BLACK",
+        "size": "XL",
+        "color": "Black",
+        "retail_price": 54900,
+        "wholesale_price": 44900,
+        "reseller_price": 41900
+      },
+      {
+        "sku": "Z2-08-XL-IVORY",
+        "size": "XL",
+        "color": "Ivory",
+        "retail_price": 54900,
+        "wholesale_price": 44900,
+        "reseller_price": 41900
+      },
+      {
+        "sku": "Z2-08-XL-SAGE",
+        "size": "XL",
+        "color": "Sage",
+        "retail_price": 54900,
+        "wholesale_price": 44900,
+        "reseller_price": 41900
+      },
+      {
+        "sku": "Z2-08-2XL-BLACK",
+        "size": "2XL",
+        "color": "Black",
+        "retail_price": 56900,
+        "wholesale_price": 46900,
+        "reseller_price": 43900
+      },
+      {
+        "sku": "Z2-08-2XL-IVORY",
+        "size": "2XL",
+        "color": "Ivory",
+        "retail_price": 56900,
+        "wholesale_price": 46900,
+        "reseller_price": 43900
+      },
+      {
+        "sku": "Z2-08-2XL-SAGE",
+        "size": "2XL",
+        "color": "Sage",
+        "retail_price": 56900,
+        "wholesale_price": 46900,
+        "reseller_price": 43900
+      }
+    ]
+  }
+]

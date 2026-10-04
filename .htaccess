@@ -1,0 +1,9 @@
+Options -Indexes
+<IfModule mod_rewrite.c>
+RewriteEngine On
+RewriteRule ^$ public/ [R=302,L]
+RewriteRule ^(?!public(?:/|$)).* - [F,L]
+</IfModule>
+<IfModule !mod_rewrite.c>
+Require all denied
+</IfModule>

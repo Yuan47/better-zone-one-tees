@@ -1,0 +1,8 @@
+@extends('layout')
+@section('title','Orders')
+@section('crumb','Orders')
+@section('content')
+<div class="page-heading"><span class="eyebrow">FROM CHECKOUT TO EVERYDAY</span><h1>Orders</h1><p class="muted">Payments are confirmed by PayMongo. Staff manage packing and handover.</p></div>
+<form class="filters"><select name="status" aria-label="Order status"><option value="">All statuses</option>@foreach(['awaiting_payment','to_pack','packing','ready','delivery_booking','out_for_delivery','completed','delivery_attention','cancelled'] as $status)<option value="{{ $status }}" @selected(request('status')===$status)>{{ ucfirst(str_replace('_',' ',$status)) }}</option>@endforeach</select><button class="button small">Filter</button></form>
+<div class="panel table-scroll"><table><thead><tr><th>Order</th><th>Customer</th><th>Quantity / tier</th><th>Total</th><th>Payment</th><th>Fulfillment</th><th></th></tr></thead><tbody>@forelse($orders as $order)<tr><td>{{ $order->number }}<small>{{ $order->created_at->format('M d, Y') }}</small></td><td>{{ $order->user->name }}</td><td>{{ $order->quantity }} pcs / {{ $order->tier }}</td><td>₱{{ number_format($order->total/100,2) }}</td><td><span class="badge">{{ $order->payment_status }}</span></td><td>{{ str_replace('_',' ',$order->status) }}</td><td><a class="text-link" href="{{ route('orders.show',$order) }}">Open →</a></td></tr>@empty<tr><td colspan="7" class="empty-note">No orders yet. A configured PayMongo test checkout will let you try the complete flow.</td></tr>@endforelse</tbody></table></div>{{ $orders->links('pagination') }}
+@endsection

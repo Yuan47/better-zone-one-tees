@@ -1,0 +1,14 @@
+@extends('layout')
+@section('title',$product->exists?'Edit product':'Add product')
+@section('crumb','Products / Edit')
+@section('content')
+<div class="page-heading"><a class="text-link" href="{{ route('admin.products') }}">← Products & inventory</a><h1>{{ $product->exists?$product->name:'Add a new product' }}</h1></div>
+<form class="panel stack" method="post" action="{{ $product->exists?route('admin.products.save',$product):route('admin.products.store') }}">@csrf @if($product->exists)@method('PATCH')@endif
+<div class="two-col"><label>Product name<input name="name" required maxlength="150" value="{{ old('name',$product->name) }}"></label><label>Category<input name="category" required maxlength="100" value="{{ old('category',$product->category) }}" list="category-options"><datalist id="category-options"><option>Essentials</option><option>Polos</option><option>Activewear</option><option>Kids</option></datalist></label></div>
+<label>Description<textarea name="description" required rows="3" maxlength="2000">{{ old('description',$product->description) }}</textarea></label><div class="two-col"><label>Illustration color<input type="color" name="art_color" value="{{ old('art_color',$product->art_color??'#c8bba8') }}"></label><label>Storefront status<select name="active"><option value="1" @selected(old('active',$product->active))>Active</option><option value="0" @selected(!old('active',$product->active))>Hidden</option></select></label></div>
+<label>Product photo URL (HTTPS, optional)<input name="image_url" type="url" maxlength="1000" value="{{ old('image_url',$product->image_url) }}" placeholder="https://…"></label><button class="button dark">Save product</button></form>
+@if($product->exists)<div class="section-heading variant-heading"><div><h2>Sizes, colors & prices</h2><p class="muted">Prices in pesos per piece. Bulk pricing automatically discounts the {{ config('shop.bulk_base','reseller') }} subtotal by 5%.</p></div></div>
+@foreach($product->variants as $variant)<details class="panel variant-editor"><summary><b>{{ $variant->size }} / {{ $variant->color }}</b><span class="muted">{{ $variant->stock }} on hand · {{ $variant->reserved }} reserved · ₱{{ number_format($variant->retail_price/100,2) }} SRP</span><span>+</span></summary>
+<form class="stack" method="post" action="{{ route('admin.variants.save',[$product,$variant]) }}">@csrf @method('PATCH')@include('admin.variant-fields',['variant'=>$variant])<button class="button dark">Save variant</button></form></details>@endforeach
+<details class="panel variant-editor"><summary><b>+ Add size & color</b></summary><form class="stack" method="post" action="{{ route('admin.variants.store',$product) }}">@csrf @include('admin.variant-fields',['variant'=>null])<button class="button dark">Add variant</button></form></details>@endif
+@endsection

@@ -1,0 +1,6 @@
+@extends('layout')
+@section('title','My orders')
+@section('content')
+<div class="page-heading"><span class="eyebrow">YOUR ZONE ONE JOURNEY</span><h1>My orders</h1><p class="muted">Payment and fulfillment updates, all in one place.</p></div>
+<div class="order-grid">@forelse($orders as $order)<article class="panel"><div class="section-heading"><h3>{{ $order->number }}</h3><span class="badge">{{ str_replace('_',' ',$order->status) }}</span></div><p class="muted">{{ $order->created_at->format('M d, Y') }} · {{ $order->quantity }} pieces · {{ ucfirst($order->tier) }} pricing</p><p>{{ $order->items->pluck('name')->unique()->join(', ') }}</p><div class="section-heading"><b>₱{{ number_format($order->total/100,2) }}</b><a class="text-link" href="{{ route('orders.show',$order) }}">View order →</a></div></article>@empty<div class="empty-state"><h2>Your first order starts here.</h2><p>Explore the collection to find your everyday essentials.</p><a class="button dark" href="{{ route('store') }}">Shop the collection</a></div>@endforelse</div>{{ $orders->links('pagination') }}
+@endsection
