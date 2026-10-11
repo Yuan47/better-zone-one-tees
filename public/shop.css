@@ -29,3 +29,4 @@ a:focus-visible,button:focus-visible,summary:focus-visible,input:focus-visible,t
 @media(max-width:700px){.account-grid{grid-template-columns:1fr}.upload-row{align-items:flex-start;flex-direction:column}.selected-pricing{padding:12px}.selected-pricing th,.selected-pricing td{padding:8px 5px;font-size:10px}.sales-period-form{flex-wrap:wrap}.variant-filter-label{max-width:none}.store-header{gap:10px}.header-actions{gap:10px}.profile-heading{gap:14px}}
 
 .account-photo{display:flex;gap:18px;align-items:center}.account-avatar{width:90px;height:90px;object-fit:cover;border-radius:50%;flex-shrink:0}.account-avatar-placeholder{display:flex;align-items:center;justify-content:center;background:var(--brand-tint);color:var(--brand-primary);font-size:32px}.checkbox-label input{width:auto}.checkbox-label{display:block}
+.account-photo>label,.upload-row>label{min-width:0;flex:1}input[type="file"]{width:100%;max-width:100%}

@@ -3659,7 +3659,7 @@
     "slug": "dannon-round-neck-v-neck-kids",
     "description": "Choose your size and color. Retail, wholesale and re-seller prices follow the total quantity of clothing in your order.",
     "art_color": "#ffffff",
-    "size_chart_note": "Yalex kids sample reference: size 10 is 12 × 16 in.; size 12 is 13 × 17 in. Measurements for sizes 4, 5, 6, 8, 9 and 11 await confirmation. Yalex’s other size numbers are not mapped to Dannon sizes.",
+    "size_chart_note": "Yalex kids sample reference. Sizes 14, 16, 18 and 20 are Yalex reference sizes and are not currently offered for this product. Measurements for Dannon’s priced sizes 4, 5, 6, 8, 9 and 11 await confirmation. No mapping between different Yalex and Dannon size numbers is assumed.",
     "size_chart": [
       {
         "size": "4",
@@ -3700,6 +3700,26 @@
         "size": "12",
         "width": 13,
         "length": 17
+      },
+      {
+        "size": "14",
+        "width": 14,
+        "length": 18
+      },
+      {
+        "size": "16",
+        "width": 15,
+        "length": 19
+      },
+      {
+        "size": "18",
+        "width": 16,
+        "length": 20
+      },
+      {
+        "size": "20",
+        "width": 17,
+        "length": 21
       }
     ],
     "variants": [

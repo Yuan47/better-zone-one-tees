@@ -82,6 +82,11 @@ class CatalogBatchTest extends TestCase
         $chart = collect($kids->size_chart)->keyBy('size');
         $this->assertEquals(['size' => '10', 'width' => 12, 'length' => 16], $chart['10']);
         $this->assertEquals(['size' => '12', 'width' => 13, 'length' => 17], $chart['12']);
+        $this->assertEquals(['size' => '14', 'width' => 14, 'length' => 18], $chart['14']);
+        $this->assertEquals(['size' => '16', 'width' => 15, 'length' => 19], $chart['16']);
+        $this->assertEquals(['size' => '18', 'width' => 16, 'length' => 20], $chart['18']);
+        $this->assertEquals(['size' => '20', 'width' => 17, 'length' => 21], $chart['20']);
+        $this->assertSame(0, $kids->variants()->whereIn('size', ['14', '16', '18', '20'])->count());
         foreach (['4', '5', '6', '8', '9', '11'] as $size) {
             $this->assertNull($chart[$size]['width']);
             $this->assertNull($chart[$size]['length']);
