@@ -13,6 +13,11 @@ class Variant extends Model
         return $this->belongsTo(Product::class);
     }
 
+    public function photoUrl(): ?string
+    {
+        return $this->image_path ? asset($this->image_path) : $this->product->photoUrl();
+    }
+
     public function available(): int
     {
         return max(0, $this->stock - $this->reserved);

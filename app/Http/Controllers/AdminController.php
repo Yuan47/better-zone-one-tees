@@ -6,115 +6,157 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
 use App\Models\Variant;
-use App\Services\Forecast;
+use App\Services\ImageUploads;
 use App\Services\Lalamove;
 use App\Services\PayMongo;
+use App\Services\Sku;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class AdminController extends Controller
 {
-    public function dashboard(Forecast $forecast)
-    {
-        $paid = Order::with('items.variant.product')->where('payment_status', 'paid')->get();
-        $revenue = $paid->sum('subtotal');
-        $ordersCount = $paid->count();
-        $customers = User::where('role', 'customer')->count();
-        $toPack = Order::where('status', 'to_pack')->count();
-        $lowStock = Variant::with('product')->whereRaw('stock - reserved <= reorder_level')->limit(6)->get();
-        $chart = [];
-        for ($i = 6; $i >= 0; $i--) {
-            $date = now()->subDays($i);
-            $chart[] = ['label' => $date->format('D'), 'amount' => $paid->filter(fn ($o) => $o->paid_at->isSameDay($date))->sum('subtotal')];
-        }
-        $best = $paid->flatMap->items->groupBy('name')->map(fn ($items) => $items->sum('quantity'))->sortDesc()->take(5);
-        $category = collect();
-        foreach ($paid as $order) {
-            $allocated = 0;
-            $items = $order->items->values();
-            foreach ($items as $i => $item) {
-                $net = $i === $items->count() - 1 ? $order->subtotal - $allocated : (int) round($item->total / max(1, $order->merchandise_base) * $order->subtotal);
-                $allocated += $net;
-                $name = $item->variant->product->category;
-                $category[$name] = ($category[$name] ?? 0) + $net;
-            }
-        }
-        $category = $category->sortDesc();
-        $recent = Order::with('user')->latest()->limit(5)->get();
-        $forecasts = $forecast->rows();
-        $revenueForecast = $forecast->revenue();
-        $categoryForecast = $forecast->categories();
-
-        return view('admin.dashboard', compact('revenue', 'ordersCount', 'customers', 'toPack', 'lowStock', 'chart', 'best', 'category', 'recent', 'forecasts', 'revenueForecast', 'categoryForecast'));
-    }
-
     public function products(Request $r)
     {
-        $products = Product::with('variants')->when($r->filled('q'), fn ($q) => $q->where('name', 'like', '%'.$r->string('q').'%'))->get();
+        $products = Product::with('variants')->when(! $r->boolean('hidden'), fn ($q) => $q->where('active', true))->when($r->filled('q'), fn ($q) => $q->where('name', 'like', '%'.$r->string('q').'%'))->get();
 
         return view('admin.products', compact('products'));
     }
 
-    public function edit(Product $product)
+    public function edit(Request $r, Product $product)
     {
         $product->load('variants');
 
-        return view('admin.product', compact('product'));
+        return view('admin.product', ['product' => $product, 'editingVariant' => $product->variants->firstWhere('id', (int) $r->query('variant'))]);
     }
 
     public function createForm()
     {
         $product = new Product(['active' => true]);
 
-        return view('admin.product', compact('product'));
+        return view('admin.product', ['product' => $product, 'editingVariant' => null]);
     }
 
-    public function save(Request $r, ?Product $product = null)
+    public function save(Request $r, ImageUploads $uploads, ?Product $product = null)
     {
-        $data = $r->validate(['name' => 'required|string|max:150', 'category' => 'required|string|max:100', 'description' => 'required|string|max:2000',
-            'art_color' => 'required|regex:/^#[0-9a-fA-F]{6}$/', 'active' => 'required|boolean',
-            'image_url' => 'nullable|url:https|max:1000']);
+        $data = $r->validate([
+            'name' => 'required|string|max:150', 'description' => 'required|string|max:2000', 'active' => 'required|boolean',
+            'photo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120', 'remove_photo' => 'nullable|boolean',
+            'size_chart' => 'nullable|array|max:30', 'size_chart.*.size' => 'nullable|string|max:40',
+            'size_chart.*.width' => 'nullable|numeric|min:1|max:100', 'size_chart.*.length' => 'nullable|numeric|min:1|max:100',
+            'size_chart_note' => 'nullable|string|max:1000',
+        ]);
+        $chart = [];
+        foreach ($data['size_chart'] ?? [] as $row) {
+            $size = trim($row['size'] ?? '');
+            if ($size === '') {
+                if (filled($row['width'] ?? null) || filled($row['length'] ?? null)) {
+                    throw ValidationException::withMessages(['size_chart' => 'Add a size label for each measurement.']);
+                }
+
+                continue;
+            }
+            if (in_array(strtoupper($size), array_column($chart, 'size'), true)) {
+                throw ValidationException::withMessages(['size_chart' => 'Size chart labels must be unique.']);
+            }
+            $chart[] = ['size' => strtoupper($size), 'width' => isset($row['width']) ? (float) $row['width'] : null, 'length' => isset($row['length']) ? (float) $row['length'] : null];
+        }
+        $oldPhoto = $product?->image_path;
+        $newPhoto = $r->file('photo') ? $uploads->store($r->file('photo'), 'products') : null;
+        unset($data['photo'],$data['remove_photo']);
+        $data['size_chart'] = $chart;
+        if ($newPhoto) {
+            $data['image_path'] = $newPhoto;
+        } elseif ($r->boolean('remove_photo')) {
+            $data['image_path'] = null;
+        }
         if (! $product) {
-            $product = Product::create($data + ['slug' => Str::slug($data['name']).'-'.Str::lower(Str::random(5))]);
+            $product = Product::create($data + ['slug' => Str::slug($data['name']).'-'.Str::lower(Str::random(5)), 'category' => '', 'art_color' => '#e4d9c8']);
         } else {
             $product->update($data);
         }
+        if ($oldPhoto && ($newPhoto || $r->boolean('remove_photo'))) {
+            $uploads->delete($oldPhoto);
+        }
 
-        return redirect()->route('admin.products.edit', $product)->with('notice', 'Product saved. Add or update its size and color variants below.');
+        return redirect()->route('admin.products.edit', $product)->with('notice', 'Product saved.');
     }
 
-    public function variant(Request $r, Product $product, ?Variant $variant = null)
+    public function variant(Request $r, Product $product, ImageUploads $uploads, ?Variant $variant = null)
     {
         if ($variant) {
             abort_unless($variant->product_id === $product->id, 404);
         }
-        $data = $r->validate(['sku' => 'required|string|max:100|unique:variants,sku,'.($variant?->id ?? 'NULL'),
-            'size' => 'required|string|max:40', 'color' => 'required|string|max:80', 'stock' => 'required|integer|min:0|max:1000000',
-            'reorder_level' => 'required|integer|min:0|max:1000000',
-            'retail' => 'required|numeric|min:1|max:100000', 'wholesale' => 'required|numeric|min:1|max:100000',
-            'reseller' => 'required|numeric|min:1|max:100000']);
+        $group = $r->input('color_group', 'COLORED');
+        $r->merge(['color_group' => $group, 'size' => strtoupper(trim((string) $r->input('size'))), 'color' => $group === 'WHITE' ? 'White' : trim((string) $r->input('color'))]);
+        $data = $r->validate([
+            'size' => 'required|string|max:40', 'color_group' => 'required|in:WHITE,COLORED',
+            'color' => ['required', 'string', 'max:80', Rule::unique('variants', 'color')->where(fn ($q) => $q->where('product_id', $product->id)->where('size', $r->input('size')))->ignore($variant?->id)],
+            'stock' => 'required|integer|min:0|max:1000000', 'reorder_level' => 'required|integer|min:0|max:1000000',
+            'retail' => 'required|numeric|min:1|max:100000', 'wholesale' => 'required|numeric|min:1|max:100000', 'reseller' => 'required|numeric|min:1|max:100000',
+            'photo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120', 'remove_photo' => 'nullable|boolean',
+        ]);
+        if ($group === 'COLORED' && strtolower($data['color']) === 'white') {
+            throw ValidationException::withMessages(['color' => 'Select WHITE for white clothing.']);
+        }
         foreach (['retail', 'wholesale', 'reseller'] as $tier) {
             $data[$tier.'_price'] = (int) round($data[$tier] * 100);
             unset($data[$tier]);
         }
         if ($data['wholesale_price'] > $data['retail_price'] || $data['reseller_price'] > $data['wholesale_price']) {
-            return back()->withErrors(['prices' => 'Prices must stay the same or decrease as quantity increases.'])->withInput();
+            throw ValidationException::withMessages(['prices' => 'Prices must stay the same or decrease as quantity increases.']);
         }
-        DB::transaction(function () use ($product, $variant, $data) {
-            if ($variant) {
-                $locked = Variant::whereKey($variant->id)->lockForUpdate()->firstOrFail();
-                if ($data['stock'] < $locked->reserved) {
-                    throw ValidationException::withMessages(['stock' => 'Stock cannot be lower than reserved quantity.']);
-                }
+        unset($data['photo'],$data['remove_photo']);
+        $oldPhoto = $variant?->image_path;
+        DB::transaction(function () use ($r, $product, $variant, $uploads, &$data) {
+            Product::whereKey($product->id)->lockForUpdate()->firstOrFail();
+            $locked = $variant ? Variant::whereKey($variant->id)->lockForUpdate()->firstOrFail() : null;
+            if ($locked && $data['stock'] < $locked->reserved) {
+                throw ValidationException::withMessages(['stock' => 'Some stock is committed to orders. On-hand stock cannot be reduced below those commitments.']);
+            }
+            if ($r->file('photo')) {
+                $data['image_path'] = $uploads->store($r->file('photo'), 'variants');
+            } elseif ($r->boolean('remove_photo')) {
+                $data['image_path'] = null;
+            }
+            if ($locked) {
                 $locked->update($data);
             } else {
-                $product->variants()->create($data);
+                $product->variants()->create($data + ['sku' => Sku::forNewVariant($product, $data['size'], $data['color'])]);
+            }
+        });
+        if ($oldPhoto && ($r->file('photo') || $r->boolean('remove_photo'))) {
+            $uploads->delete($oldPhoto);
+        }
+
+        return back()->with('notice', 'Variant saved. SKU is assigned automatically.');
+    }
+
+    public function color(Request $r, Product $product, ImageUploads $uploads)
+    {
+        $data = $r->validate(['color' => 'required|string|max:80', 'photo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120']);
+        $color = trim($data['color']);
+        if (strtolower($color) === 'white' || $product->variants()->where('color', $color)->exists()) {
+            throw ValidationException::withMessages(['color' => 'This color already exists. Edit its variants below.']);
+        }
+        $templates = $product->variants()->where('color_group', 'COLORED')->orderBy('id')->get()->unique('size');
+        if ($templates->isEmpty()) {
+            throw ValidationException::withMessages(['color' => 'Add a COLORED size variant first to set its prices.']);
+        }
+        $photo = $r->file('photo') ? $uploads->store($r->file('photo'), 'variants') : null;
+        DB::transaction(function () use ($templates, $color, $product, $photo) {
+            Product::whereKey($product->id)->lockForUpdate()->firstOrFail();
+            foreach ($templates as $v) {
+                $product->variants()->create([
+                    'sku' => Sku::forNewVariant($product, $v->size, $color), 'size' => $v->size, 'color' => $color, 'color_group' => 'COLORED', 'image_path' => $photo,
+                    'retail_price' => $v->retail_price, 'wholesale_price' => $v->wholesale_price, 'reseller_price' => $v->reseller_price, 'stock' => 0, 'reorder_level' => $v->reorder_level,
+                ]);
             }
         });
 
-        return back()->with('notice', 'Variant saved.');
+        return back()->with('notice', 'Color added across existing colored sizes. Review its prices and enter counted stock.');
     }
 
     public function orders(Request $r)

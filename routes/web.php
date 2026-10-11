@@ -1,8 +1,10 @@
 <?php
 
+use App\Http\Controllers\AccountController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ChatController;
+use App\Http\Controllers\ReportsController;
 use App\Http\Controllers\StoreController;
 use App\Http\Controllers\WebhookController;
 use Illuminate\Support\Facades\Route;
@@ -22,6 +24,9 @@ Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->n
 Route::post('/chat', [ChatController::class, '__invoke'])->middleware('throttle:12,1')->name('chat');
 Route::post('/webhooks/paymongo', WebhookController::class)->name('webhooks.paymongo');
 Route::middleware('auth')->group(function () {
+    Route::get('/account', [AccountController::class, 'show'])->name('account');
+    Route::patch('/account', [AccountController::class, 'update'])->name('account.update');
+    Route::patch('/account/password', [AccountController::class, 'password'])->middleware('throttle:5,1')->name('account.password');
     Route::post('/wishlist/{product}', [StoreController::class, 'wishlist'])->name('wishlist.toggle');
     Route::get('/checkout', [StoreController::class, 'checkout'])->name('checkout');
     Route::post('/checkout/quote', [StoreController::class, 'quote'])->middleware('throttle:10,1')->name('checkout.quote');
@@ -30,7 +35,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/orders/{order}', [StoreController::class, 'order'])->name('orders.show');
 });
 Route::middleware(['auth', 'staff'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
+    Route::get('/', [ReportsController::class, 'dashboard'])->name('dashboard');
+    Route::get('/forecast', [ReportsController::class, 'forecast'])->name('forecast');
     Route::get('/orders', [AdminController::class, 'orders'])->name('orders');
     Route::get('/reports/export', [AdminController::class, 'export'])->name('reports.export');
     Route::patch('/orders/{order}', [AdminController::class, 'status'])->name('orders.status');
@@ -41,6 +47,7 @@ Route::middleware(['auth', 'staff'])->prefix('admin')->name('admin.')->group(fun
         Route::post('/products', [AdminController::class, 'save'])->name('products.store');
         Route::get('/products/{product}', [AdminController::class, 'edit'])->name('products.edit');
         Route::patch('/products/{product}', [AdminController::class, 'save'])->name('products.save');
+        Route::post('/products/{product}/colors', [AdminController::class, 'color'])->name('colors.store');
         Route::post('/products/{product}/variants', [AdminController::class, 'variant'])->name('variants.store');
         Route::patch('/products/{product}/variants/{variant}', [AdminController::class, 'variant'])->name('variants.save');
         Route::get('/customers', [AdminController::class, 'customers'])->name('customers');

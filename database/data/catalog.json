@@ -1,1009 +1,5316 @@
 [
   {
-    "name": "Everyday Cotton Tee",
-    "category": "Essentials",
+    "name": "DANNON - ROUND NECK / V-NECK",
+    "slug": "dannon-round-neck-v-neck",
+    "description": "Choose your size and color. Retail, wholesale and re-seller prices follow the total quantity of clothing in your order.",
+    "art_color": "#ffffff",
+    "size_chart_note": "Yalex adult sample reference; 4XL measurements confirmed by the store owner. Verify fit for this brand before purchase.",
+    "size_chart": [
+      {
+        "size": "XS",
+        "width": 17,
+        "length": 24
+      },
+      {
+        "size": "S",
+        "width": 18,
+        "length": 25
+      },
+      {
+        "size": "M",
+        "width": 19,
+        "length": 26
+      },
+      {
+        "size": "L",
+        "width": 20,
+        "length": 27
+      },
+      {
+        "size": "XL",
+        "width": 21,
+        "length": 28
+      },
+      {
+        "size": "2XL",
+        "width": 22,
+        "length": 29
+      },
+      {
+        "size": "3XL",
+        "width": 23,
+        "length": 30
+      },
+      {
+        "size": "4XL",
+        "width": 24,
+        "length": 31
+      },
+      {
+        "size": "5XL",
+        "width": 25,
+        "length": 32
+      }
+    ],
     "variants": [
       {
-        "sku": "Z2-01-S-BLACK",
+        "size": "XS",
+        "color": "White",
+        "color_group": "WHITE",
+        "reseller_price": 11700,
+        "wholesale_price": 12200,
+        "retail_price": 13200
+      },
+      {
         "size": "S",
-        "color": "Black",
-        "retail_price": 24900,
-        "wholesale_price": 19900,
-        "reseller_price": 17900
+        "color": "White",
+        "color_group": "WHITE",
+        "reseller_price": 12700,
+        "wholesale_price": 13200,
+        "retail_price": 14200
       },
       {
-        "sku": "Z2-01-S-IVORY",
+        "size": "M",
+        "color": "White",
+        "color_group": "WHITE",
+        "reseller_price": 12700,
+        "wholesale_price": 13200,
+        "retail_price": 14200
+      },
+      {
+        "size": "L",
+        "color": "White",
+        "color_group": "WHITE",
+        "reseller_price": 14200,
+        "wholesale_price": 14700,
+        "retail_price": 15700
+      },
+      {
+        "size": "XL",
+        "color": "White",
+        "color_group": "WHITE",
+        "reseller_price": 14200,
+        "wholesale_price": 14700,
+        "retail_price": 15700
+      },
+      {
+        "size": "2XL",
+        "color": "White",
+        "color_group": "WHITE",
+        "reseller_price": 15200,
+        "wholesale_price": 15700,
+        "retail_price": 16700
+      },
+      {
+        "size": "3XL",
+        "color": "White",
+        "color_group": "WHITE",
+        "reseller_price": 16200,
+        "wholesale_price": 16700,
+        "retail_price": 17700
+      },
+      {
+        "size": "4XL",
+        "color": "White",
+        "color_group": "WHITE",
+        "reseller_price": 18200,
+        "wholesale_price": 18700,
+        "retail_price": 19700
+      },
+      {
+        "size": "5XL",
+        "color": "White",
+        "color_group": "WHITE",
+        "reseller_price": 18200,
+        "wholesale_price": 18700,
+        "retail_price": 19700
+      },
+      {
+        "size": "XS",
+        "color": "Red",
+        "color_group": "COLORED",
+        "reseller_price": 13700,
+        "wholesale_price": 14200,
+        "retail_price": 15200
+      },
+      {
         "size": "S",
-        "color": "Ivory",
-        "retail_price": 24900,
-        "wholesale_price": 19900,
-        "reseller_price": 17900
+        "color": "Red",
+        "color_group": "COLORED",
+        "reseller_price": 15200,
+        "wholesale_price": 15700,
+        "retail_price": 16700
       },
       {
-        "sku": "Z2-01-S-SAGE",
+        "size": "M",
+        "color": "Red",
+        "color_group": "COLORED",
+        "reseller_price": 15200,
+        "wholesale_price": 15700,
+        "retail_price": 16700
+      },
+      {
+        "size": "L",
+        "color": "Red",
+        "color_group": "COLORED",
+        "reseller_price": 16700,
+        "wholesale_price": 17200,
+        "retail_price": 18200
+      },
+      {
+        "size": "XL",
+        "color": "Red",
+        "color_group": "COLORED",
+        "reseller_price": 16700,
+        "wholesale_price": 17200,
+        "retail_price": 18200
+      },
+      {
+        "size": "2XL",
+        "color": "Red",
+        "color_group": "COLORED",
+        "reseller_price": 18700,
+        "wholesale_price": 19200,
+        "retail_price": 20200
+      },
+      {
+        "size": "3XL",
+        "color": "Red",
+        "color_group": "COLORED",
+        "reseller_price": 19700,
+        "wholesale_price": 20200,
+        "retail_price": 21200
+      },
+      {
+        "size": "4XL",
+        "color": "Red",
+        "color_group": "COLORED",
+        "reseller_price": 21700,
+        "wholesale_price": 22200,
+        "retail_price": 23200
+      },
+      {
+        "size": "5XL",
+        "color": "Red",
+        "color_group": "COLORED",
+        "reseller_price": 21700,
+        "wholesale_price": 22200,
+        "retail_price": 23200
+      },
+      {
+        "size": "XS",
+        "color": "Mandarin",
+        "color_group": "COLORED",
+        "reseller_price": 13700,
+        "wholesale_price": 14200,
+        "retail_price": 15200
+      },
+      {
         "size": "S",
-        "color": "Sage",
-        "retail_price": 24900,
-        "wholesale_price": 19900,
-        "reseller_price": 17900
+        "color": "Mandarin",
+        "color_group": "COLORED",
+        "reseller_price": 15200,
+        "wholesale_price": 15700,
+        "retail_price": 16700
       },
       {
-        "sku": "Z2-01-M-BLACK",
         "size": "M",
-        "color": "Black",
-        "retail_price": 24900,
-        "wholesale_price": 19900,
-        "reseller_price": 17900
+        "color": "Mandarin",
+        "color_group": "COLORED",
+        "reseller_price": 15200,
+        "wholesale_price": 15700,
+        "retail_price": 16700
       },
       {
-        "sku": "Z2-01-M-IVORY",
+        "size": "L",
+        "color": "Mandarin",
+        "color_group": "COLORED",
+        "reseller_price": 16700,
+        "wholesale_price": 17200,
+        "retail_price": 18200
+      },
+      {
+        "size": "XL",
+        "color": "Mandarin",
+        "color_group": "COLORED",
+        "reseller_price": 16700,
+        "wholesale_price": 17200,
+        "retail_price": 18200
+      },
+      {
+        "size": "2XL",
+        "color": "Mandarin",
+        "color_group": "COLORED",
+        "reseller_price": 18700,
+        "wholesale_price": 19200,
+        "retail_price": 20200
+      },
+      {
+        "size": "3XL",
+        "color": "Mandarin",
+        "color_group": "COLORED",
+        "reseller_price": 19700,
+        "wholesale_price": 20200,
+        "retail_price": 21200
+      },
+      {
+        "size": "4XL",
+        "color": "Mandarin",
+        "color_group": "COLORED",
+        "reseller_price": 21700,
+        "wholesale_price": 22200,
+        "retail_price": 23200
+      },
+      {
+        "size": "5XL",
+        "color": "Mandarin",
+        "color_group": "COLORED",
+        "reseller_price": 21700,
+        "wholesale_price": 22200,
+        "retail_price": 23200
+      },
+      {
+        "size": "XS",
+        "color": "Maroon",
+        "color_group": "COLORED",
+        "reseller_price": 13700,
+        "wholesale_price": 14200,
+        "retail_price": 15200
+      },
+      {
+        "size": "S",
+        "color": "Maroon",
+        "color_group": "COLORED",
+        "reseller_price": 15200,
+        "wholesale_price": 15700,
+        "retail_price": 16700
+      },
+      {
         "size": "M",
-        "color": "Ivory",
-        "retail_price": 24900,
-        "wholesale_price": 19900,
-        "reseller_price": 17900
+        "color": "Maroon",
+        "color_group": "COLORED",
+        "reseller_price": 15200,
+        "wholesale_price": 15700,
+        "retail_price": 16700
       },
       {
-        "sku": "Z2-01-M-SAGE",
+        "size": "L",
+        "color": "Maroon",
+        "color_group": "COLORED",
+        "reseller_price": 16700,
+        "wholesale_price": 17200,
+        "retail_price": 18200
+      },
+      {
+        "size": "XL",
+        "color": "Maroon",
+        "color_group": "COLORED",
+        "reseller_price": 16700,
+        "wholesale_price": 17200,
+        "retail_price": 18200
+      },
+      {
+        "size": "2XL",
+        "color": "Maroon",
+        "color_group": "COLORED",
+        "reseller_price": 18700,
+        "wholesale_price": 19200,
+        "retail_price": 20200
+      },
+      {
+        "size": "3XL",
+        "color": "Maroon",
+        "color_group": "COLORED",
+        "reseller_price": 19700,
+        "wholesale_price": 20200,
+        "retail_price": 21200
+      },
+      {
+        "size": "4XL",
+        "color": "Maroon",
+        "color_group": "COLORED",
+        "reseller_price": 21700,
+        "wholesale_price": 22200,
+        "retail_price": 23200
+      },
+      {
+        "size": "5XL",
+        "color": "Maroon",
+        "color_group": "COLORED",
+        "reseller_price": 21700,
+        "wholesale_price": 22200,
+        "retail_price": 23200
+      },
+      {
+        "size": "XS",
+        "color": "Batis",
+        "color_group": "COLORED",
+        "reseller_price": 13700,
+        "wholesale_price": 14200,
+        "retail_price": 15200
+      },
+      {
+        "size": "S",
+        "color": "Batis",
+        "color_group": "COLORED",
+        "reseller_price": 15200,
+        "wholesale_price": 15700,
+        "retail_price": 16700
+      },
+      {
         "size": "M",
-        "color": "Sage",
-        "retail_price": 24900,
-        "wholesale_price": 19900,
-        "reseller_price": 17900
+        "color": "Batis",
+        "color_group": "COLORED",
+        "reseller_price": 15200,
+        "wholesale_price": 15700,
+        "retail_price": 16700
       },
       {
-        "sku": "Z2-01-L-BLACK",
         "size": "L",
-        "color": "Black",
-        "retail_price": 24900,
-        "wholesale_price": 19900,
-        "reseller_price": 17900
+        "color": "Batis",
+        "color_group": "COLORED",
+        "reseller_price": 16700,
+        "wholesale_price": 17200,
+        "retail_price": 18200
       },
       {
-        "sku": "Z2-01-L-IVORY",
+        "size": "XL",
+        "color": "Batis",
+        "color_group": "COLORED",
+        "reseller_price": 16700,
+        "wholesale_price": 17200,
+        "retail_price": 18200
+      },
+      {
+        "size": "2XL",
+        "color": "Batis",
+        "color_group": "COLORED",
+        "reseller_price": 18700,
+        "wholesale_price": 19200,
+        "retail_price": 20200
+      },
+      {
+        "size": "3XL",
+        "color": "Batis",
+        "color_group": "COLORED",
+        "reseller_price": 19700,
+        "wholesale_price": 20200,
+        "retail_price": 21200
+      },
+      {
+        "size": "4XL",
+        "color": "Batis",
+        "color_group": "COLORED",
+        "reseller_price": 21700,
+        "wholesale_price": 22200,
+        "retail_price": 23200
+      },
+      {
+        "size": "5XL",
+        "color": "Batis",
+        "color_group": "COLORED",
+        "reseller_price": 21700,
+        "wholesale_price": 22200,
+        "retail_price": 23200
+      },
+      {
+        "size": "XS",
+        "color": "Teal",
+        "color_group": "COLORED",
+        "reseller_price": 13700,
+        "wholesale_price": 14200,
+        "retail_price": 15200
+      },
+      {
+        "size": "S",
+        "color": "Teal",
+        "color_group": "COLORED",
+        "reseller_price": 15200,
+        "wholesale_price": 15700,
+        "retail_price": 16700
+      },
+      {
+        "size": "M",
+        "color": "Teal",
+        "color_group": "COLORED",
+        "reseller_price": 15200,
+        "wholesale_price": 15700,
+        "retail_price": 16700
+      },
+      {
         "size": "L",
-        "color": "Ivory",
-        "retail_price": 24900,
-        "wholesale_price": 19900,
-        "reseller_price": 17900
+        "color": "Teal",
+        "color_group": "COLORED",
+        "reseller_price": 16700,
+        "wholesale_price": 17200,
+        "retail_price": 18200
       },
       {
-        "sku": "Z2-01-L-SAGE",
+        "size": "XL",
+        "color": "Teal",
+        "color_group": "COLORED",
+        "reseller_price": 16700,
+        "wholesale_price": 17200,
+        "retail_price": 18200
+      },
+      {
+        "size": "2XL",
+        "color": "Teal",
+        "color_group": "COLORED",
+        "reseller_price": 18700,
+        "wholesale_price": 19200,
+        "retail_price": 20200
+      },
+      {
+        "size": "3XL",
+        "color": "Teal",
+        "color_group": "COLORED",
+        "reseller_price": 19700,
+        "wholesale_price": 20200,
+        "retail_price": 21200
+      },
+      {
+        "size": "4XL",
+        "color": "Teal",
+        "color_group": "COLORED",
+        "reseller_price": 21700,
+        "wholesale_price": 22200,
+        "retail_price": 23200
+      },
+      {
+        "size": "5XL",
+        "color": "Teal",
+        "color_group": "COLORED",
+        "reseller_price": 21700,
+        "wholesale_price": 22200,
+        "retail_price": 23200
+      },
+      {
+        "size": "XS",
+        "color": "Light Blue",
+        "color_group": "COLORED",
+        "reseller_price": 13700,
+        "wholesale_price": 14200,
+        "retail_price": 15200
+      },
+      {
+        "size": "S",
+        "color": "Light Blue",
+        "color_group": "COLORED",
+        "reseller_price": 15200,
+        "wholesale_price": 15700,
+        "retail_price": 16700
+      },
+      {
+        "size": "M",
+        "color": "Light Blue",
+        "color_group": "COLORED",
+        "reseller_price": 15200,
+        "wholesale_price": 15700,
+        "retail_price": 16700
+      },
+      {
         "size": "L",
-        "color": "Sage",
-        "retail_price": 24900,
-        "wholesale_price": 19900,
-        "reseller_price": 17900
+        "color": "Light Blue",
+        "color_group": "COLORED",
+        "reseller_price": 16700,
+        "wholesale_price": 17200,
+        "retail_price": 18200
       },
       {
-        "sku": "Z2-01-XL-BLACK",
         "size": "XL",
-        "color": "Black",
-        "retail_price": 24900,
-        "wholesale_price": 19900,
-        "reseller_price": 17900
+        "color": "Light Blue",
+        "color_group": "COLORED",
+        "reseller_price": 16700,
+        "wholesale_price": 17200,
+        "retail_price": 18200
       },
       {
-        "sku": "Z2-01-XL-IVORY",
+        "size": "2XL",
+        "color": "Light Blue",
+        "color_group": "COLORED",
+        "reseller_price": 18700,
+        "wholesale_price": 19200,
+        "retail_price": 20200
+      },
+      {
+        "size": "3XL",
+        "color": "Light Blue",
+        "color_group": "COLORED",
+        "reseller_price": 19700,
+        "wholesale_price": 20200,
+        "retail_price": 21200
+      },
+      {
+        "size": "4XL",
+        "color": "Light Blue",
+        "color_group": "COLORED",
+        "reseller_price": 21700,
+        "wholesale_price": 22200,
+        "retail_price": 23200
+      },
+      {
+        "size": "5XL",
+        "color": "Light Blue",
+        "color_group": "COLORED",
+        "reseller_price": 21700,
+        "wholesale_price": 22200,
+        "retail_price": 23200
+      },
+      {
+        "size": "XS",
+        "color": "Fatigue",
+        "color_group": "COLORED",
+        "reseller_price": 13700,
+        "wholesale_price": 14200,
+        "retail_price": 15200
+      },
+      {
+        "size": "S",
+        "color": "Fatigue",
+        "color_group": "COLORED",
+        "reseller_price": 15200,
+        "wholesale_price": 15700,
+        "retail_price": 16700
+      },
+      {
+        "size": "M",
+        "color": "Fatigue",
+        "color_group": "COLORED",
+        "reseller_price": 15200,
+        "wholesale_price": 15700,
+        "retail_price": 16700
+      },
+      {
+        "size": "L",
+        "color": "Fatigue",
+        "color_group": "COLORED",
+        "reseller_price": 16700,
+        "wholesale_price": 17200,
+        "retail_price": 18200
+      },
+      {
         "size": "XL",
-        "color": "Ivory",
-        "retail_price": 24900,
-        "wholesale_price": 19900,
-        "reseller_price": 17900
+        "color": "Fatigue",
+        "color_group": "COLORED",
+        "reseller_price": 16700,
+        "wholesale_price": 17200,
+        "retail_price": 18200
       },
       {
-        "sku": "Z2-01-XL-SAGE",
+        "size": "2XL",
+        "color": "Fatigue",
+        "color_group": "COLORED",
+        "reseller_price": 18700,
+        "wholesale_price": 19200,
+        "retail_price": 20200
+      },
+      {
+        "size": "3XL",
+        "color": "Fatigue",
+        "color_group": "COLORED",
+        "reseller_price": 19700,
+        "wholesale_price": 20200,
+        "retail_price": 21200
+      },
+      {
+        "size": "4XL",
+        "color": "Fatigue",
+        "color_group": "COLORED",
+        "reseller_price": 21700,
+        "wholesale_price": 22200,
+        "retail_price": 23200
+      },
+      {
+        "size": "5XL",
+        "color": "Fatigue",
+        "color_group": "COLORED",
+        "reseller_price": 21700,
+        "wholesale_price": 22200,
+        "retail_price": 23200
+      },
+      {
+        "size": "XS",
+        "color": "Gray",
+        "color_group": "COLORED",
+        "reseller_price": 13700,
+        "wholesale_price": 14200,
+        "retail_price": 15200
+      },
+      {
+        "size": "S",
+        "color": "Gray",
+        "color_group": "COLORED",
+        "reseller_price": 15200,
+        "wholesale_price": 15700,
+        "retail_price": 16700
+      },
+      {
+        "size": "M",
+        "color": "Gray",
+        "color_group": "COLORED",
+        "reseller_price": 15200,
+        "wholesale_price": 15700,
+        "retail_price": 16700
+      },
+      {
+        "size": "L",
+        "color": "Gray",
+        "color_group": "COLORED",
+        "reseller_price": 16700,
+        "wholesale_price": 17200,
+        "retail_price": 18200
+      },
+      {
         "size": "XL",
-        "color": "Sage",
-        "retail_price": 24900,
-        "wholesale_price": 19900,
-        "reseller_price": 17900
+        "color": "Gray",
+        "color_group": "COLORED",
+        "reseller_price": 16700,
+        "wholesale_price": 17200,
+        "retail_price": 18200
       },
       {
-        "sku": "Z2-01-2XL-BLACK",
         "size": "2XL",
-        "color": "Black",
-        "retail_price": 26900,
-        "wholesale_price": 21900,
-        "reseller_price": 19900
+        "color": "Gray",
+        "color_group": "COLORED",
+        "reseller_price": 18700,
+        "wholesale_price": 19200,
+        "retail_price": 20200
       },
       {
-        "sku": "Z2-01-2XL-IVORY",
-        "size": "2XL",
-        "color": "Ivory",
-        "retail_price": 26900,
-        "wholesale_price": 21900,
-        "reseller_price": 19900
+        "size": "3XL",
+        "color": "Gray",
+        "color_group": "COLORED",
+        "reseller_price": 19700,
+        "wholesale_price": 20200,
+        "retail_price": 21200
       },
       {
-        "sku": "Z2-01-2XL-SAGE",
+        "size": "4XL",
+        "color": "Gray",
+        "color_group": "COLORED",
+        "reseller_price": 21700,
+        "wholesale_price": 22200,
+        "retail_price": 23200
+      },
+      {
+        "size": "5XL",
+        "color": "Gray",
+        "color_group": "COLORED",
+        "reseller_price": 21700,
+        "wholesale_price": 22200,
+        "retail_price": 23200
+      },
+      {
+        "size": "XS",
+        "color": "Pool Green",
+        "color_group": "COLORED",
+        "reseller_price": 13700,
+        "wholesale_price": 14200,
+        "retail_price": 15200
+      },
+      {
+        "size": "S",
+        "color": "Pool Green",
+        "color_group": "COLORED",
+        "reseller_price": 15200,
+        "wholesale_price": 15700,
+        "retail_price": 16700
+      },
+      {
+        "size": "M",
+        "color": "Pool Green",
+        "color_group": "COLORED",
+        "reseller_price": 15200,
+        "wholesale_price": 15700,
+        "retail_price": 16700
+      },
+      {
+        "size": "L",
+        "color": "Pool Green",
+        "color_group": "COLORED",
+        "reseller_price": 16700,
+        "wholesale_price": 17200,
+        "retail_price": 18200
+      },
+      {
+        "size": "XL",
+        "color": "Pool Green",
+        "color_group": "COLORED",
+        "reseller_price": 16700,
+        "wholesale_price": 17200,
+        "retail_price": 18200
+      },
+      {
         "size": "2XL",
-        "color": "Sage",
-        "retail_price": 26900,
-        "wholesale_price": 21900,
-        "reseller_price": 19900
+        "color": "Pool Green",
+        "color_group": "COLORED",
+        "reseller_price": 18700,
+        "wholesale_price": 19200,
+        "retail_price": 20200
+      },
+      {
+        "size": "3XL",
+        "color": "Pool Green",
+        "color_group": "COLORED",
+        "reseller_price": 19700,
+        "wholesale_price": 20200,
+        "retail_price": 21200
+      },
+      {
+        "size": "4XL",
+        "color": "Pool Green",
+        "color_group": "COLORED",
+        "reseller_price": 21700,
+        "wholesale_price": 22200,
+        "retail_price": 23200
+      },
+      {
+        "size": "5XL",
+        "color": "Pool Green",
+        "color_group": "COLORED",
+        "reseller_price": 21700,
+        "wholesale_price": 22200,
+        "retail_price": 23200
+      },
+      {
+        "size": "XS",
+        "color": "Gold",
+        "color_group": "COLORED",
+        "reseller_price": 13700,
+        "wholesale_price": 14200,
+        "retail_price": 15200
+      },
+      {
+        "size": "S",
+        "color": "Gold",
+        "color_group": "COLORED",
+        "reseller_price": 15200,
+        "wholesale_price": 15700,
+        "retail_price": 16700
+      },
+      {
+        "size": "M",
+        "color": "Gold",
+        "color_group": "COLORED",
+        "reseller_price": 15200,
+        "wholesale_price": 15700,
+        "retail_price": 16700
+      },
+      {
+        "size": "L",
+        "color": "Gold",
+        "color_group": "COLORED",
+        "reseller_price": 16700,
+        "wholesale_price": 17200,
+        "retail_price": 18200
+      },
+      {
+        "size": "XL",
+        "color": "Gold",
+        "color_group": "COLORED",
+        "reseller_price": 16700,
+        "wholesale_price": 17200,
+        "retail_price": 18200
+      },
+      {
+        "size": "2XL",
+        "color": "Gold",
+        "color_group": "COLORED",
+        "reseller_price": 18700,
+        "wholesale_price": 19200,
+        "retail_price": 20200
+      },
+      {
+        "size": "3XL",
+        "color": "Gold",
+        "color_group": "COLORED",
+        "reseller_price": 19700,
+        "wholesale_price": 20200,
+        "retail_price": 21200
+      },
+      {
+        "size": "4XL",
+        "color": "Gold",
+        "color_group": "COLORED",
+        "reseller_price": 21700,
+        "wholesale_price": 22200,
+        "retail_price": 23200
+      },
+      {
+        "size": "5XL",
+        "color": "Gold",
+        "color_group": "COLORED",
+        "reseller_price": 21700,
+        "wholesale_price": 22200,
+        "retail_price": 23200
+      },
+      {
+        "size": "XS",
+        "color": "Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 13700,
+        "wholesale_price": 14200,
+        "retail_price": 15200
+      },
+      {
+        "size": "S",
+        "color": "Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 15200,
+        "wholesale_price": 15700,
+        "retail_price": 16700
+      },
+      {
+        "size": "M",
+        "color": "Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 15200,
+        "wholesale_price": 15700,
+        "retail_price": 16700
+      },
+      {
+        "size": "L",
+        "color": "Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 16700,
+        "wholesale_price": 17200,
+        "retail_price": 18200
+      },
+      {
+        "size": "XL",
+        "color": "Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 16700,
+        "wholesale_price": 17200,
+        "retail_price": 18200
+      },
+      {
+        "size": "2XL",
+        "color": "Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 18700,
+        "wholesale_price": 19200,
+        "retail_price": 20200
+      },
+      {
+        "size": "3XL",
+        "color": "Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 19700,
+        "wholesale_price": 20200,
+        "retail_price": 21200
+      },
+      {
+        "size": "4XL",
+        "color": "Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 21700,
+        "wholesale_price": 22200,
+        "retail_price": 23200
+      },
+      {
+        "size": "5XL",
+        "color": "Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 21700,
+        "wholesale_price": 22200,
+        "retail_price": 23200
+      },
+      {
+        "size": "XS",
+        "color": "Peach",
+        "color_group": "COLORED",
+        "reseller_price": 13700,
+        "wholesale_price": 14200,
+        "retail_price": 15200
+      },
+      {
+        "size": "S",
+        "color": "Peach",
+        "color_group": "COLORED",
+        "reseller_price": 15200,
+        "wholesale_price": 15700,
+        "retail_price": 16700
+      },
+      {
+        "size": "M",
+        "color": "Peach",
+        "color_group": "COLORED",
+        "reseller_price": 15200,
+        "wholesale_price": 15700,
+        "retail_price": 16700
+      },
+      {
+        "size": "L",
+        "color": "Peach",
+        "color_group": "COLORED",
+        "reseller_price": 16700,
+        "wholesale_price": 17200,
+        "retail_price": 18200
+      },
+      {
+        "size": "XL",
+        "color": "Peach",
+        "color_group": "COLORED",
+        "reseller_price": 16700,
+        "wholesale_price": 17200,
+        "retail_price": 18200
+      },
+      {
+        "size": "2XL",
+        "color": "Peach",
+        "color_group": "COLORED",
+        "reseller_price": 18700,
+        "wholesale_price": 19200,
+        "retail_price": 20200
+      },
+      {
+        "size": "3XL",
+        "color": "Peach",
+        "color_group": "COLORED",
+        "reseller_price": 19700,
+        "wholesale_price": 20200,
+        "retail_price": 21200
+      },
+      {
+        "size": "4XL",
+        "color": "Peach",
+        "color_group": "COLORED",
+        "reseller_price": 21700,
+        "wholesale_price": 22200,
+        "retail_price": 23200
+      },
+      {
+        "size": "5XL",
+        "color": "Peach",
+        "color_group": "COLORED",
+        "reseller_price": 21700,
+        "wholesale_price": 22200,
+        "retail_price": 23200
+      },
+      {
+        "size": "XS",
+        "color": "Light Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 13700,
+        "wholesale_price": 14200,
+        "retail_price": 15200
+      },
+      {
+        "size": "S",
+        "color": "Light Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 15200,
+        "wholesale_price": 15700,
+        "retail_price": 16700
+      },
+      {
+        "size": "M",
+        "color": "Light Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 15200,
+        "wholesale_price": 15700,
+        "retail_price": 16700
+      },
+      {
+        "size": "L",
+        "color": "Light Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 16700,
+        "wholesale_price": 17200,
+        "retail_price": 18200
+      },
+      {
+        "size": "XL",
+        "color": "Light Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 16700,
+        "wholesale_price": 17200,
+        "retail_price": 18200
+      },
+      {
+        "size": "2XL",
+        "color": "Light Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 18700,
+        "wholesale_price": 19200,
+        "retail_price": 20200
+      },
+      {
+        "size": "3XL",
+        "color": "Light Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 19700,
+        "wholesale_price": 20200,
+        "retail_price": 21200
+      },
+      {
+        "size": "4XL",
+        "color": "Light Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 21700,
+        "wholesale_price": 22200,
+        "retail_price": 23200
+      },
+      {
+        "size": "5XL",
+        "color": "Light Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 21700,
+        "wholesale_price": 22200,
+        "retail_price": 23200
       }
     ]
   },
   {
-    "name": "The Classic Crew",
-    "category": "Essentials",
+    "name": "DANNON - WITH COLLAR",
+    "slug": "dannon-with-collar",
+    "description": "Choose your size and color. Retail, wholesale and re-seller prices follow the total quantity of clothing in your order.",
+    "art_color": "#ffffff",
+    "size_chart_note": "Dannon Clothing Men’s Polo Shirt MP1-1 reference supplied by the store owner.",
+    "size_chart": [
+      {
+        "size": "S",
+        "width": 18,
+        "length": 26
+      },
+      {
+        "size": "M",
+        "width": 19,
+        "length": 27
+      },
+      {
+        "size": "L",
+        "width": 20,
+        "length": 28
+      },
+      {
+        "size": "XL",
+        "width": 21,
+        "length": 29
+      },
+      {
+        "size": "2XL",
+        "width": 22,
+        "length": 30
+      },
+      {
+        "size": "3XL",
+        "width": 23,
+        "length": 31
+      },
+      {
+        "size": "4XL",
+        "width": 25,
+        "length": 33
+      },
+      {
+        "size": "5XL",
+        "width": 26.5,
+        "length": 34
+      }
+    ],
     "variants": [
       {
-        "sku": "Z2-02-S-BLACK",
         "size": "S",
-        "color": "Black",
-        "retail_price": 29900,
-        "wholesale_price": 23900,
-        "reseller_price": 21900
+        "color": "White",
+        "color_group": "WHITE",
+        "reseller_price": 18700,
+        "wholesale_price": 19200,
+        "retail_price": 20200
       },
       {
-        "sku": "Z2-02-S-IVORY",
+        "size": "M",
+        "color": "White",
+        "color_group": "WHITE",
+        "reseller_price": 18700,
+        "wholesale_price": 19200,
+        "retail_price": 20200
+      },
+      {
+        "size": "L",
+        "color": "White",
+        "color_group": "WHITE",
+        "reseller_price": 19700,
+        "wholesale_price": 20200,
+        "retail_price": 21200
+      },
+      {
+        "size": "XL",
+        "color": "White",
+        "color_group": "WHITE",
+        "reseller_price": 19700,
+        "wholesale_price": 20200,
+        "retail_price": 21200
+      },
+      {
+        "size": "2XL",
+        "color": "White",
+        "color_group": "WHITE",
+        "reseller_price": 21700,
+        "wholesale_price": 22200,
+        "retail_price": 23200
+      },
+      {
+        "size": "3XL",
+        "color": "White",
+        "color_group": "WHITE",
+        "reseller_price": 24200,
+        "wholesale_price": 24700,
+        "retail_price": 25700
+      },
+      {
         "size": "S",
-        "color": "Ivory",
-        "retail_price": 29900,
-        "wholesale_price": 23900,
-        "reseller_price": 21900
+        "color": "Red",
+        "color_group": "COLORED",
+        "reseller_price": 21700,
+        "wholesale_price": 22200,
+        "retail_price": 23200
       },
       {
-        "sku": "Z2-02-S-SAGE",
+        "size": "M",
+        "color": "Red",
+        "color_group": "COLORED",
+        "reseller_price": 21700,
+        "wholesale_price": 22200,
+        "retail_price": 23200
+      },
+      {
+        "size": "L",
+        "color": "Red",
+        "color_group": "COLORED",
+        "reseller_price": 23200,
+        "wholesale_price": 23700,
+        "retail_price": 24700
+      },
+      {
+        "size": "XL",
+        "color": "Red",
+        "color_group": "COLORED",
+        "reseller_price": 23200,
+        "wholesale_price": 23700,
+        "retail_price": 24700
+      },
+      {
+        "size": "2XL",
+        "color": "Red",
+        "color_group": "COLORED",
+        "reseller_price": 25700,
+        "wholesale_price": 26200,
+        "retail_price": 27200
+      },
+      {
+        "size": "3XL",
+        "color": "Red",
+        "color_group": "COLORED",
+        "reseller_price": 28700,
+        "wholesale_price": 29200,
+        "retail_price": 30200
+      },
+      {
+        "size": "4XL",
+        "color": "Red",
+        "color_group": "COLORED",
+        "reseller_price": 28700,
+        "wholesale_price": 29200,
+        "retail_price": 30200
+      },
+      {
+        "size": "5XL",
+        "color": "Red",
+        "color_group": "COLORED",
+        "reseller_price": 28700,
+        "wholesale_price": 29200,
+        "retail_price": 30200
+      },
+      {
         "size": "S",
-        "color": "Sage",
-        "retail_price": 29900,
-        "wholesale_price": 23900,
-        "reseller_price": 21900
+        "color": "Mandarin",
+        "color_group": "COLORED",
+        "reseller_price": 21700,
+        "wholesale_price": 22200,
+        "retail_price": 23200
       },
       {
-        "sku": "Z2-02-M-BLACK",
         "size": "M",
-        "color": "Black",
-        "retail_price": 29900,
-        "wholesale_price": 23900,
-        "reseller_price": 21900
+        "color": "Mandarin",
+        "color_group": "COLORED",
+        "reseller_price": 21700,
+        "wholesale_price": 22200,
+        "retail_price": 23200
       },
       {
-        "sku": "Z2-02-M-IVORY",
+        "size": "L",
+        "color": "Mandarin",
+        "color_group": "COLORED",
+        "reseller_price": 23200,
+        "wholesale_price": 23700,
+        "retail_price": 24700
+      },
+      {
+        "size": "XL",
+        "color": "Mandarin",
+        "color_group": "COLORED",
+        "reseller_price": 23200,
+        "wholesale_price": 23700,
+        "retail_price": 24700
+      },
+      {
+        "size": "2XL",
+        "color": "Mandarin",
+        "color_group": "COLORED",
+        "reseller_price": 25700,
+        "wholesale_price": 26200,
+        "retail_price": 27200
+      },
+      {
+        "size": "3XL",
+        "color": "Mandarin",
+        "color_group": "COLORED",
+        "reseller_price": 28700,
+        "wholesale_price": 29200,
+        "retail_price": 30200
+      },
+      {
+        "size": "4XL",
+        "color": "Mandarin",
+        "color_group": "COLORED",
+        "reseller_price": 28700,
+        "wholesale_price": 29200,
+        "retail_price": 30200
+      },
+      {
+        "size": "5XL",
+        "color": "Mandarin",
+        "color_group": "COLORED",
+        "reseller_price": 28700,
+        "wholesale_price": 29200,
+        "retail_price": 30200
+      },
+      {
+        "size": "S",
+        "color": "Maroon",
+        "color_group": "COLORED",
+        "reseller_price": 21700,
+        "wholesale_price": 22200,
+        "retail_price": 23200
+      },
+      {
         "size": "M",
-        "color": "Ivory",
-        "retail_price": 29900,
-        "wholesale_price": 23900,
-        "reseller_price": 21900
+        "color": "Maroon",
+        "color_group": "COLORED",
+        "reseller_price": 21700,
+        "wholesale_price": 22200,
+        "retail_price": 23200
       },
       {
-        "sku": "Z2-02-M-SAGE",
+        "size": "L",
+        "color": "Maroon",
+        "color_group": "COLORED",
+        "reseller_price": 23200,
+        "wholesale_price": 23700,
+        "retail_price": 24700
+      },
+      {
+        "size": "XL",
+        "color": "Maroon",
+        "color_group": "COLORED",
+        "reseller_price": 23200,
+        "wholesale_price": 23700,
+        "retail_price": 24700
+      },
+      {
+        "size": "2XL",
+        "color": "Maroon",
+        "color_group": "COLORED",
+        "reseller_price": 25700,
+        "wholesale_price": 26200,
+        "retail_price": 27200
+      },
+      {
+        "size": "3XL",
+        "color": "Maroon",
+        "color_group": "COLORED",
+        "reseller_price": 28700,
+        "wholesale_price": 29200,
+        "retail_price": 30200
+      },
+      {
+        "size": "4XL",
+        "color": "Maroon",
+        "color_group": "COLORED",
+        "reseller_price": 28700,
+        "wholesale_price": 29200,
+        "retail_price": 30200
+      },
+      {
+        "size": "5XL",
+        "color": "Maroon",
+        "color_group": "COLORED",
+        "reseller_price": 28700,
+        "wholesale_price": 29200,
+        "retail_price": 30200
+      },
+      {
+        "size": "S",
+        "color": "Batis",
+        "color_group": "COLORED",
+        "reseller_price": 21700,
+        "wholesale_price": 22200,
+        "retail_price": 23200
+      },
+      {
         "size": "M",
-        "color": "Sage",
-        "retail_price": 29900,
-        "wholesale_price": 23900,
-        "reseller_price": 21900
+        "color": "Batis",
+        "color_group": "COLORED",
+        "reseller_price": 21700,
+        "wholesale_price": 22200,
+        "retail_price": 23200
       },
       {
-        "sku": "Z2-02-L-BLACK",
         "size": "L",
-        "color": "Black",
-        "retail_price": 29900,
-        "wholesale_price": 23900,
-        "reseller_price": 21900
+        "color": "Batis",
+        "color_group": "COLORED",
+        "reseller_price": 23200,
+        "wholesale_price": 23700,
+        "retail_price": 24700
       },
       {
-        "sku": "Z2-02-L-IVORY",
+        "size": "XL",
+        "color": "Batis",
+        "color_group": "COLORED",
+        "reseller_price": 23200,
+        "wholesale_price": 23700,
+        "retail_price": 24700
+      },
+      {
+        "size": "2XL",
+        "color": "Batis",
+        "color_group": "COLORED",
+        "reseller_price": 25700,
+        "wholesale_price": 26200,
+        "retail_price": 27200
+      },
+      {
+        "size": "3XL",
+        "color": "Batis",
+        "color_group": "COLORED",
+        "reseller_price": 28700,
+        "wholesale_price": 29200,
+        "retail_price": 30200
+      },
+      {
+        "size": "4XL",
+        "color": "Batis",
+        "color_group": "COLORED",
+        "reseller_price": 28700,
+        "wholesale_price": 29200,
+        "retail_price": 30200
+      },
+      {
+        "size": "5XL",
+        "color": "Batis",
+        "color_group": "COLORED",
+        "reseller_price": 28700,
+        "wholesale_price": 29200,
+        "retail_price": 30200
+      },
+      {
+        "size": "S",
+        "color": "Teal",
+        "color_group": "COLORED",
+        "reseller_price": 21700,
+        "wholesale_price": 22200,
+        "retail_price": 23200
+      },
+      {
+        "size": "M",
+        "color": "Teal",
+        "color_group": "COLORED",
+        "reseller_price": 21700,
+        "wholesale_price": 22200,
+        "retail_price": 23200
+      },
+      {
         "size": "L",
-        "color": "Ivory",
-        "retail_price": 29900,
-        "wholesale_price": 23900,
-        "reseller_price": 21900
+        "color": "Teal",
+        "color_group": "COLORED",
+        "reseller_price": 23200,
+        "wholesale_price": 23700,
+        "retail_price": 24700
       },
       {
-        "sku": "Z2-02-L-SAGE",
+        "size": "XL",
+        "color": "Teal",
+        "color_group": "COLORED",
+        "reseller_price": 23200,
+        "wholesale_price": 23700,
+        "retail_price": 24700
+      },
+      {
+        "size": "2XL",
+        "color": "Teal",
+        "color_group": "COLORED",
+        "reseller_price": 25700,
+        "wholesale_price": 26200,
+        "retail_price": 27200
+      },
+      {
+        "size": "3XL",
+        "color": "Teal",
+        "color_group": "COLORED",
+        "reseller_price": 28700,
+        "wholesale_price": 29200,
+        "retail_price": 30200
+      },
+      {
+        "size": "4XL",
+        "color": "Teal",
+        "color_group": "COLORED",
+        "reseller_price": 28700,
+        "wholesale_price": 29200,
+        "retail_price": 30200
+      },
+      {
+        "size": "5XL",
+        "color": "Teal",
+        "color_group": "COLORED",
+        "reseller_price": 28700,
+        "wholesale_price": 29200,
+        "retail_price": 30200
+      },
+      {
+        "size": "S",
+        "color": "Light Blue",
+        "color_group": "COLORED",
+        "reseller_price": 21700,
+        "wholesale_price": 22200,
+        "retail_price": 23200
+      },
+      {
+        "size": "M",
+        "color": "Light Blue",
+        "color_group": "COLORED",
+        "reseller_price": 21700,
+        "wholesale_price": 22200,
+        "retail_price": 23200
+      },
+      {
         "size": "L",
-        "color": "Sage",
-        "retail_price": 29900,
-        "wholesale_price": 23900,
-        "reseller_price": 21900
+        "color": "Light Blue",
+        "color_group": "COLORED",
+        "reseller_price": 23200,
+        "wholesale_price": 23700,
+        "retail_price": 24700
       },
       {
-        "sku": "Z2-02-XL-BLACK",
         "size": "XL",
-        "color": "Black",
-        "retail_price": 29900,
-        "wholesale_price": 23900,
-        "reseller_price": 21900
+        "color": "Light Blue",
+        "color_group": "COLORED",
+        "reseller_price": 23200,
+        "wholesale_price": 23700,
+        "retail_price": 24700
       },
       {
-        "sku": "Z2-02-XL-IVORY",
+        "size": "2XL",
+        "color": "Light Blue",
+        "color_group": "COLORED",
+        "reseller_price": 25700,
+        "wholesale_price": 26200,
+        "retail_price": 27200
+      },
+      {
+        "size": "3XL",
+        "color": "Light Blue",
+        "color_group": "COLORED",
+        "reseller_price": 28700,
+        "wholesale_price": 29200,
+        "retail_price": 30200
+      },
+      {
+        "size": "4XL",
+        "color": "Light Blue",
+        "color_group": "COLORED",
+        "reseller_price": 28700,
+        "wholesale_price": 29200,
+        "retail_price": 30200
+      },
+      {
+        "size": "5XL",
+        "color": "Light Blue",
+        "color_group": "COLORED",
+        "reseller_price": 28700,
+        "wholesale_price": 29200,
+        "retail_price": 30200
+      },
+      {
+        "size": "S",
+        "color": "Fatigue",
+        "color_group": "COLORED",
+        "reseller_price": 21700,
+        "wholesale_price": 22200,
+        "retail_price": 23200
+      },
+      {
+        "size": "M",
+        "color": "Fatigue",
+        "color_group": "COLORED",
+        "reseller_price": 21700,
+        "wholesale_price": 22200,
+        "retail_price": 23200
+      },
+      {
+        "size": "L",
+        "color": "Fatigue",
+        "color_group": "COLORED",
+        "reseller_price": 23200,
+        "wholesale_price": 23700,
+        "retail_price": 24700
+      },
+      {
         "size": "XL",
-        "color": "Ivory",
-        "retail_price": 29900,
-        "wholesale_price": 23900,
-        "reseller_price": 21900
+        "color": "Fatigue",
+        "color_group": "COLORED",
+        "reseller_price": 23200,
+        "wholesale_price": 23700,
+        "retail_price": 24700
       },
       {
-        "sku": "Z2-02-XL-SAGE",
+        "size": "2XL",
+        "color": "Fatigue",
+        "color_group": "COLORED",
+        "reseller_price": 25700,
+        "wholesale_price": 26200,
+        "retail_price": 27200
+      },
+      {
+        "size": "3XL",
+        "color": "Fatigue",
+        "color_group": "COLORED",
+        "reseller_price": 28700,
+        "wholesale_price": 29200,
+        "retail_price": 30200
+      },
+      {
+        "size": "4XL",
+        "color": "Fatigue",
+        "color_group": "COLORED",
+        "reseller_price": 28700,
+        "wholesale_price": 29200,
+        "retail_price": 30200
+      },
+      {
+        "size": "5XL",
+        "color": "Fatigue",
+        "color_group": "COLORED",
+        "reseller_price": 28700,
+        "wholesale_price": 29200,
+        "retail_price": 30200
+      },
+      {
+        "size": "S",
+        "color": "Gray",
+        "color_group": "COLORED",
+        "reseller_price": 21700,
+        "wholesale_price": 22200,
+        "retail_price": 23200
+      },
+      {
+        "size": "M",
+        "color": "Gray",
+        "color_group": "COLORED",
+        "reseller_price": 21700,
+        "wholesale_price": 22200,
+        "retail_price": 23200
+      },
+      {
+        "size": "L",
+        "color": "Gray",
+        "color_group": "COLORED",
+        "reseller_price": 23200,
+        "wholesale_price": 23700,
+        "retail_price": 24700
+      },
+      {
         "size": "XL",
-        "color": "Sage",
-        "retail_price": 29900,
-        "wholesale_price": 23900,
-        "reseller_price": 21900
+        "color": "Gray",
+        "color_group": "COLORED",
+        "reseller_price": 23200,
+        "wholesale_price": 23700,
+        "retail_price": 24700
       },
       {
-        "sku": "Z2-02-2XL-BLACK",
         "size": "2XL",
-        "color": "Black",
-        "retail_price": 31900,
-        "wholesale_price": 25900,
-        "reseller_price": 23900
+        "color": "Gray",
+        "color_group": "COLORED",
+        "reseller_price": 25700,
+        "wholesale_price": 26200,
+        "retail_price": 27200
       },
       {
-        "sku": "Z2-02-2XL-IVORY",
-        "size": "2XL",
-        "color": "Ivory",
-        "retail_price": 31900,
-        "wholesale_price": 25900,
-        "reseller_price": 23900
+        "size": "3XL",
+        "color": "Gray",
+        "color_group": "COLORED",
+        "reseller_price": 28700,
+        "wholesale_price": 29200,
+        "retail_price": 30200
       },
       {
-        "sku": "Z2-02-2XL-SAGE",
+        "size": "4XL",
+        "color": "Gray",
+        "color_group": "COLORED",
+        "reseller_price": 28700,
+        "wholesale_price": 29200,
+        "retail_price": 30200
+      },
+      {
+        "size": "5XL",
+        "color": "Gray",
+        "color_group": "COLORED",
+        "reseller_price": 28700,
+        "wholesale_price": 29200,
+        "retail_price": 30200
+      },
+      {
+        "size": "S",
+        "color": "Pool Green",
+        "color_group": "COLORED",
+        "reseller_price": 21700,
+        "wholesale_price": 22200,
+        "retail_price": 23200
+      },
+      {
+        "size": "M",
+        "color": "Pool Green",
+        "color_group": "COLORED",
+        "reseller_price": 21700,
+        "wholesale_price": 22200,
+        "retail_price": 23200
+      },
+      {
+        "size": "L",
+        "color": "Pool Green",
+        "color_group": "COLORED",
+        "reseller_price": 23200,
+        "wholesale_price": 23700,
+        "retail_price": 24700
+      },
+      {
+        "size": "XL",
+        "color": "Pool Green",
+        "color_group": "COLORED",
+        "reseller_price": 23200,
+        "wholesale_price": 23700,
+        "retail_price": 24700
+      },
+      {
         "size": "2XL",
-        "color": "Sage",
-        "retail_price": 31900,
-        "wholesale_price": 25900,
-        "reseller_price": 23900
+        "color": "Pool Green",
+        "color_group": "COLORED",
+        "reseller_price": 25700,
+        "wholesale_price": 26200,
+        "retail_price": 27200
+      },
+      {
+        "size": "3XL",
+        "color": "Pool Green",
+        "color_group": "COLORED",
+        "reseller_price": 28700,
+        "wholesale_price": 29200,
+        "retail_price": 30200
+      },
+      {
+        "size": "4XL",
+        "color": "Pool Green",
+        "color_group": "COLORED",
+        "reseller_price": 28700,
+        "wholesale_price": 29200,
+        "retail_price": 30200
+      },
+      {
+        "size": "5XL",
+        "color": "Pool Green",
+        "color_group": "COLORED",
+        "reseller_price": 28700,
+        "wholesale_price": 29200,
+        "retail_price": 30200
+      },
+      {
+        "size": "S",
+        "color": "Gold",
+        "color_group": "COLORED",
+        "reseller_price": 21700,
+        "wholesale_price": 22200,
+        "retail_price": 23200
+      },
+      {
+        "size": "M",
+        "color": "Gold",
+        "color_group": "COLORED",
+        "reseller_price": 21700,
+        "wholesale_price": 22200,
+        "retail_price": 23200
+      },
+      {
+        "size": "L",
+        "color": "Gold",
+        "color_group": "COLORED",
+        "reseller_price": 23200,
+        "wholesale_price": 23700,
+        "retail_price": 24700
+      },
+      {
+        "size": "XL",
+        "color": "Gold",
+        "color_group": "COLORED",
+        "reseller_price": 23200,
+        "wholesale_price": 23700,
+        "retail_price": 24700
+      },
+      {
+        "size": "2XL",
+        "color": "Gold",
+        "color_group": "COLORED",
+        "reseller_price": 25700,
+        "wholesale_price": 26200,
+        "retail_price": 27200
+      },
+      {
+        "size": "3XL",
+        "color": "Gold",
+        "color_group": "COLORED",
+        "reseller_price": 28700,
+        "wholesale_price": 29200,
+        "retail_price": 30200
+      },
+      {
+        "size": "4XL",
+        "color": "Gold",
+        "color_group": "COLORED",
+        "reseller_price": 28700,
+        "wholesale_price": 29200,
+        "retail_price": 30200
+      },
+      {
+        "size": "5XL",
+        "color": "Gold",
+        "color_group": "COLORED",
+        "reseller_price": 28700,
+        "wholesale_price": 29200,
+        "retail_price": 30200
+      },
+      {
+        "size": "S",
+        "color": "Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 21700,
+        "wholesale_price": 22200,
+        "retail_price": 23200
+      },
+      {
+        "size": "M",
+        "color": "Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 21700,
+        "wholesale_price": 22200,
+        "retail_price": 23200
+      },
+      {
+        "size": "L",
+        "color": "Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 23200,
+        "wholesale_price": 23700,
+        "retail_price": 24700
+      },
+      {
+        "size": "XL",
+        "color": "Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 23200,
+        "wholesale_price": 23700,
+        "retail_price": 24700
+      },
+      {
+        "size": "2XL",
+        "color": "Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 25700,
+        "wholesale_price": 26200,
+        "retail_price": 27200
+      },
+      {
+        "size": "3XL",
+        "color": "Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 28700,
+        "wholesale_price": 29200,
+        "retail_price": 30200
+      },
+      {
+        "size": "4XL",
+        "color": "Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 28700,
+        "wholesale_price": 29200,
+        "retail_price": 30200
+      },
+      {
+        "size": "5XL",
+        "color": "Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 28700,
+        "wholesale_price": 29200,
+        "retail_price": 30200
+      },
+      {
+        "size": "S",
+        "color": "Peach",
+        "color_group": "COLORED",
+        "reseller_price": 21700,
+        "wholesale_price": 22200,
+        "retail_price": 23200
+      },
+      {
+        "size": "M",
+        "color": "Peach",
+        "color_group": "COLORED",
+        "reseller_price": 21700,
+        "wholesale_price": 22200,
+        "retail_price": 23200
+      },
+      {
+        "size": "L",
+        "color": "Peach",
+        "color_group": "COLORED",
+        "reseller_price": 23200,
+        "wholesale_price": 23700,
+        "retail_price": 24700
+      },
+      {
+        "size": "XL",
+        "color": "Peach",
+        "color_group": "COLORED",
+        "reseller_price": 23200,
+        "wholesale_price": 23700,
+        "retail_price": 24700
+      },
+      {
+        "size": "2XL",
+        "color": "Peach",
+        "color_group": "COLORED",
+        "reseller_price": 25700,
+        "wholesale_price": 26200,
+        "retail_price": 27200
+      },
+      {
+        "size": "3XL",
+        "color": "Peach",
+        "color_group": "COLORED",
+        "reseller_price": 28700,
+        "wholesale_price": 29200,
+        "retail_price": 30200
+      },
+      {
+        "size": "4XL",
+        "color": "Peach",
+        "color_group": "COLORED",
+        "reseller_price": 28700,
+        "wholesale_price": 29200,
+        "retail_price": 30200
+      },
+      {
+        "size": "5XL",
+        "color": "Peach",
+        "color_group": "COLORED",
+        "reseller_price": 28700,
+        "wholesale_price": 29200,
+        "retail_price": 30200
+      },
+      {
+        "size": "S",
+        "color": "Light Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 21700,
+        "wholesale_price": 22200,
+        "retail_price": 23200
+      },
+      {
+        "size": "M",
+        "color": "Light Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 21700,
+        "wholesale_price": 22200,
+        "retail_price": 23200
+      },
+      {
+        "size": "L",
+        "color": "Light Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 23200,
+        "wholesale_price": 23700,
+        "retail_price": 24700
+      },
+      {
+        "size": "XL",
+        "color": "Light Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 23200,
+        "wholesale_price": 23700,
+        "retail_price": 24700
+      },
+      {
+        "size": "2XL",
+        "color": "Light Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 25700,
+        "wholesale_price": 26200,
+        "retail_price": 27200
+      },
+      {
+        "size": "3XL",
+        "color": "Light Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 28700,
+        "wholesale_price": 29200,
+        "retail_price": 30200
+      },
+      {
+        "size": "4XL",
+        "color": "Light Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 28700,
+        "wholesale_price": 29200,
+        "retail_price": 30200
+      },
+      {
+        "size": "5XL",
+        "color": "Light Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 28700,
+        "wholesale_price": 29200,
+        "retail_price": 30200
       }
     ]
   },
   {
-    "name": "Relaxed Pocket Tee",
-    "category": "Essentials",
+    "name": "LUCKY HANNA - V-NECK",
+    "slug": "lucky-hanna-v-neck",
+    "description": "Choose your size and color. Retail, wholesale and re-seller prices follow the total quantity of clothing in your order.",
+    "art_color": "#ffffff",
+    "size_chart_note": "Yalex adult sample reference. Verify fit for this brand before purchase.",
+    "size_chart": [
+      {
+        "size": "S",
+        "width": 18,
+        "length": 25
+      },
+      {
+        "size": "M",
+        "width": 19,
+        "length": 26
+      },
+      {
+        "size": "L",
+        "width": 20,
+        "length": 27
+      },
+      {
+        "size": "XL",
+        "width": 21,
+        "length": 28
+      },
+      {
+        "size": "2XL",
+        "width": 22,
+        "length": 29
+      },
+      {
+        "size": "3XL",
+        "width": 23,
+        "length": 30
+      }
+    ],
     "variants": [
       {
-        "sku": "Z2-03-S-BLACK",
         "size": "S",
-        "color": "Black",
-        "retail_price": 34900,
-        "wholesale_price": 28900,
-        "reseller_price": 25900
+        "color": "White",
+        "color_group": "WHITE",
+        "reseller_price": 12500,
+        "wholesale_price": 13000,
+        "retail_price": 14000
       },
       {
-        "sku": "Z2-03-S-IVORY",
+        "size": "M",
+        "color": "White",
+        "color_group": "WHITE",
+        "reseller_price": 12500,
+        "wholesale_price": 13000,
+        "retail_price": 14000
+      },
+      {
+        "size": "L",
+        "color": "White",
+        "color_group": "WHITE",
+        "reseller_price": 12500,
+        "wholesale_price": 13000,
+        "retail_price": 14000
+      },
+      {
+        "size": "XL",
+        "color": "White",
+        "color_group": "WHITE",
+        "reseller_price": 12500,
+        "wholesale_price": 13000,
+        "retail_price": 14000
+      },
+      {
+        "size": "2XL",
+        "color": "White",
+        "color_group": "WHITE",
+        "reseller_price": 14500,
+        "wholesale_price": 15000,
+        "retail_price": 16000
+      },
+      {
+        "size": "3XL",
+        "color": "White",
+        "color_group": "WHITE",
+        "reseller_price": 14500,
+        "wholesale_price": 15000,
+        "retail_price": 16000
+      },
+      {
         "size": "S",
-        "color": "Ivory",
-        "retail_price": 34900,
-        "wholesale_price": 28900,
-        "reseller_price": 25900
+        "color": "Red",
+        "color_group": "COLORED",
+        "reseller_price": 15000,
+        "wholesale_price": 15500,
+        "retail_price": 16500
       },
       {
-        "sku": "Z2-03-S-SAGE",
+        "size": "M",
+        "color": "Red",
+        "color_group": "COLORED",
+        "reseller_price": 15000,
+        "wholesale_price": 15500,
+        "retail_price": 16500
+      },
+      {
+        "size": "L",
+        "color": "Red",
+        "color_group": "COLORED",
+        "reseller_price": 15000,
+        "wholesale_price": 15500,
+        "retail_price": 16500
+      },
+      {
+        "size": "XL",
+        "color": "Red",
+        "color_group": "COLORED",
+        "reseller_price": 15000,
+        "wholesale_price": 15500,
+        "retail_price": 16500
+      },
+      {
+        "size": "2XL",
+        "color": "Red",
+        "color_group": "COLORED",
+        "reseller_price": 18000,
+        "wholesale_price": 18500,
+        "retail_price": 19500
+      },
+      {
+        "size": "3XL",
+        "color": "Red",
+        "color_group": "COLORED",
+        "reseller_price": 18000,
+        "wholesale_price": 18500,
+        "retail_price": 19500
+      },
+      {
         "size": "S",
-        "color": "Sage",
-        "retail_price": 34900,
-        "wholesale_price": 28900,
-        "reseller_price": 25900
+        "color": "Mandarin",
+        "color_group": "COLORED",
+        "reseller_price": 15000,
+        "wholesale_price": 15500,
+        "retail_price": 16500
       },
       {
-        "sku": "Z2-03-M-BLACK",
         "size": "M",
-        "color": "Black",
-        "retail_price": 34900,
-        "wholesale_price": 28900,
-        "reseller_price": 25900
+        "color": "Mandarin",
+        "color_group": "COLORED",
+        "reseller_price": 15000,
+        "wholesale_price": 15500,
+        "retail_price": 16500
       },
       {
-        "sku": "Z2-03-M-IVORY",
+        "size": "L",
+        "color": "Mandarin",
+        "color_group": "COLORED",
+        "reseller_price": 15000,
+        "wholesale_price": 15500,
+        "retail_price": 16500
+      },
+      {
+        "size": "XL",
+        "color": "Mandarin",
+        "color_group": "COLORED",
+        "reseller_price": 15000,
+        "wholesale_price": 15500,
+        "retail_price": 16500
+      },
+      {
+        "size": "2XL",
+        "color": "Mandarin",
+        "color_group": "COLORED",
+        "reseller_price": 18000,
+        "wholesale_price": 18500,
+        "retail_price": 19500
+      },
+      {
+        "size": "3XL",
+        "color": "Mandarin",
+        "color_group": "COLORED",
+        "reseller_price": 18000,
+        "wholesale_price": 18500,
+        "retail_price": 19500
+      },
+      {
+        "size": "S",
+        "color": "Maroon",
+        "color_group": "COLORED",
+        "reseller_price": 15000,
+        "wholesale_price": 15500,
+        "retail_price": 16500
+      },
+      {
         "size": "M",
-        "color": "Ivory",
-        "retail_price": 34900,
-        "wholesale_price": 28900,
-        "reseller_price": 25900
+        "color": "Maroon",
+        "color_group": "COLORED",
+        "reseller_price": 15000,
+        "wholesale_price": 15500,
+        "retail_price": 16500
       },
       {
-        "sku": "Z2-03-M-SAGE",
+        "size": "L",
+        "color": "Maroon",
+        "color_group": "COLORED",
+        "reseller_price": 15000,
+        "wholesale_price": 15500,
+        "retail_price": 16500
+      },
+      {
+        "size": "XL",
+        "color": "Maroon",
+        "color_group": "COLORED",
+        "reseller_price": 15000,
+        "wholesale_price": 15500,
+        "retail_price": 16500
+      },
+      {
+        "size": "2XL",
+        "color": "Maroon",
+        "color_group": "COLORED",
+        "reseller_price": 18000,
+        "wholesale_price": 18500,
+        "retail_price": 19500
+      },
+      {
+        "size": "3XL",
+        "color": "Maroon",
+        "color_group": "COLORED",
+        "reseller_price": 18000,
+        "wholesale_price": 18500,
+        "retail_price": 19500
+      },
+      {
+        "size": "S",
+        "color": "Batis",
+        "color_group": "COLORED",
+        "reseller_price": 15000,
+        "wholesale_price": 15500,
+        "retail_price": 16500
+      },
+      {
         "size": "M",
-        "color": "Sage",
-        "retail_price": 34900,
-        "wholesale_price": 28900,
-        "reseller_price": 25900
+        "color": "Batis",
+        "color_group": "COLORED",
+        "reseller_price": 15000,
+        "wholesale_price": 15500,
+        "retail_price": 16500
       },
       {
-        "sku": "Z2-03-L-BLACK",
         "size": "L",
-        "color": "Black",
-        "retail_price": 34900,
-        "wholesale_price": 28900,
-        "reseller_price": 25900
+        "color": "Batis",
+        "color_group": "COLORED",
+        "reseller_price": 15000,
+        "wholesale_price": 15500,
+        "retail_price": 16500
       },
       {
-        "sku": "Z2-03-L-IVORY",
+        "size": "XL",
+        "color": "Batis",
+        "color_group": "COLORED",
+        "reseller_price": 15000,
+        "wholesale_price": 15500,
+        "retail_price": 16500
+      },
+      {
+        "size": "2XL",
+        "color": "Batis",
+        "color_group": "COLORED",
+        "reseller_price": 18000,
+        "wholesale_price": 18500,
+        "retail_price": 19500
+      },
+      {
+        "size": "3XL",
+        "color": "Batis",
+        "color_group": "COLORED",
+        "reseller_price": 18000,
+        "wholesale_price": 18500,
+        "retail_price": 19500
+      },
+      {
+        "size": "S",
+        "color": "Teal",
+        "color_group": "COLORED",
+        "reseller_price": 15000,
+        "wholesale_price": 15500,
+        "retail_price": 16500
+      },
+      {
+        "size": "M",
+        "color": "Teal",
+        "color_group": "COLORED",
+        "reseller_price": 15000,
+        "wholesale_price": 15500,
+        "retail_price": 16500
+      },
+      {
         "size": "L",
-        "color": "Ivory",
-        "retail_price": 34900,
-        "wholesale_price": 28900,
-        "reseller_price": 25900
+        "color": "Teal",
+        "color_group": "COLORED",
+        "reseller_price": 15000,
+        "wholesale_price": 15500,
+        "retail_price": 16500
       },
       {
-        "sku": "Z2-03-L-SAGE",
+        "size": "XL",
+        "color": "Teal",
+        "color_group": "COLORED",
+        "reseller_price": 15000,
+        "wholesale_price": 15500,
+        "retail_price": 16500
+      },
+      {
+        "size": "2XL",
+        "color": "Teal",
+        "color_group": "COLORED",
+        "reseller_price": 18000,
+        "wholesale_price": 18500,
+        "retail_price": 19500
+      },
+      {
+        "size": "3XL",
+        "color": "Teal",
+        "color_group": "COLORED",
+        "reseller_price": 18000,
+        "wholesale_price": 18500,
+        "retail_price": 19500
+      },
+      {
+        "size": "S",
+        "color": "Light Blue",
+        "color_group": "COLORED",
+        "reseller_price": 15000,
+        "wholesale_price": 15500,
+        "retail_price": 16500
+      },
+      {
+        "size": "M",
+        "color": "Light Blue",
+        "color_group": "COLORED",
+        "reseller_price": 15000,
+        "wholesale_price": 15500,
+        "retail_price": 16500
+      },
+      {
         "size": "L",
-        "color": "Sage",
-        "retail_price": 34900,
-        "wholesale_price": 28900,
-        "reseller_price": 25900
+        "color": "Light Blue",
+        "color_group": "COLORED",
+        "reseller_price": 15000,
+        "wholesale_price": 15500,
+        "retail_price": 16500
       },
       {
-        "sku": "Z2-03-XL-BLACK",
         "size": "XL",
-        "color": "Black",
-        "retail_price": 34900,
-        "wholesale_price": 28900,
-        "reseller_price": 25900
+        "color": "Light Blue",
+        "color_group": "COLORED",
+        "reseller_price": 15000,
+        "wholesale_price": 15500,
+        "retail_price": 16500
       },
       {
-        "sku": "Z2-03-XL-IVORY",
+        "size": "2XL",
+        "color": "Light Blue",
+        "color_group": "COLORED",
+        "reseller_price": 18000,
+        "wholesale_price": 18500,
+        "retail_price": 19500
+      },
+      {
+        "size": "3XL",
+        "color": "Light Blue",
+        "color_group": "COLORED",
+        "reseller_price": 18000,
+        "wholesale_price": 18500,
+        "retail_price": 19500
+      },
+      {
+        "size": "S",
+        "color": "Fatigue",
+        "color_group": "COLORED",
+        "reseller_price": 15000,
+        "wholesale_price": 15500,
+        "retail_price": 16500
+      },
+      {
+        "size": "M",
+        "color": "Fatigue",
+        "color_group": "COLORED",
+        "reseller_price": 15000,
+        "wholesale_price": 15500,
+        "retail_price": 16500
+      },
+      {
+        "size": "L",
+        "color": "Fatigue",
+        "color_group": "COLORED",
+        "reseller_price": 15000,
+        "wholesale_price": 15500,
+        "retail_price": 16500
+      },
+      {
         "size": "XL",
-        "color": "Ivory",
-        "retail_price": 34900,
-        "wholesale_price": 28900,
-        "reseller_price": 25900
+        "color": "Fatigue",
+        "color_group": "COLORED",
+        "reseller_price": 15000,
+        "wholesale_price": 15500,
+        "retail_price": 16500
       },
       {
-        "sku": "Z2-03-XL-SAGE",
+        "size": "2XL",
+        "color": "Fatigue",
+        "color_group": "COLORED",
+        "reseller_price": 18000,
+        "wholesale_price": 18500,
+        "retail_price": 19500
+      },
+      {
+        "size": "3XL",
+        "color": "Fatigue",
+        "color_group": "COLORED",
+        "reseller_price": 18000,
+        "wholesale_price": 18500,
+        "retail_price": 19500
+      },
+      {
+        "size": "S",
+        "color": "Gray",
+        "color_group": "COLORED",
+        "reseller_price": 15000,
+        "wholesale_price": 15500,
+        "retail_price": 16500
+      },
+      {
+        "size": "M",
+        "color": "Gray",
+        "color_group": "COLORED",
+        "reseller_price": 15000,
+        "wholesale_price": 15500,
+        "retail_price": 16500
+      },
+      {
+        "size": "L",
+        "color": "Gray",
+        "color_group": "COLORED",
+        "reseller_price": 15000,
+        "wholesale_price": 15500,
+        "retail_price": 16500
+      },
+      {
         "size": "XL",
-        "color": "Sage",
-        "retail_price": 34900,
-        "wholesale_price": 28900,
-        "reseller_price": 25900
+        "color": "Gray",
+        "color_group": "COLORED",
+        "reseller_price": 15000,
+        "wholesale_price": 15500,
+        "retail_price": 16500
       },
       {
-        "sku": "Z2-03-2XL-BLACK",
         "size": "2XL",
-        "color": "Black",
-        "retail_price": 36900,
-        "wholesale_price": 30900,
-        "reseller_price": 27900
+        "color": "Gray",
+        "color_group": "COLORED",
+        "reseller_price": 18000,
+        "wholesale_price": 18500,
+        "retail_price": 19500
       },
       {
-        "sku": "Z2-03-2XL-IVORY",
-        "size": "2XL",
-        "color": "Ivory",
-        "retail_price": 36900,
-        "wholesale_price": 30900,
-        "reseller_price": 27900
+        "size": "3XL",
+        "color": "Gray",
+        "color_group": "COLORED",
+        "reseller_price": 18000,
+        "wholesale_price": 18500,
+        "retail_price": 19500
       },
       {
-        "sku": "Z2-03-2XL-SAGE",
+        "size": "S",
+        "color": "Pool Green",
+        "color_group": "COLORED",
+        "reseller_price": 15000,
+        "wholesale_price": 15500,
+        "retail_price": 16500
+      },
+      {
+        "size": "M",
+        "color": "Pool Green",
+        "color_group": "COLORED",
+        "reseller_price": 15000,
+        "wholesale_price": 15500,
+        "retail_price": 16500
+      },
+      {
+        "size": "L",
+        "color": "Pool Green",
+        "color_group": "COLORED",
+        "reseller_price": 15000,
+        "wholesale_price": 15500,
+        "retail_price": 16500
+      },
+      {
+        "size": "XL",
+        "color": "Pool Green",
+        "color_group": "COLORED",
+        "reseller_price": 15000,
+        "wholesale_price": 15500,
+        "retail_price": 16500
+      },
+      {
         "size": "2XL",
-        "color": "Sage",
-        "retail_price": 36900,
-        "wholesale_price": 30900,
-        "reseller_price": 27900
+        "color": "Pool Green",
+        "color_group": "COLORED",
+        "reseller_price": 18000,
+        "wholesale_price": 18500,
+        "retail_price": 19500
+      },
+      {
+        "size": "3XL",
+        "color": "Pool Green",
+        "color_group": "COLORED",
+        "reseller_price": 18000,
+        "wholesale_price": 18500,
+        "retail_price": 19500
+      },
+      {
+        "size": "S",
+        "color": "Gold",
+        "color_group": "COLORED",
+        "reseller_price": 15000,
+        "wholesale_price": 15500,
+        "retail_price": 16500
+      },
+      {
+        "size": "M",
+        "color": "Gold",
+        "color_group": "COLORED",
+        "reseller_price": 15000,
+        "wholesale_price": 15500,
+        "retail_price": 16500
+      },
+      {
+        "size": "L",
+        "color": "Gold",
+        "color_group": "COLORED",
+        "reseller_price": 15000,
+        "wholesale_price": 15500,
+        "retail_price": 16500
+      },
+      {
+        "size": "XL",
+        "color": "Gold",
+        "color_group": "COLORED",
+        "reseller_price": 15000,
+        "wholesale_price": 15500,
+        "retail_price": 16500
+      },
+      {
+        "size": "2XL",
+        "color": "Gold",
+        "color_group": "COLORED",
+        "reseller_price": 18000,
+        "wholesale_price": 18500,
+        "retail_price": 19500
+      },
+      {
+        "size": "3XL",
+        "color": "Gold",
+        "color_group": "COLORED",
+        "reseller_price": 18000,
+        "wholesale_price": 18500,
+        "retail_price": 19500
+      },
+      {
+        "size": "S",
+        "color": "Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 15000,
+        "wholesale_price": 15500,
+        "retail_price": 16500
+      },
+      {
+        "size": "M",
+        "color": "Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 15000,
+        "wholesale_price": 15500,
+        "retail_price": 16500
+      },
+      {
+        "size": "L",
+        "color": "Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 15000,
+        "wholesale_price": 15500,
+        "retail_price": 16500
+      },
+      {
+        "size": "XL",
+        "color": "Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 15000,
+        "wholesale_price": 15500,
+        "retail_price": 16500
+      },
+      {
+        "size": "2XL",
+        "color": "Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 18000,
+        "wholesale_price": 18500,
+        "retail_price": 19500
+      },
+      {
+        "size": "3XL",
+        "color": "Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 18000,
+        "wholesale_price": 18500,
+        "retail_price": 19500
+      },
+      {
+        "size": "S",
+        "color": "Peach",
+        "color_group": "COLORED",
+        "reseller_price": 15000,
+        "wholesale_price": 15500,
+        "retail_price": 16500
+      },
+      {
+        "size": "M",
+        "color": "Peach",
+        "color_group": "COLORED",
+        "reseller_price": 15000,
+        "wholesale_price": 15500,
+        "retail_price": 16500
+      },
+      {
+        "size": "L",
+        "color": "Peach",
+        "color_group": "COLORED",
+        "reseller_price": 15000,
+        "wholesale_price": 15500,
+        "retail_price": 16500
+      },
+      {
+        "size": "XL",
+        "color": "Peach",
+        "color_group": "COLORED",
+        "reseller_price": 15000,
+        "wholesale_price": 15500,
+        "retail_price": 16500
+      },
+      {
+        "size": "2XL",
+        "color": "Peach",
+        "color_group": "COLORED",
+        "reseller_price": 18000,
+        "wholesale_price": 18500,
+        "retail_price": 19500
+      },
+      {
+        "size": "3XL",
+        "color": "Peach",
+        "color_group": "COLORED",
+        "reseller_price": 18000,
+        "wholesale_price": 18500,
+        "retail_price": 19500
+      },
+      {
+        "size": "S",
+        "color": "Light Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 15000,
+        "wholesale_price": 15500,
+        "retail_price": 16500
+      },
+      {
+        "size": "M",
+        "color": "Light Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 15000,
+        "wholesale_price": 15500,
+        "retail_price": 16500
+      },
+      {
+        "size": "L",
+        "color": "Light Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 15000,
+        "wholesale_price": 15500,
+        "retail_price": 16500
+      },
+      {
+        "size": "XL",
+        "color": "Light Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 15000,
+        "wholesale_price": 15500,
+        "retail_price": 16500
+      },
+      {
+        "size": "2XL",
+        "color": "Light Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 18000,
+        "wholesale_price": 18500,
+        "retail_price": 19500
+      },
+      {
+        "size": "3XL",
+        "color": "Light Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 18000,
+        "wholesale_price": 18500,
+        "retail_price": 19500
       }
     ]
   },
   {
-    "name": "Essential Polo",
-    "category": "Polos",
+    "name": "LUCKY HANNA - WITH COLLAR",
+    "slug": "lucky-hanna-with-collar",
+    "description": "Choose your size and color. Retail, wholesale and re-seller prices follow the total quantity of clothing in your order.",
+    "art_color": "#ffffff",
+    "size_chart_note": "Lucky Hanna Ladies Polo Shirt LP1-1 reference supplied by the store owner.",
+    "size_chart": [
+      {
+        "size": "S",
+        "width": 16,
+        "length": 24
+      },
+      {
+        "size": "M",
+        "width": 17,
+        "length": 25
+      },
+      {
+        "size": "L",
+        "width": 18,
+        "length": 26
+      },
+      {
+        "size": "XL",
+        "width": 19,
+        "length": 27
+      },
+      {
+        "size": "2XL",
+        "width": 20.5,
+        "length": 28
+      },
+      {
+        "size": "3XL",
+        "width": 21.5,
+        "length": 29
+      },
+      {
+        "size": "4XL",
+        "width": 22.5,
+        "length": 30
+      },
+      {
+        "size": "5XL",
+        "width": 23.5,
+        "length": 31
+      }
+    ],
     "variants": [
       {
-        "sku": "Z2-04-S-BLACK",
         "size": "S",
-        "color": "Black",
-        "retail_price": 49900,
-        "wholesale_price": 39900,
-        "reseller_price": 36900
+        "color": "White",
+        "color_group": "WHITE",
+        "reseller_price": 16900,
+        "wholesale_price": 17400,
+        "retail_price": 18400
       },
       {
-        "sku": "Z2-04-S-IVORY",
+        "size": "M",
+        "color": "White",
+        "color_group": "WHITE",
+        "reseller_price": 16900,
+        "wholesale_price": 17400,
+        "retail_price": 18400
+      },
+      {
+        "size": "L",
+        "color": "White",
+        "color_group": "WHITE",
+        "reseller_price": 16900,
+        "wholesale_price": 17400,
+        "retail_price": 18400
+      },
+      {
+        "size": "XL",
+        "color": "White",
+        "color_group": "WHITE",
+        "reseller_price": 16900,
+        "wholesale_price": 17400,
+        "retail_price": 18400
+      },
+      {
+        "size": "2XL",
+        "color": "White",
+        "color_group": "WHITE",
+        "reseller_price": 17900,
+        "wholesale_price": 18400,
+        "retail_price": 19400
+      },
+      {
+        "size": "3XL",
+        "color": "White",
+        "color_group": "WHITE",
+        "reseller_price": 20000,
+        "wholesale_price": 20500,
+        "retail_price": 21500
+      },
+      {
+        "size": "4XL",
+        "color": "White",
+        "color_group": "WHITE",
+        "reseller_price": 20000,
+        "wholesale_price": 20500,
+        "retail_price": 21500
+      },
+      {
+        "size": "5XL",
+        "color": "White",
+        "color_group": "WHITE",
+        "reseller_price": 20000,
+        "wholesale_price": 20500,
+        "retail_price": 21500
+      },
+      {
         "size": "S",
-        "color": "Ivory",
-        "retail_price": 49900,
-        "wholesale_price": 39900,
-        "reseller_price": 36900
+        "color": "Red",
+        "color_group": "COLORED",
+        "reseller_price": 18900,
+        "wholesale_price": 19400,
+        "retail_price": 20400
       },
       {
-        "sku": "Z2-04-S-SAGE",
+        "size": "M",
+        "color": "Red",
+        "color_group": "COLORED",
+        "reseller_price": 18900,
+        "wholesale_price": 19400,
+        "retail_price": 20400
+      },
+      {
+        "size": "L",
+        "color": "Red",
+        "color_group": "COLORED",
+        "reseller_price": 18900,
+        "wholesale_price": 19400,
+        "retail_price": 20400
+      },
+      {
+        "size": "XL",
+        "color": "Red",
+        "color_group": "COLORED",
+        "reseller_price": 18900,
+        "wholesale_price": 19400,
+        "retail_price": 20400
+      },
+      {
+        "size": "2XL",
+        "color": "Red",
+        "color_group": "COLORED",
+        "reseller_price": 20400,
+        "wholesale_price": 20900,
+        "retail_price": 21900
+      },
+      {
+        "size": "3XL",
+        "color": "Red",
+        "color_group": "COLORED",
+        "reseller_price": 23500,
+        "wholesale_price": 24000,
+        "retail_price": 25000
+      },
+      {
+        "size": "4XL",
+        "color": "Red",
+        "color_group": "COLORED",
+        "reseller_price": 23500,
+        "wholesale_price": 24000,
+        "retail_price": 25000
+      },
+      {
+        "size": "5XL",
+        "color": "Red",
+        "color_group": "COLORED",
+        "reseller_price": 23500,
+        "wholesale_price": 24000,
+        "retail_price": 25000
+      },
+      {
         "size": "S",
-        "color": "Sage",
-        "retail_price": 49900,
-        "wholesale_price": 39900,
-        "reseller_price": 36900
+        "color": "Mandarin",
+        "color_group": "COLORED",
+        "reseller_price": 18900,
+        "wholesale_price": 19400,
+        "retail_price": 20400
       },
       {
-        "sku": "Z2-04-M-BLACK",
         "size": "M",
-        "color": "Black",
-        "retail_price": 49900,
-        "wholesale_price": 39900,
-        "reseller_price": 36900
+        "color": "Mandarin",
+        "color_group": "COLORED",
+        "reseller_price": 18900,
+        "wholesale_price": 19400,
+        "retail_price": 20400
       },
       {
-        "sku": "Z2-04-M-IVORY",
+        "size": "L",
+        "color": "Mandarin",
+        "color_group": "COLORED",
+        "reseller_price": 18900,
+        "wholesale_price": 19400,
+        "retail_price": 20400
+      },
+      {
+        "size": "XL",
+        "color": "Mandarin",
+        "color_group": "COLORED",
+        "reseller_price": 18900,
+        "wholesale_price": 19400,
+        "retail_price": 20400
+      },
+      {
+        "size": "2XL",
+        "color": "Mandarin",
+        "color_group": "COLORED",
+        "reseller_price": 20400,
+        "wholesale_price": 20900,
+        "retail_price": 21900
+      },
+      {
+        "size": "3XL",
+        "color": "Mandarin",
+        "color_group": "COLORED",
+        "reseller_price": 23500,
+        "wholesale_price": 24000,
+        "retail_price": 25000
+      },
+      {
+        "size": "4XL",
+        "color": "Mandarin",
+        "color_group": "COLORED",
+        "reseller_price": 23500,
+        "wholesale_price": 24000,
+        "retail_price": 25000
+      },
+      {
+        "size": "5XL",
+        "color": "Mandarin",
+        "color_group": "COLORED",
+        "reseller_price": 23500,
+        "wholesale_price": 24000,
+        "retail_price": 25000
+      },
+      {
+        "size": "S",
+        "color": "Maroon",
+        "color_group": "COLORED",
+        "reseller_price": 18900,
+        "wholesale_price": 19400,
+        "retail_price": 20400
+      },
+      {
         "size": "M",
-        "color": "Ivory",
-        "retail_price": 49900,
-        "wholesale_price": 39900,
-        "reseller_price": 36900
+        "color": "Maroon",
+        "color_group": "COLORED",
+        "reseller_price": 18900,
+        "wholesale_price": 19400,
+        "retail_price": 20400
       },
       {
-        "sku": "Z2-04-M-SAGE",
+        "size": "L",
+        "color": "Maroon",
+        "color_group": "COLORED",
+        "reseller_price": 18900,
+        "wholesale_price": 19400,
+        "retail_price": 20400
+      },
+      {
+        "size": "XL",
+        "color": "Maroon",
+        "color_group": "COLORED",
+        "reseller_price": 18900,
+        "wholesale_price": 19400,
+        "retail_price": 20400
+      },
+      {
+        "size": "2XL",
+        "color": "Maroon",
+        "color_group": "COLORED",
+        "reseller_price": 20400,
+        "wholesale_price": 20900,
+        "retail_price": 21900
+      },
+      {
+        "size": "3XL",
+        "color": "Maroon",
+        "color_group": "COLORED",
+        "reseller_price": 23500,
+        "wholesale_price": 24000,
+        "retail_price": 25000
+      },
+      {
+        "size": "4XL",
+        "color": "Maroon",
+        "color_group": "COLORED",
+        "reseller_price": 23500,
+        "wholesale_price": 24000,
+        "retail_price": 25000
+      },
+      {
+        "size": "5XL",
+        "color": "Maroon",
+        "color_group": "COLORED",
+        "reseller_price": 23500,
+        "wholesale_price": 24000,
+        "retail_price": 25000
+      },
+      {
+        "size": "S",
+        "color": "Batis",
+        "color_group": "COLORED",
+        "reseller_price": 18900,
+        "wholesale_price": 19400,
+        "retail_price": 20400
+      },
+      {
         "size": "M",
-        "color": "Sage",
-        "retail_price": 49900,
-        "wholesale_price": 39900,
-        "reseller_price": 36900
+        "color": "Batis",
+        "color_group": "COLORED",
+        "reseller_price": 18900,
+        "wholesale_price": 19400,
+        "retail_price": 20400
       },
       {
-        "sku": "Z2-04-L-BLACK",
         "size": "L",
-        "color": "Black",
-        "retail_price": 49900,
-        "wholesale_price": 39900,
-        "reseller_price": 36900
+        "color": "Batis",
+        "color_group": "COLORED",
+        "reseller_price": 18900,
+        "wholesale_price": 19400,
+        "retail_price": 20400
       },
       {
-        "sku": "Z2-04-L-IVORY",
+        "size": "XL",
+        "color": "Batis",
+        "color_group": "COLORED",
+        "reseller_price": 18900,
+        "wholesale_price": 19400,
+        "retail_price": 20400
+      },
+      {
+        "size": "2XL",
+        "color": "Batis",
+        "color_group": "COLORED",
+        "reseller_price": 20400,
+        "wholesale_price": 20900,
+        "retail_price": 21900
+      },
+      {
+        "size": "3XL",
+        "color": "Batis",
+        "color_group": "COLORED",
+        "reseller_price": 23500,
+        "wholesale_price": 24000,
+        "retail_price": 25000
+      },
+      {
+        "size": "4XL",
+        "color": "Batis",
+        "color_group": "COLORED",
+        "reseller_price": 23500,
+        "wholesale_price": 24000,
+        "retail_price": 25000
+      },
+      {
+        "size": "5XL",
+        "color": "Batis",
+        "color_group": "COLORED",
+        "reseller_price": 23500,
+        "wholesale_price": 24000,
+        "retail_price": 25000
+      },
+      {
+        "size": "S",
+        "color": "Teal",
+        "color_group": "COLORED",
+        "reseller_price": 18900,
+        "wholesale_price": 19400,
+        "retail_price": 20400
+      },
+      {
+        "size": "M",
+        "color": "Teal",
+        "color_group": "COLORED",
+        "reseller_price": 18900,
+        "wholesale_price": 19400,
+        "retail_price": 20400
+      },
+      {
         "size": "L",
-        "color": "Ivory",
-        "retail_price": 49900,
-        "wholesale_price": 39900,
-        "reseller_price": 36900
+        "color": "Teal",
+        "color_group": "COLORED",
+        "reseller_price": 18900,
+        "wholesale_price": 19400,
+        "retail_price": 20400
       },
       {
-        "sku": "Z2-04-L-SAGE",
+        "size": "XL",
+        "color": "Teal",
+        "color_group": "COLORED",
+        "reseller_price": 18900,
+        "wholesale_price": 19400,
+        "retail_price": 20400
+      },
+      {
+        "size": "2XL",
+        "color": "Teal",
+        "color_group": "COLORED",
+        "reseller_price": 20400,
+        "wholesale_price": 20900,
+        "retail_price": 21900
+      },
+      {
+        "size": "3XL",
+        "color": "Teal",
+        "color_group": "COLORED",
+        "reseller_price": 23500,
+        "wholesale_price": 24000,
+        "retail_price": 25000
+      },
+      {
+        "size": "4XL",
+        "color": "Teal",
+        "color_group": "COLORED",
+        "reseller_price": 23500,
+        "wholesale_price": 24000,
+        "retail_price": 25000
+      },
+      {
+        "size": "5XL",
+        "color": "Teal",
+        "color_group": "COLORED",
+        "reseller_price": 23500,
+        "wholesale_price": 24000,
+        "retail_price": 25000
+      },
+      {
+        "size": "S",
+        "color": "Light Blue",
+        "color_group": "COLORED",
+        "reseller_price": 18900,
+        "wholesale_price": 19400,
+        "retail_price": 20400
+      },
+      {
+        "size": "M",
+        "color": "Light Blue",
+        "color_group": "COLORED",
+        "reseller_price": 18900,
+        "wholesale_price": 19400,
+        "retail_price": 20400
+      },
+      {
         "size": "L",
-        "color": "Sage",
-        "retail_price": 49900,
-        "wholesale_price": 39900,
-        "reseller_price": 36900
+        "color": "Light Blue",
+        "color_group": "COLORED",
+        "reseller_price": 18900,
+        "wholesale_price": 19400,
+        "retail_price": 20400
       },
       {
-        "sku": "Z2-04-XL-BLACK",
         "size": "XL",
-        "color": "Black",
-        "retail_price": 49900,
-        "wholesale_price": 39900,
-        "reseller_price": 36900
+        "color": "Light Blue",
+        "color_group": "COLORED",
+        "reseller_price": 18900,
+        "wholesale_price": 19400,
+        "retail_price": 20400
       },
       {
-        "sku": "Z2-04-XL-IVORY",
+        "size": "2XL",
+        "color": "Light Blue",
+        "color_group": "COLORED",
+        "reseller_price": 20400,
+        "wholesale_price": 20900,
+        "retail_price": 21900
+      },
+      {
+        "size": "3XL",
+        "color": "Light Blue",
+        "color_group": "COLORED",
+        "reseller_price": 23500,
+        "wholesale_price": 24000,
+        "retail_price": 25000
+      },
+      {
+        "size": "4XL",
+        "color": "Light Blue",
+        "color_group": "COLORED",
+        "reseller_price": 23500,
+        "wholesale_price": 24000,
+        "retail_price": 25000
+      },
+      {
+        "size": "5XL",
+        "color": "Light Blue",
+        "color_group": "COLORED",
+        "reseller_price": 23500,
+        "wholesale_price": 24000,
+        "retail_price": 25000
+      },
+      {
+        "size": "S",
+        "color": "Fatigue",
+        "color_group": "COLORED",
+        "reseller_price": 18900,
+        "wholesale_price": 19400,
+        "retail_price": 20400
+      },
+      {
+        "size": "M",
+        "color": "Fatigue",
+        "color_group": "COLORED",
+        "reseller_price": 18900,
+        "wholesale_price": 19400,
+        "retail_price": 20400
+      },
+      {
+        "size": "L",
+        "color": "Fatigue",
+        "color_group": "COLORED",
+        "reseller_price": 18900,
+        "wholesale_price": 19400,
+        "retail_price": 20400
+      },
+      {
         "size": "XL",
-        "color": "Ivory",
-        "retail_price": 49900,
-        "wholesale_price": 39900,
-        "reseller_price": 36900
+        "color": "Fatigue",
+        "color_group": "COLORED",
+        "reseller_price": 18900,
+        "wholesale_price": 19400,
+        "retail_price": 20400
       },
       {
-        "sku": "Z2-04-XL-SAGE",
+        "size": "2XL",
+        "color": "Fatigue",
+        "color_group": "COLORED",
+        "reseller_price": 20400,
+        "wholesale_price": 20900,
+        "retail_price": 21900
+      },
+      {
+        "size": "3XL",
+        "color": "Fatigue",
+        "color_group": "COLORED",
+        "reseller_price": 23500,
+        "wholesale_price": 24000,
+        "retail_price": 25000
+      },
+      {
+        "size": "4XL",
+        "color": "Fatigue",
+        "color_group": "COLORED",
+        "reseller_price": 23500,
+        "wholesale_price": 24000,
+        "retail_price": 25000
+      },
+      {
+        "size": "5XL",
+        "color": "Fatigue",
+        "color_group": "COLORED",
+        "reseller_price": 23500,
+        "wholesale_price": 24000,
+        "retail_price": 25000
+      },
+      {
+        "size": "S",
+        "color": "Gray",
+        "color_group": "COLORED",
+        "reseller_price": 18900,
+        "wholesale_price": 19400,
+        "retail_price": 20400
+      },
+      {
+        "size": "M",
+        "color": "Gray",
+        "color_group": "COLORED",
+        "reseller_price": 18900,
+        "wholesale_price": 19400,
+        "retail_price": 20400
+      },
+      {
+        "size": "L",
+        "color": "Gray",
+        "color_group": "COLORED",
+        "reseller_price": 18900,
+        "wholesale_price": 19400,
+        "retail_price": 20400
+      },
+      {
         "size": "XL",
-        "color": "Sage",
-        "retail_price": 49900,
-        "wholesale_price": 39900,
-        "reseller_price": 36900
+        "color": "Gray",
+        "color_group": "COLORED",
+        "reseller_price": 18900,
+        "wholesale_price": 19400,
+        "retail_price": 20400
       },
       {
-        "sku": "Z2-04-2XL-BLACK",
         "size": "2XL",
-        "color": "Black",
-        "retail_price": 51900,
-        "wholesale_price": 41900,
-        "reseller_price": 38900
+        "color": "Gray",
+        "color_group": "COLORED",
+        "reseller_price": 20400,
+        "wholesale_price": 20900,
+        "retail_price": 21900
       },
       {
-        "sku": "Z2-04-2XL-IVORY",
-        "size": "2XL",
-        "color": "Ivory",
-        "retail_price": 51900,
-        "wholesale_price": 41900,
-        "reseller_price": 38900
+        "size": "3XL",
+        "color": "Gray",
+        "color_group": "COLORED",
+        "reseller_price": 23500,
+        "wholesale_price": 24000,
+        "retail_price": 25000
       },
       {
-        "sku": "Z2-04-2XL-SAGE",
+        "size": "4XL",
+        "color": "Gray",
+        "color_group": "COLORED",
+        "reseller_price": 23500,
+        "wholesale_price": 24000,
+        "retail_price": 25000
+      },
+      {
+        "size": "5XL",
+        "color": "Gray",
+        "color_group": "COLORED",
+        "reseller_price": 23500,
+        "wholesale_price": 24000,
+        "retail_price": 25000
+      },
+      {
+        "size": "S",
+        "color": "Pool Green",
+        "color_group": "COLORED",
+        "reseller_price": 18900,
+        "wholesale_price": 19400,
+        "retail_price": 20400
+      },
+      {
+        "size": "M",
+        "color": "Pool Green",
+        "color_group": "COLORED",
+        "reseller_price": 18900,
+        "wholesale_price": 19400,
+        "retail_price": 20400
+      },
+      {
+        "size": "L",
+        "color": "Pool Green",
+        "color_group": "COLORED",
+        "reseller_price": 18900,
+        "wholesale_price": 19400,
+        "retail_price": 20400
+      },
+      {
+        "size": "XL",
+        "color": "Pool Green",
+        "color_group": "COLORED",
+        "reseller_price": 18900,
+        "wholesale_price": 19400,
+        "retail_price": 20400
+      },
+      {
         "size": "2XL",
-        "color": "Sage",
-        "retail_price": 51900,
-        "wholesale_price": 41900,
-        "reseller_price": 38900
+        "color": "Pool Green",
+        "color_group": "COLORED",
+        "reseller_price": 20400,
+        "wholesale_price": 20900,
+        "retail_price": 21900
+      },
+      {
+        "size": "3XL",
+        "color": "Pool Green",
+        "color_group": "COLORED",
+        "reseller_price": 23500,
+        "wholesale_price": 24000,
+        "retail_price": 25000
+      },
+      {
+        "size": "4XL",
+        "color": "Pool Green",
+        "color_group": "COLORED",
+        "reseller_price": 23500,
+        "wholesale_price": 24000,
+        "retail_price": 25000
+      },
+      {
+        "size": "5XL",
+        "color": "Pool Green",
+        "color_group": "COLORED",
+        "reseller_price": 23500,
+        "wholesale_price": 24000,
+        "retail_price": 25000
+      },
+      {
+        "size": "S",
+        "color": "Gold",
+        "color_group": "COLORED",
+        "reseller_price": 18900,
+        "wholesale_price": 19400,
+        "retail_price": 20400
+      },
+      {
+        "size": "M",
+        "color": "Gold",
+        "color_group": "COLORED",
+        "reseller_price": 18900,
+        "wholesale_price": 19400,
+        "retail_price": 20400
+      },
+      {
+        "size": "L",
+        "color": "Gold",
+        "color_group": "COLORED",
+        "reseller_price": 18900,
+        "wholesale_price": 19400,
+        "retail_price": 20400
+      },
+      {
+        "size": "XL",
+        "color": "Gold",
+        "color_group": "COLORED",
+        "reseller_price": 18900,
+        "wholesale_price": 19400,
+        "retail_price": 20400
+      },
+      {
+        "size": "2XL",
+        "color": "Gold",
+        "color_group": "COLORED",
+        "reseller_price": 20400,
+        "wholesale_price": 20900,
+        "retail_price": 21900
+      },
+      {
+        "size": "3XL",
+        "color": "Gold",
+        "color_group": "COLORED",
+        "reseller_price": 23500,
+        "wholesale_price": 24000,
+        "retail_price": 25000
+      },
+      {
+        "size": "4XL",
+        "color": "Gold",
+        "color_group": "COLORED",
+        "reseller_price": 23500,
+        "wholesale_price": 24000,
+        "retail_price": 25000
+      },
+      {
+        "size": "5XL",
+        "color": "Gold",
+        "color_group": "COLORED",
+        "reseller_price": 23500,
+        "wholesale_price": 24000,
+        "retail_price": 25000
+      },
+      {
+        "size": "S",
+        "color": "Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 18900,
+        "wholesale_price": 19400,
+        "retail_price": 20400
+      },
+      {
+        "size": "M",
+        "color": "Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 18900,
+        "wholesale_price": 19400,
+        "retail_price": 20400
+      },
+      {
+        "size": "L",
+        "color": "Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 18900,
+        "wholesale_price": 19400,
+        "retail_price": 20400
+      },
+      {
+        "size": "XL",
+        "color": "Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 18900,
+        "wholesale_price": 19400,
+        "retail_price": 20400
+      },
+      {
+        "size": "2XL",
+        "color": "Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 20400,
+        "wholesale_price": 20900,
+        "retail_price": 21900
+      },
+      {
+        "size": "3XL",
+        "color": "Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 23500,
+        "wholesale_price": 24000,
+        "retail_price": 25000
+      },
+      {
+        "size": "4XL",
+        "color": "Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 23500,
+        "wholesale_price": 24000,
+        "retail_price": 25000
+      },
+      {
+        "size": "5XL",
+        "color": "Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 23500,
+        "wholesale_price": 24000,
+        "retail_price": 25000
+      },
+      {
+        "size": "S",
+        "color": "Peach",
+        "color_group": "COLORED",
+        "reseller_price": 18900,
+        "wholesale_price": 19400,
+        "retail_price": 20400
+      },
+      {
+        "size": "M",
+        "color": "Peach",
+        "color_group": "COLORED",
+        "reseller_price": 18900,
+        "wholesale_price": 19400,
+        "retail_price": 20400
+      },
+      {
+        "size": "L",
+        "color": "Peach",
+        "color_group": "COLORED",
+        "reseller_price": 18900,
+        "wholesale_price": 19400,
+        "retail_price": 20400
+      },
+      {
+        "size": "XL",
+        "color": "Peach",
+        "color_group": "COLORED",
+        "reseller_price": 18900,
+        "wholesale_price": 19400,
+        "retail_price": 20400
+      },
+      {
+        "size": "2XL",
+        "color": "Peach",
+        "color_group": "COLORED",
+        "reseller_price": 20400,
+        "wholesale_price": 20900,
+        "retail_price": 21900
+      },
+      {
+        "size": "3XL",
+        "color": "Peach",
+        "color_group": "COLORED",
+        "reseller_price": 23500,
+        "wholesale_price": 24000,
+        "retail_price": 25000
+      },
+      {
+        "size": "4XL",
+        "color": "Peach",
+        "color_group": "COLORED",
+        "reseller_price": 23500,
+        "wholesale_price": 24000,
+        "retail_price": 25000
+      },
+      {
+        "size": "5XL",
+        "color": "Peach",
+        "color_group": "COLORED",
+        "reseller_price": 23500,
+        "wholesale_price": 24000,
+        "retail_price": 25000
+      },
+      {
+        "size": "S",
+        "color": "Light Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 18900,
+        "wholesale_price": 19400,
+        "retail_price": 20400
+      },
+      {
+        "size": "M",
+        "color": "Light Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 18900,
+        "wholesale_price": 19400,
+        "retail_price": 20400
+      },
+      {
+        "size": "L",
+        "color": "Light Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 18900,
+        "wholesale_price": 19400,
+        "retail_price": 20400
+      },
+      {
+        "size": "XL",
+        "color": "Light Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 18900,
+        "wholesale_price": 19400,
+        "retail_price": 20400
+      },
+      {
+        "size": "2XL",
+        "color": "Light Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 20400,
+        "wholesale_price": 20900,
+        "retail_price": 21900
+      },
+      {
+        "size": "3XL",
+        "color": "Light Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 23500,
+        "wholesale_price": 24000,
+        "retail_price": 25000
+      },
+      {
+        "size": "4XL",
+        "color": "Light Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 23500,
+        "wholesale_price": 24000,
+        "retail_price": 25000
+      },
+      {
+        "size": "5XL",
+        "color": "Light Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 23500,
+        "wholesale_price": 24000,
+        "retail_price": 25000
       }
     ]
   },
   {
-    "name": "Active Dri-Fit Tee",
-    "category": "Activewear",
+    "name": "DANNON - ROUND NECK / V-NECK KIDS",
+    "slug": "dannon-round-neck-v-neck-kids",
+    "description": "Choose your size and color. Retail, wholesale and re-seller prices follow the total quantity of clothing in your order.",
+    "art_color": "#ffffff",
+    "size_chart_note": "Yalex kids sample reference: size 10 is 12 × 16 in.; size 12 is 13 × 17 in. Measurements for sizes 4, 5, 6, 8, 9 and 11 await confirmation. Yalex’s other size numbers are not mapped to Dannon sizes.",
+    "size_chart": [
+      {
+        "size": "4",
+        "width": null,
+        "length": null
+      },
+      {
+        "size": "5",
+        "width": null,
+        "length": null
+      },
+      {
+        "size": "6",
+        "width": null,
+        "length": null
+      },
+      {
+        "size": "8",
+        "width": null,
+        "length": null
+      },
+      {
+        "size": "9",
+        "width": null,
+        "length": null
+      },
+      {
+        "size": "10",
+        "width": 12,
+        "length": 16
+      },
+      {
+        "size": "11",
+        "width": null,
+        "length": null
+      },
+      {
+        "size": "12",
+        "width": 13,
+        "length": 17
+      }
+    ],
     "variants": [
       {
-        "sku": "Z2-05-S-BLACK",
-        "size": "S",
-        "color": "Black",
-        "retail_price": 32900,
-        "wholesale_price": 26900,
-        "reseller_price": 24900
+        "size": "4",
+        "color": "White",
+        "color_group": "WHITE",
+        "reseller_price": 8000,
+        "wholesale_price": 8500,
+        "retail_price": 9500
       },
       {
-        "sku": "Z2-05-S-IVORY",
-        "size": "S",
-        "color": "Ivory",
-        "retail_price": 32900,
-        "wholesale_price": 26900,
-        "reseller_price": 24900
+        "size": "5",
+        "color": "White",
+        "color_group": "WHITE",
+        "reseller_price": 8000,
+        "wholesale_price": 8500,
+        "retail_price": 9500
       },
       {
-        "sku": "Z2-05-S-SAGE",
-        "size": "S",
-        "color": "Sage",
-        "retail_price": 32900,
-        "wholesale_price": 26900,
-        "reseller_price": 24900
+        "size": "6",
+        "color": "White",
+        "color_group": "WHITE",
+        "reseller_price": 8000,
+        "wholesale_price": 8500,
+        "retail_price": 9500
       },
       {
-        "sku": "Z2-05-M-BLACK",
-        "size": "M",
-        "color": "Black",
-        "retail_price": 32900,
-        "wholesale_price": 26900,
-        "reseller_price": 24900
+        "size": "8",
+        "color": "White",
+        "color_group": "WHITE",
+        "reseller_price": 9000,
+        "wholesale_price": 9500,
+        "retail_price": 10500
       },
       {
-        "sku": "Z2-05-M-IVORY",
-        "size": "M",
-        "color": "Ivory",
-        "retail_price": 32900,
-        "wholesale_price": 26900,
-        "reseller_price": 24900
+        "size": "9",
+        "color": "White",
+        "color_group": "WHITE",
+        "reseller_price": 9000,
+        "wholesale_price": 9500,
+        "retail_price": 10500
       },
       {
-        "sku": "Z2-05-M-SAGE",
-        "size": "M",
-        "color": "Sage",
-        "retail_price": 32900,
-        "wholesale_price": 26900,
-        "reseller_price": 24900
+        "size": "10",
+        "color": "White",
+        "color_group": "WHITE",
+        "reseller_price": 9000,
+        "wholesale_price": 9500,
+        "retail_price": 10500
       },
       {
-        "sku": "Z2-05-L-BLACK",
-        "size": "L",
-        "color": "Black",
-        "retail_price": 32900,
-        "wholesale_price": 26900,
-        "reseller_price": 24900
+        "size": "11",
+        "color": "White",
+        "color_group": "WHITE",
+        "reseller_price": 9000,
+        "wholesale_price": 9500,
+        "retail_price": 10500
       },
       {
-        "sku": "Z2-05-L-IVORY",
-        "size": "L",
-        "color": "Ivory",
-        "retail_price": 32900,
-        "wholesale_price": 26900,
-        "reseller_price": 24900
+        "size": "12",
+        "color": "White",
+        "color_group": "WHITE",
+        "reseller_price": 9000,
+        "wholesale_price": 9500,
+        "retail_price": 10500
       },
       {
-        "sku": "Z2-05-L-SAGE",
-        "size": "L",
-        "color": "Sage",
-        "retail_price": 32900,
-        "wholesale_price": 26900,
-        "reseller_price": 24900
+        "size": "4",
+        "color": "Red",
+        "color_group": "COLORED",
+        "reseller_price": 10600,
+        "wholesale_price": 11100,
+        "retail_price": 12100
       },
       {
-        "sku": "Z2-05-XL-BLACK",
-        "size": "XL",
-        "color": "Black",
-        "retail_price": 32900,
-        "wholesale_price": 26900,
-        "reseller_price": 24900
+        "size": "5",
+        "color": "Red",
+        "color_group": "COLORED",
+        "reseller_price": 10600,
+        "wholesale_price": 11100,
+        "retail_price": 12100
       },
       {
-        "sku": "Z2-05-XL-IVORY",
-        "size": "XL",
-        "color": "Ivory",
-        "retail_price": 32900,
-        "wholesale_price": 26900,
-        "reseller_price": 24900
+        "size": "6",
+        "color": "Red",
+        "color_group": "COLORED",
+        "reseller_price": 10600,
+        "wholesale_price": 11100,
+        "retail_price": 12100
       },
       {
-        "sku": "Z2-05-XL-SAGE",
-        "size": "XL",
-        "color": "Sage",
-        "retail_price": 32900,
-        "wholesale_price": 26900,
-        "reseller_price": 24900
+        "size": "8",
+        "color": "Red",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
       },
       {
-        "sku": "Z2-05-2XL-BLACK",
-        "size": "2XL",
-        "color": "Black",
-        "retail_price": 34900,
-        "wholesale_price": 28900,
-        "reseller_price": 26900
+        "size": "9",
+        "color": "Red",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
       },
       {
-        "sku": "Z2-05-2XL-IVORY",
-        "size": "2XL",
-        "color": "Ivory",
-        "retail_price": 34900,
-        "wholesale_price": 28900,
-        "reseller_price": 26900
+        "size": "10",
+        "color": "Red",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
       },
       {
-        "sku": "Z2-05-2XL-SAGE",
-        "size": "2XL",
-        "color": "Sage",
-        "retail_price": 34900,
-        "wholesale_price": 28900,
-        "reseller_price": 26900
+        "size": "11",
+        "color": "Red",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "12",
+        "color": "Red",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "4",
+        "color": "Mandarin",
+        "color_group": "COLORED",
+        "reseller_price": 10600,
+        "wholesale_price": 11100,
+        "retail_price": 12100
+      },
+      {
+        "size": "5",
+        "color": "Mandarin",
+        "color_group": "COLORED",
+        "reseller_price": 10600,
+        "wholesale_price": 11100,
+        "retail_price": 12100
+      },
+      {
+        "size": "6",
+        "color": "Mandarin",
+        "color_group": "COLORED",
+        "reseller_price": 10600,
+        "wholesale_price": 11100,
+        "retail_price": 12100
+      },
+      {
+        "size": "8",
+        "color": "Mandarin",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "9",
+        "color": "Mandarin",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "10",
+        "color": "Mandarin",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "11",
+        "color": "Mandarin",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "12",
+        "color": "Mandarin",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "4",
+        "color": "Maroon",
+        "color_group": "COLORED",
+        "reseller_price": 10600,
+        "wholesale_price": 11100,
+        "retail_price": 12100
+      },
+      {
+        "size": "5",
+        "color": "Maroon",
+        "color_group": "COLORED",
+        "reseller_price": 10600,
+        "wholesale_price": 11100,
+        "retail_price": 12100
+      },
+      {
+        "size": "6",
+        "color": "Maroon",
+        "color_group": "COLORED",
+        "reseller_price": 10600,
+        "wholesale_price": 11100,
+        "retail_price": 12100
+      },
+      {
+        "size": "8",
+        "color": "Maroon",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "9",
+        "color": "Maroon",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "10",
+        "color": "Maroon",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "11",
+        "color": "Maroon",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "12",
+        "color": "Maroon",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "4",
+        "color": "Batis",
+        "color_group": "COLORED",
+        "reseller_price": 10600,
+        "wholesale_price": 11100,
+        "retail_price": 12100
+      },
+      {
+        "size": "5",
+        "color": "Batis",
+        "color_group": "COLORED",
+        "reseller_price": 10600,
+        "wholesale_price": 11100,
+        "retail_price": 12100
+      },
+      {
+        "size": "6",
+        "color": "Batis",
+        "color_group": "COLORED",
+        "reseller_price": 10600,
+        "wholesale_price": 11100,
+        "retail_price": 12100
+      },
+      {
+        "size": "8",
+        "color": "Batis",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "9",
+        "color": "Batis",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "10",
+        "color": "Batis",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "11",
+        "color": "Batis",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "12",
+        "color": "Batis",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "4",
+        "color": "Teal",
+        "color_group": "COLORED",
+        "reseller_price": 10600,
+        "wholesale_price": 11100,
+        "retail_price": 12100
+      },
+      {
+        "size": "5",
+        "color": "Teal",
+        "color_group": "COLORED",
+        "reseller_price": 10600,
+        "wholesale_price": 11100,
+        "retail_price": 12100
+      },
+      {
+        "size": "6",
+        "color": "Teal",
+        "color_group": "COLORED",
+        "reseller_price": 10600,
+        "wholesale_price": 11100,
+        "retail_price": 12100
+      },
+      {
+        "size": "8",
+        "color": "Teal",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "9",
+        "color": "Teal",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "10",
+        "color": "Teal",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "11",
+        "color": "Teal",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "12",
+        "color": "Teal",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "4",
+        "color": "Light Blue",
+        "color_group": "COLORED",
+        "reseller_price": 10600,
+        "wholesale_price": 11100,
+        "retail_price": 12100
+      },
+      {
+        "size": "5",
+        "color": "Light Blue",
+        "color_group": "COLORED",
+        "reseller_price": 10600,
+        "wholesale_price": 11100,
+        "retail_price": 12100
+      },
+      {
+        "size": "6",
+        "color": "Light Blue",
+        "color_group": "COLORED",
+        "reseller_price": 10600,
+        "wholesale_price": 11100,
+        "retail_price": 12100
+      },
+      {
+        "size": "8",
+        "color": "Light Blue",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "9",
+        "color": "Light Blue",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "10",
+        "color": "Light Blue",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "11",
+        "color": "Light Blue",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "12",
+        "color": "Light Blue",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "4",
+        "color": "Fatigue",
+        "color_group": "COLORED",
+        "reseller_price": 10600,
+        "wholesale_price": 11100,
+        "retail_price": 12100
+      },
+      {
+        "size": "5",
+        "color": "Fatigue",
+        "color_group": "COLORED",
+        "reseller_price": 10600,
+        "wholesale_price": 11100,
+        "retail_price": 12100
+      },
+      {
+        "size": "6",
+        "color": "Fatigue",
+        "color_group": "COLORED",
+        "reseller_price": 10600,
+        "wholesale_price": 11100,
+        "retail_price": 12100
+      },
+      {
+        "size": "8",
+        "color": "Fatigue",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "9",
+        "color": "Fatigue",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "10",
+        "color": "Fatigue",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "11",
+        "color": "Fatigue",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "12",
+        "color": "Fatigue",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "4",
+        "color": "Gray",
+        "color_group": "COLORED",
+        "reseller_price": 10600,
+        "wholesale_price": 11100,
+        "retail_price": 12100
+      },
+      {
+        "size": "5",
+        "color": "Gray",
+        "color_group": "COLORED",
+        "reseller_price": 10600,
+        "wholesale_price": 11100,
+        "retail_price": 12100
+      },
+      {
+        "size": "6",
+        "color": "Gray",
+        "color_group": "COLORED",
+        "reseller_price": 10600,
+        "wholesale_price": 11100,
+        "retail_price": 12100
+      },
+      {
+        "size": "8",
+        "color": "Gray",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "9",
+        "color": "Gray",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "10",
+        "color": "Gray",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "11",
+        "color": "Gray",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "12",
+        "color": "Gray",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "4",
+        "color": "Pool Green",
+        "color_group": "COLORED",
+        "reseller_price": 10600,
+        "wholesale_price": 11100,
+        "retail_price": 12100
+      },
+      {
+        "size": "5",
+        "color": "Pool Green",
+        "color_group": "COLORED",
+        "reseller_price": 10600,
+        "wholesale_price": 11100,
+        "retail_price": 12100
+      },
+      {
+        "size": "6",
+        "color": "Pool Green",
+        "color_group": "COLORED",
+        "reseller_price": 10600,
+        "wholesale_price": 11100,
+        "retail_price": 12100
+      },
+      {
+        "size": "8",
+        "color": "Pool Green",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "9",
+        "color": "Pool Green",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "10",
+        "color": "Pool Green",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "11",
+        "color": "Pool Green",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "12",
+        "color": "Pool Green",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "4",
+        "color": "Gold",
+        "color_group": "COLORED",
+        "reseller_price": 10600,
+        "wholesale_price": 11100,
+        "retail_price": 12100
+      },
+      {
+        "size": "5",
+        "color": "Gold",
+        "color_group": "COLORED",
+        "reseller_price": 10600,
+        "wholesale_price": 11100,
+        "retail_price": 12100
+      },
+      {
+        "size": "6",
+        "color": "Gold",
+        "color_group": "COLORED",
+        "reseller_price": 10600,
+        "wholesale_price": 11100,
+        "retail_price": 12100
+      },
+      {
+        "size": "8",
+        "color": "Gold",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "9",
+        "color": "Gold",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "10",
+        "color": "Gold",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "11",
+        "color": "Gold",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "12",
+        "color": "Gold",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "4",
+        "color": "Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 10600,
+        "wholesale_price": 11100,
+        "retail_price": 12100
+      },
+      {
+        "size": "5",
+        "color": "Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 10600,
+        "wholesale_price": 11100,
+        "retail_price": 12100
+      },
+      {
+        "size": "6",
+        "color": "Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 10600,
+        "wholesale_price": 11100,
+        "retail_price": 12100
+      },
+      {
+        "size": "8",
+        "color": "Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "9",
+        "color": "Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "10",
+        "color": "Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "11",
+        "color": "Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "12",
+        "color": "Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "4",
+        "color": "Peach",
+        "color_group": "COLORED",
+        "reseller_price": 10600,
+        "wholesale_price": 11100,
+        "retail_price": 12100
+      },
+      {
+        "size": "5",
+        "color": "Peach",
+        "color_group": "COLORED",
+        "reseller_price": 10600,
+        "wholesale_price": 11100,
+        "retail_price": 12100
+      },
+      {
+        "size": "6",
+        "color": "Peach",
+        "color_group": "COLORED",
+        "reseller_price": 10600,
+        "wholesale_price": 11100,
+        "retail_price": 12100
+      },
+      {
+        "size": "8",
+        "color": "Peach",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "9",
+        "color": "Peach",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "10",
+        "color": "Peach",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "11",
+        "color": "Peach",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "12",
+        "color": "Peach",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "4",
+        "color": "Light Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 10600,
+        "wholesale_price": 11100,
+        "retail_price": 12100
+      },
+      {
+        "size": "5",
+        "color": "Light Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 10600,
+        "wholesale_price": 11100,
+        "retail_price": 12100
+      },
+      {
+        "size": "6",
+        "color": "Light Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 10600,
+        "wholesale_price": 11100,
+        "retail_price": 12100
+      },
+      {
+        "size": "8",
+        "color": "Light Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "9",
+        "color": "Light Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "10",
+        "color": "Light Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "11",
+        "color": "Light Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
+      },
+      {
+        "size": "12",
+        "color": "Light Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 11100,
+        "wholesale_price": 11600,
+        "retail_price": 12600
       }
     ]
   },
   {
-    "name": "Weekend Oversized Tee",
-    "category": "Essentials",
-    "variants": [
+    "name": "THANOS",
+    "slug": "thanos",
+    "description": "Choose your size and color. Retail, wholesale and re-seller prices follow the total quantity of clothing in your order.",
+    "art_color": "#ffffff",
+    "size_chart_note": "Yalex adult sample reference. Verify fit for this brand before purchase.",
+    "size_chart": [
       {
-        "sku": "Z2-06-S-BLACK",
+        "size": "XS",
+        "width": 17,
+        "length": 24
+      },
+      {
         "size": "S",
-        "color": "Black",
-        "retail_price": 39900,
-        "wholesale_price": 32900,
-        "reseller_price": 29900
+        "width": 18,
+        "length": 25
       },
       {
-        "sku": "Z2-06-S-IVORY",
-        "size": "S",
-        "color": "Ivory",
-        "retail_price": 39900,
-        "wholesale_price": 32900,
-        "reseller_price": 29900
-      },
-      {
-        "sku": "Z2-06-S-SAGE",
-        "size": "S",
-        "color": "Sage",
-        "retail_price": 39900,
-        "wholesale_price": 32900,
-        "reseller_price": 29900
-      },
-      {
-        "sku": "Z2-06-M-BLACK",
         "size": "M",
-        "color": "Black",
-        "retail_price": 39900,
-        "wholesale_price": 32900,
-        "reseller_price": 29900
+        "width": 19,
+        "length": 26
       },
       {
-        "sku": "Z2-06-M-IVORY",
-        "size": "M",
-        "color": "Ivory",
-        "retail_price": 39900,
-        "wholesale_price": 32900,
-        "reseller_price": 29900
-      },
-      {
-        "sku": "Z2-06-M-SAGE",
-        "size": "M",
-        "color": "Sage",
-        "retail_price": 39900,
-        "wholesale_price": 32900,
-        "reseller_price": 29900
-      },
-      {
-        "sku": "Z2-06-L-BLACK",
         "size": "L",
-        "color": "Black",
-        "retail_price": 39900,
-        "wholesale_price": 32900,
-        "reseller_price": 29900
+        "width": 20,
+        "length": 27
       },
       {
-        "sku": "Z2-06-L-IVORY",
-        "size": "L",
-        "color": "Ivory",
-        "retail_price": 39900,
-        "wholesale_price": 32900,
-        "reseller_price": 29900
-      },
-      {
-        "sku": "Z2-06-L-SAGE",
-        "size": "L",
-        "color": "Sage",
-        "retail_price": 39900,
-        "wholesale_price": 32900,
-        "reseller_price": 29900
-      },
-      {
-        "sku": "Z2-06-XL-BLACK",
         "size": "XL",
-        "color": "Black",
-        "retail_price": 39900,
-        "wholesale_price": 32900,
-        "reseller_price": 29900
+        "width": 21,
+        "length": 28
       },
       {
-        "sku": "Z2-06-XL-IVORY",
-        "size": "XL",
-        "color": "Ivory",
-        "retail_price": 39900,
-        "wholesale_price": 32900,
-        "reseller_price": 29900
-      },
-      {
-        "sku": "Z2-06-XL-SAGE",
-        "size": "XL",
-        "color": "Sage",
-        "retail_price": 39900,
-        "wholesale_price": 32900,
-        "reseller_price": 29900
-      },
-      {
-        "sku": "Z2-06-2XL-BLACK",
         "size": "2XL",
-        "color": "Black",
-        "retail_price": 41900,
-        "wholesale_price": 34900,
-        "reseller_price": 31900
-      },
-      {
-        "sku": "Z2-06-2XL-IVORY",
-        "size": "2XL",
-        "color": "Ivory",
-        "retail_price": 41900,
-        "wholesale_price": 34900,
-        "reseller_price": 31900
-      },
-      {
-        "sku": "Z2-06-2XL-SAGE",
-        "size": "2XL",
-        "color": "Sage",
-        "retail_price": 41900,
-        "wholesale_price": 34900,
-        "reseller_price": 31900
+        "width": 22,
+        "length": 29
       }
-    ]
-  },
-  {
-    "name": "Everyday Kids Tee",
-    "category": "Kids",
+    ],
     "variants": [
       {
-        "sku": "Z2-07-S-BLACK",
+        "size": "XS",
+        "color": "White",
+        "color_group": "WHITE",
+        "reseller_price": 9600,
+        "wholesale_price": 10100,
+        "retail_price": 11100
+      },
+      {
         "size": "S",
-        "color": "Black",
-        "retail_price": 19900,
-        "wholesale_price": 15900,
-        "reseller_price": 13900
+        "color": "White",
+        "color_group": "WHITE",
+        "reseller_price": 10200,
+        "wholesale_price": 10700,
+        "retail_price": 11700
       },
       {
-        "sku": "Z2-07-S-IVORY",
+        "size": "M",
+        "color": "White",
+        "color_group": "WHITE",
+        "reseller_price": 10200,
+        "wholesale_price": 10700,
+        "retail_price": 11700
+      },
+      {
+        "size": "L",
+        "color": "White",
+        "color_group": "WHITE",
+        "reseller_price": 11000,
+        "wholesale_price": 11500,
+        "retail_price": 12500
+      },
+      {
+        "size": "XL",
+        "color": "White",
+        "color_group": "WHITE",
+        "reseller_price": 11000,
+        "wholesale_price": 11500,
+        "retail_price": 12500
+      },
+      {
+        "size": "2XL",
+        "color": "White",
+        "color_group": "WHITE",
+        "reseller_price": 12200,
+        "wholesale_price": 12700,
+        "retail_price": 13700
+      },
+      {
+        "size": "XS",
+        "color": "Red",
+        "color_group": "COLORED",
+        "reseller_price": 10700,
+        "wholesale_price": 11200,
+        "retail_price": 12200
+      },
+      {
         "size": "S",
-        "color": "Ivory",
-        "retail_price": 19900,
-        "wholesale_price": 15900,
-        "reseller_price": 13900
+        "color": "Red",
+        "color_group": "COLORED",
+        "reseller_price": 11400,
+        "wholesale_price": 11900,
+        "retail_price": 12900
       },
       {
-        "sku": "Z2-07-S-SAGE",
+        "size": "M",
+        "color": "Red",
+        "color_group": "COLORED",
+        "reseller_price": 11400,
+        "wholesale_price": 11900,
+        "retail_price": 12900
+      },
+      {
+        "size": "L",
+        "color": "Red",
+        "color_group": "COLORED",
+        "reseller_price": 12400,
+        "wholesale_price": 12900,
+        "retail_price": 13900
+      },
+      {
+        "size": "XL",
+        "color": "Red",
+        "color_group": "COLORED",
+        "reseller_price": 12400,
+        "wholesale_price": 12900,
+        "retail_price": 13900
+      },
+      {
+        "size": "2XL",
+        "color": "Red",
+        "color_group": "COLORED",
+        "reseller_price": 13700,
+        "wholesale_price": 14200,
+        "retail_price": 15200
+      },
+      {
+        "size": "XS",
+        "color": "Mandarin",
+        "color_group": "COLORED",
+        "reseller_price": 10700,
+        "wholesale_price": 11200,
+        "retail_price": 12200
+      },
+      {
         "size": "S",
-        "color": "Sage",
-        "retail_price": 19900,
-        "wholesale_price": 15900,
-        "reseller_price": 13900
+        "color": "Mandarin",
+        "color_group": "COLORED",
+        "reseller_price": 11400,
+        "wholesale_price": 11900,
+        "retail_price": 12900
       },
       {
-        "sku": "Z2-07-M-BLACK",
         "size": "M",
-        "color": "Black",
-        "retail_price": 19900,
-        "wholesale_price": 15900,
-        "reseller_price": 13900
+        "color": "Mandarin",
+        "color_group": "COLORED",
+        "reseller_price": 11400,
+        "wholesale_price": 11900,
+        "retail_price": 12900
       },
       {
-        "sku": "Z2-07-M-IVORY",
-        "size": "M",
-        "color": "Ivory",
-        "retail_price": 19900,
-        "wholesale_price": 15900,
-        "reseller_price": 13900
-      },
-      {
-        "sku": "Z2-07-M-SAGE",
-        "size": "M",
-        "color": "Sage",
-        "retail_price": 19900,
-        "wholesale_price": 15900,
-        "reseller_price": 13900
-      },
-      {
-        "sku": "Z2-07-L-BLACK",
         "size": "L",
-        "color": "Black",
-        "retail_price": 19900,
-        "wholesale_price": 15900,
-        "reseller_price": 13900
+        "color": "Mandarin",
+        "color_group": "COLORED",
+        "reseller_price": 12400,
+        "wholesale_price": 12900,
+        "retail_price": 13900
       },
       {
-        "sku": "Z2-07-L-IVORY",
-        "size": "L",
-        "color": "Ivory",
-        "retail_price": 19900,
-        "wholesale_price": 15900,
-        "reseller_price": 13900
-      },
-      {
-        "sku": "Z2-07-L-SAGE",
-        "size": "L",
-        "color": "Sage",
-        "retail_price": 19900,
-        "wholesale_price": 15900,
-        "reseller_price": 13900
-      },
-      {
-        "sku": "Z2-07-XL-BLACK",
         "size": "XL",
-        "color": "Black",
-        "retail_price": 19900,
-        "wholesale_price": 15900,
-        "reseller_price": 13900
+        "color": "Mandarin",
+        "color_group": "COLORED",
+        "reseller_price": 12400,
+        "wholesale_price": 12900,
+        "retail_price": 13900
       },
       {
-        "sku": "Z2-07-XL-IVORY",
-        "size": "XL",
-        "color": "Ivory",
-        "retail_price": 19900,
-        "wholesale_price": 15900,
-        "reseller_price": 13900
-      },
-      {
-        "sku": "Z2-07-XL-SAGE",
-        "size": "XL",
-        "color": "Sage",
-        "retail_price": 19900,
-        "wholesale_price": 15900,
-        "reseller_price": 13900
-      },
-      {
-        "sku": "Z2-07-2XL-BLACK",
         "size": "2XL",
-        "color": "Black",
-        "retail_price": 21900,
-        "wholesale_price": 17900,
-        "reseller_price": 15900
+        "color": "Mandarin",
+        "color_group": "COLORED",
+        "reseller_price": 13700,
+        "wholesale_price": 14200,
+        "retail_price": 15200
       },
       {
-        "sku": "Z2-07-2XL-IVORY",
-        "size": "2XL",
-        "color": "Ivory",
-        "retail_price": 21900,
-        "wholesale_price": 17900,
-        "reseller_price": 15900
+        "size": "XS",
+        "color": "Maroon",
+        "color_group": "COLORED",
+        "reseller_price": 10700,
+        "wholesale_price": 11200,
+        "retail_price": 12200
       },
       {
-        "sku": "Z2-07-2XL-SAGE",
-        "size": "2XL",
-        "color": "Sage",
-        "retail_price": 21900,
-        "wholesale_price": 17900,
-        "reseller_price": 15900
-      }
-    ]
-  },
-  {
-    "name": "Classic Piqu\u00e9 Polo",
-    "category": "Polos",
-    "variants": [
-      {
-        "sku": "Z2-08-S-BLACK",
         "size": "S",
-        "color": "Black",
-        "retail_price": 54900,
-        "wholesale_price": 44900,
-        "reseller_price": 41900
+        "color": "Maroon",
+        "color_group": "COLORED",
+        "reseller_price": 11400,
+        "wholesale_price": 11900,
+        "retail_price": 12900
       },
       {
-        "sku": "Z2-08-S-IVORY",
+        "size": "M",
+        "color": "Maroon",
+        "color_group": "COLORED",
+        "reseller_price": 11400,
+        "wholesale_price": 11900,
+        "retail_price": 12900
+      },
+      {
+        "size": "L",
+        "color": "Maroon",
+        "color_group": "COLORED",
+        "reseller_price": 12400,
+        "wholesale_price": 12900,
+        "retail_price": 13900
+      },
+      {
+        "size": "XL",
+        "color": "Maroon",
+        "color_group": "COLORED",
+        "reseller_price": 12400,
+        "wholesale_price": 12900,
+        "retail_price": 13900
+      },
+      {
+        "size": "2XL",
+        "color": "Maroon",
+        "color_group": "COLORED",
+        "reseller_price": 13700,
+        "wholesale_price": 14200,
+        "retail_price": 15200
+      },
+      {
+        "size": "XS",
+        "color": "Batis",
+        "color_group": "COLORED",
+        "reseller_price": 10700,
+        "wholesale_price": 11200,
+        "retail_price": 12200
+      },
+      {
         "size": "S",
-        "color": "Ivory",
-        "retail_price": 54900,
-        "wholesale_price": 44900,
-        "reseller_price": 41900
+        "color": "Batis",
+        "color_group": "COLORED",
+        "reseller_price": 11400,
+        "wholesale_price": 11900,
+        "retail_price": 12900
       },
       {
-        "sku": "Z2-08-S-SAGE",
+        "size": "M",
+        "color": "Batis",
+        "color_group": "COLORED",
+        "reseller_price": 11400,
+        "wholesale_price": 11900,
+        "retail_price": 12900
+      },
+      {
+        "size": "L",
+        "color": "Batis",
+        "color_group": "COLORED",
+        "reseller_price": 12400,
+        "wholesale_price": 12900,
+        "retail_price": 13900
+      },
+      {
+        "size": "XL",
+        "color": "Batis",
+        "color_group": "COLORED",
+        "reseller_price": 12400,
+        "wholesale_price": 12900,
+        "retail_price": 13900
+      },
+      {
+        "size": "2XL",
+        "color": "Batis",
+        "color_group": "COLORED",
+        "reseller_price": 13700,
+        "wholesale_price": 14200,
+        "retail_price": 15200
+      },
+      {
+        "size": "XS",
+        "color": "Teal",
+        "color_group": "COLORED",
+        "reseller_price": 10700,
+        "wholesale_price": 11200,
+        "retail_price": 12200
+      },
+      {
         "size": "S",
-        "color": "Sage",
-        "retail_price": 54900,
-        "wholesale_price": 44900,
-        "reseller_price": 41900
+        "color": "Teal",
+        "color_group": "COLORED",
+        "reseller_price": 11400,
+        "wholesale_price": 11900,
+        "retail_price": 12900
       },
       {
-        "sku": "Z2-08-M-BLACK",
         "size": "M",
-        "color": "Black",
-        "retail_price": 54900,
-        "wholesale_price": 44900,
-        "reseller_price": 41900
+        "color": "Teal",
+        "color_group": "COLORED",
+        "reseller_price": 11400,
+        "wholesale_price": 11900,
+        "retail_price": 12900
       },
       {
-        "sku": "Z2-08-M-IVORY",
+        "size": "L",
+        "color": "Teal",
+        "color_group": "COLORED",
+        "reseller_price": 12400,
+        "wholesale_price": 12900,
+        "retail_price": 13900
+      },
+      {
+        "size": "XL",
+        "color": "Teal",
+        "color_group": "COLORED",
+        "reseller_price": 12400,
+        "wholesale_price": 12900,
+        "retail_price": 13900
+      },
+      {
+        "size": "2XL",
+        "color": "Teal",
+        "color_group": "COLORED",
+        "reseller_price": 13700,
+        "wholesale_price": 14200,
+        "retail_price": 15200
+      },
+      {
+        "size": "XS",
+        "color": "Light Blue",
+        "color_group": "COLORED",
+        "reseller_price": 10700,
+        "wholesale_price": 11200,
+        "retail_price": 12200
+      },
+      {
+        "size": "S",
+        "color": "Light Blue",
+        "color_group": "COLORED",
+        "reseller_price": 11400,
+        "wholesale_price": 11900,
+        "retail_price": 12900
+      },
+      {
         "size": "M",
-        "color": "Ivory",
-        "retail_price": 54900,
-        "wholesale_price": 44900,
-        "reseller_price": 41900
+        "color": "Light Blue",
+        "color_group": "COLORED",
+        "reseller_price": 11400,
+        "wholesale_price": 11900,
+        "retail_price": 12900
       },
       {
-        "sku": "Z2-08-M-SAGE",
+        "size": "L",
+        "color": "Light Blue",
+        "color_group": "COLORED",
+        "reseller_price": 12400,
+        "wholesale_price": 12900,
+        "retail_price": 13900
+      },
+      {
+        "size": "XL",
+        "color": "Light Blue",
+        "color_group": "COLORED",
+        "reseller_price": 12400,
+        "wholesale_price": 12900,
+        "retail_price": 13900
+      },
+      {
+        "size": "2XL",
+        "color": "Light Blue",
+        "color_group": "COLORED",
+        "reseller_price": 13700,
+        "wholesale_price": 14200,
+        "retail_price": 15200
+      },
+      {
+        "size": "XS",
+        "color": "Fatigue",
+        "color_group": "COLORED",
+        "reseller_price": 10700,
+        "wholesale_price": 11200,
+        "retail_price": 12200
+      },
+      {
+        "size": "S",
+        "color": "Fatigue",
+        "color_group": "COLORED",
+        "reseller_price": 11400,
+        "wholesale_price": 11900,
+        "retail_price": 12900
+      },
+      {
         "size": "M",
-        "color": "Sage",
-        "retail_price": 54900,
-        "wholesale_price": 44900,
-        "reseller_price": 41900
+        "color": "Fatigue",
+        "color_group": "COLORED",
+        "reseller_price": 11400,
+        "wholesale_price": 11900,
+        "retail_price": 12900
       },
       {
-        "sku": "Z2-08-L-BLACK",
         "size": "L",
-        "color": "Black",
-        "retail_price": 54900,
-        "wholesale_price": 44900,
-        "reseller_price": 41900
+        "color": "Fatigue",
+        "color_group": "COLORED",
+        "reseller_price": 12400,
+        "wholesale_price": 12900,
+        "retail_price": 13900
       },
       {
-        "sku": "Z2-08-L-IVORY",
+        "size": "XL",
+        "color": "Fatigue",
+        "color_group": "COLORED",
+        "reseller_price": 12400,
+        "wholesale_price": 12900,
+        "retail_price": 13900
+      },
+      {
+        "size": "2XL",
+        "color": "Fatigue",
+        "color_group": "COLORED",
+        "reseller_price": 13700,
+        "wholesale_price": 14200,
+        "retail_price": 15200
+      },
+      {
+        "size": "XS",
+        "color": "Gray",
+        "color_group": "COLORED",
+        "reseller_price": 10700,
+        "wholesale_price": 11200,
+        "retail_price": 12200
+      },
+      {
+        "size": "S",
+        "color": "Gray",
+        "color_group": "COLORED",
+        "reseller_price": 11400,
+        "wholesale_price": 11900,
+        "retail_price": 12900
+      },
+      {
+        "size": "M",
+        "color": "Gray",
+        "color_group": "COLORED",
+        "reseller_price": 11400,
+        "wholesale_price": 11900,
+        "retail_price": 12900
+      },
+      {
         "size": "L",
-        "color": "Ivory",
-        "retail_price": 54900,
-        "wholesale_price": 44900,
-        "reseller_price": 41900
+        "color": "Gray",
+        "color_group": "COLORED",
+        "reseller_price": 12400,
+        "wholesale_price": 12900,
+        "retail_price": 13900
       },
       {
-        "sku": "Z2-08-L-SAGE",
+        "size": "XL",
+        "color": "Gray",
+        "color_group": "COLORED",
+        "reseller_price": 12400,
+        "wholesale_price": 12900,
+        "retail_price": 13900
+      },
+      {
+        "size": "2XL",
+        "color": "Gray",
+        "color_group": "COLORED",
+        "reseller_price": 13700,
+        "wholesale_price": 14200,
+        "retail_price": 15200
+      },
+      {
+        "size": "XS",
+        "color": "Pool Green",
+        "color_group": "COLORED",
+        "reseller_price": 10700,
+        "wholesale_price": 11200,
+        "retail_price": 12200
+      },
+      {
+        "size": "S",
+        "color": "Pool Green",
+        "color_group": "COLORED",
+        "reseller_price": 11400,
+        "wholesale_price": 11900,
+        "retail_price": 12900
+      },
+      {
+        "size": "M",
+        "color": "Pool Green",
+        "color_group": "COLORED",
+        "reseller_price": 11400,
+        "wholesale_price": 11900,
+        "retail_price": 12900
+      },
+      {
         "size": "L",
-        "color": "Sage",
-        "retail_price": 54900,
-        "wholesale_price": 44900,
-        "reseller_price": 41900
+        "color": "Pool Green",
+        "color_group": "COLORED",
+        "reseller_price": 12400,
+        "wholesale_price": 12900,
+        "retail_price": 13900
       },
       {
-        "sku": "Z2-08-XL-BLACK",
         "size": "XL",
-        "color": "Black",
-        "retail_price": 54900,
-        "wholesale_price": 44900,
-        "reseller_price": 41900
+        "color": "Pool Green",
+        "color_group": "COLORED",
+        "reseller_price": 12400,
+        "wholesale_price": 12900,
+        "retail_price": 13900
       },
       {
-        "sku": "Z2-08-XL-IVORY",
+        "size": "2XL",
+        "color": "Pool Green",
+        "color_group": "COLORED",
+        "reseller_price": 13700,
+        "wholesale_price": 14200,
+        "retail_price": 15200
+      },
+      {
+        "size": "XS",
+        "color": "Gold",
+        "color_group": "COLORED",
+        "reseller_price": 10700,
+        "wholesale_price": 11200,
+        "retail_price": 12200
+      },
+      {
+        "size": "S",
+        "color": "Gold",
+        "color_group": "COLORED",
+        "reseller_price": 11400,
+        "wholesale_price": 11900,
+        "retail_price": 12900
+      },
+      {
+        "size": "M",
+        "color": "Gold",
+        "color_group": "COLORED",
+        "reseller_price": 11400,
+        "wholesale_price": 11900,
+        "retail_price": 12900
+      },
+      {
+        "size": "L",
+        "color": "Gold",
+        "color_group": "COLORED",
+        "reseller_price": 12400,
+        "wholesale_price": 12900,
+        "retail_price": 13900
+      },
+      {
         "size": "XL",
-        "color": "Ivory",
-        "retail_price": 54900,
-        "wholesale_price": 44900,
-        "reseller_price": 41900
+        "color": "Gold",
+        "color_group": "COLORED",
+        "reseller_price": 12400,
+        "wholesale_price": 12900,
+        "retail_price": 13900
       },
       {
-        "sku": "Z2-08-XL-SAGE",
+        "size": "2XL",
+        "color": "Gold",
+        "color_group": "COLORED",
+        "reseller_price": 13700,
+        "wholesale_price": 14200,
+        "retail_price": 15200
+      },
+      {
+        "size": "XS",
+        "color": "Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 10700,
+        "wholesale_price": 11200,
+        "retail_price": 12200
+      },
+      {
+        "size": "S",
+        "color": "Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 11400,
+        "wholesale_price": 11900,
+        "retail_price": 12900
+      },
+      {
+        "size": "M",
+        "color": "Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 11400,
+        "wholesale_price": 11900,
+        "retail_price": 12900
+      },
+      {
+        "size": "L",
+        "color": "Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 12400,
+        "wholesale_price": 12900,
+        "retail_price": 13900
+      },
+      {
         "size": "XL",
-        "color": "Sage",
-        "retail_price": 54900,
-        "wholesale_price": 44900,
-        "reseller_price": 41900
+        "color": "Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 12400,
+        "wholesale_price": 12900,
+        "retail_price": 13900
       },
       {
-        "sku": "Z2-08-2XL-BLACK",
         "size": "2XL",
-        "color": "Black",
-        "retail_price": 56900,
-        "wholesale_price": 46900,
-        "reseller_price": 43900
+        "color": "Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 13700,
+        "wholesale_price": 14200,
+        "retail_price": 15200
       },
       {
-        "sku": "Z2-08-2XL-IVORY",
-        "size": "2XL",
-        "color": "Ivory",
-        "retail_price": 56900,
-        "wholesale_price": 46900,
-        "reseller_price": 43900
+        "size": "XS",
+        "color": "Peach",
+        "color_group": "COLORED",
+        "reseller_price": 10700,
+        "wholesale_price": 11200,
+        "retail_price": 12200
       },
       {
-        "sku": "Z2-08-2XL-SAGE",
+        "size": "S",
+        "color": "Peach",
+        "color_group": "COLORED",
+        "reseller_price": 11400,
+        "wholesale_price": 11900,
+        "retail_price": 12900
+      },
+      {
+        "size": "M",
+        "color": "Peach",
+        "color_group": "COLORED",
+        "reseller_price": 11400,
+        "wholesale_price": 11900,
+        "retail_price": 12900
+      },
+      {
+        "size": "L",
+        "color": "Peach",
+        "color_group": "COLORED",
+        "reseller_price": 12400,
+        "wholesale_price": 12900,
+        "retail_price": 13900
+      },
+      {
+        "size": "XL",
+        "color": "Peach",
+        "color_group": "COLORED",
+        "reseller_price": 12400,
+        "wholesale_price": 12900,
+        "retail_price": 13900
+      },
+      {
         "size": "2XL",
-        "color": "Sage",
-        "retail_price": 56900,
-        "wholesale_price": 46900,
-        "reseller_price": 43900
+        "color": "Peach",
+        "color_group": "COLORED",
+        "reseller_price": 13700,
+        "wholesale_price": 14200,
+        "retail_price": 15200
+      },
+      {
+        "size": "XS",
+        "color": "Light Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 10700,
+        "wholesale_price": 11200,
+        "retail_price": 12200
+      },
+      {
+        "size": "S",
+        "color": "Light Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 11400,
+        "wholesale_price": 11900,
+        "retail_price": 12900
+      },
+      {
+        "size": "M",
+        "color": "Light Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 11400,
+        "wholesale_price": 11900,
+        "retail_price": 12900
+      },
+      {
+        "size": "L",
+        "color": "Light Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 12400,
+        "wholesale_price": 12900,
+        "retail_price": 13900
+      },
+      {
+        "size": "XL",
+        "color": "Light Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 12400,
+        "wholesale_price": 12900,
+        "retail_price": 13900
+      },
+      {
+        "size": "2XL",
+        "color": "Light Yellow",
+        "color_group": "COLORED",
+        "reseller_price": 13700,
+        "wholesale_price": 14200,
+        "retail_price": 15200
       }
     ]
   }

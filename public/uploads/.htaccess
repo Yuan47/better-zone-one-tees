@@ -1,0 +1,7 @@
+Options -Indexes
+<FilesMatch "(?i)\.(php[0-9]?|phtml|phar|cgi|pl|py|sh|exe|html|svg)$">
+    Require all denied
+</FilesMatch>
+<FilesMatch "(?i)\.(jpg|jpeg|png|webp)$">
+    SetHandler none
+</FilesMatch>

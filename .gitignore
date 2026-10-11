@@ -27,3 +27,6 @@ Thumbs.db
 /database/*.sqlite
 /storage/logs/*
 *.zip
+
+/public/uploads/*
+!/public/uploads/.htaccess

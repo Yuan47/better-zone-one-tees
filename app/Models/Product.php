@@ -10,7 +10,17 @@ class Product extends Model
 
     protected function casts(): array
     {
-        return ['active' => 'boolean'];
+        return ['active' => 'boolean', 'size_chart' => 'array'];
+    }
+
+    public function photoUrl(): ?string
+    {
+        return $this->image_path ? asset($this->image_path) : ($this->image_url ?: null);
+    }
+
+    public function isPolo(): bool
+    {
+        return str_contains(strtoupper($this->name), 'WITH COLLAR');
     }
 
     public function variants()

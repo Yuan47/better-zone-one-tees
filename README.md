@@ -35,7 +35,15 @@ No frontend build step or external CDN is required. Uses Blade, CSS, JavaScript,
 | Staff | staff@zoneone.test | ZoneOneDemo!2026 |
 | Customer | customer@zoneone.test | ZoneOneDemo!2026 |
 
-Demo seeding is limited to local/testing. It supplies 8 sample styles, 120 variants, and 120 pieces of sample stock per variant, without resetting existing stock/passwords. Replace sample inventory with a physical count before operating.
+Demo user seeding is limited to local/testing. The first catalog batch contains the six supplied Dannon, Lucky Hanna, and Thanos products, with WHITE and COLORED options in one product. It includes 13 named colors and 628 size/color variants at the supplied Retail, Wholesale, and Re-seller prices. Inventory starts at zero until the owner enters physical counts. Existing passwords and inventory are preserved on repeated imports.
+
+To upgrade an existing installation without reseeding accounts:
+
+    php artisan migrate --force
+    php artisan shop:import-catalog
+    php artisan view:clear
+
+The import archives the eight original sample styles once and preserves their variants and order history. Repeated imports leave owner changes intact. Hidden products can still be reviewed in the admin catalog.
 
 ## Quantity pricing
 
@@ -50,7 +58,13 @@ Bulk discount rounds once to the nearest centavo on the whole clothing subtotal.
 
 ## Available functionality
 
-Catalog search/filters/sort, cart edits, automatic pricing, registration/login, wishlist, protected order history, checkout review. Admin product create/edit/hide, photo URLs, variants/stock/prices, customers, packing workflow, sales graphs, category reporting, CSV export, forecasting, chatbot FAQ settings. Staff can manage fulfillment/reports; catalog/customer/settings edits require admin.
+Catalog search/size/color filters/sort, cart edits, automatic pricing, registration/login, wishlist, protected order history, checkout review. My Account is available to customers, staff, and admins: editable username/name/photo, fixed email, and password changes with current password and confirmation. Customers can save a structured delivery address that prefills checkout.
+
+Admin product create/edit/hide includes product and variant image uploads, automatic SKUs, owner-defined colors, size charts, stock, and prices. New color batches copy the existing colored size prices and start with zero inventory. Size charts use Width and Length in inches. Dannon and Lucky Hanna polo measurements follow the supplied charts; other adult tees use the Yalex sample chart, including the confirmed 4XL 24 × 31. For kids, only sizes 10 and 12 currently match the supplied chart; other priced sizes remain “To be confirmed” and editable. Actual product photos are still to be supplied.
+
+Admin/staff dashboards show Confirmed Clothing sale, Average Order Value, best sellers, inventory, recent orders, and Sales over time with Daily, Weekly, Monthly, and Yearly views. Sales & Growth Forecast has a separate page. Customer management, packing, CSV export, and chatbot FAQ settings remain available. Staff can manage fulfillment/reports; catalog/customer/settings edits require admin. Categories and reserved quantities are absent from the interface; internal payment stock reservations still prevent overselling.
+
+Uploads accept JPEG, PNG, and WebP only: product/variant photos up to 5 MB and account photos up to 2 MB. Files use generated names under public/uploads; executable uploads are blocked. Keep uploaded files backed up and preserve them across deployment. This project's Apache settings allow a 6 MB file/8 MB request; configure equivalent limits on other hosts. Images and personal data are excluded from Git.
 
 PayMongo hosted Checkout v2 adapter, signed webhook verification, amount/currency/session/reference checks, duplicate protection, locked inventory reservations. Returning from checkout never confirms payment. Unconfigured checkout is disabled.
 
@@ -71,7 +85,9 @@ Linear regression:
     b = sum((x - mean(x)) × (y - mean(y))) / sum((x - mean(x))²)
     a = mean(y) - b × mean(x)
 
-Uses up to six completed months. x is 1..n; x=n+1 forecasts the current incomplete month using finished history only. Covers net clothing revenue and unit demand per product/category. Growth requires two periods with a nonzero earlier period; regression requires three. Missing history is labeled. Negative demand predictions display zero. Dashboard reveals periods, rate, intercept, slope, and target month. Backtesting on actual sales is still needed.
+Uses up to six completed months. x is 1..n; x=n+1 forecasts the current incomplete month using finished history only. Covers confirmed net clothing sales and unit demand per active product. Growth requires two periods with a nonzero earlier period; regression requires three. Missing history is labeled. Negative demand predictions display zero. The forecast page reveals periods, rate, intercept, slope, and target month. Backtesting on actual sales is still needed.
+
+Confirmed Clothing sale sums paid order clothing subtotals after the bulk discount and excludes delivery fees. Average Order Value divides that same total by the number of paid orders. Sales periods use payment confirmation timestamps in Asia/Manila; weekly periods begin Monday. The dashboard cards show all-time values, while the chart uses the selected period. Current incomplete periods are labeled.
 
 ## Connect providers
 

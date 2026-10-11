@@ -9,6 +9,7 @@ use App\Services\Lalamove;
 use App\Services\OrderFlow;
 use App\Services\PayMongo;
 use App\Services\Pricing;
+use App\Services\StructuredAddress;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -22,21 +23,22 @@ class StoreController extends Controller
         if ($r->filled('q')) {
             $query->where('name', 'like', '%'.mb_substr($r->string('q'), 0, 100).'%');
         }
-        if ($r->filled('category')) {
-            $query->where('category', $r->string('category'));
-        }
         if ($r->boolean('wishlist')) {
             abort_unless($r->user(), 403);
             $query->whereIn('id', DB::table('wishlists')->where('user_id', $r->user()->id)->pluck('product_id'));
         }
-        if ($r->filled('size')) {
-            $query->whereHas('variants', fn ($q) => $q->where('size', $r->string('size')));
-        }
-        if ($r->filled('color')) {
-            $query->whereHas('variants', fn ($q) => $q->where('color', $r->string('color')));
-        }
-        if ($r->boolean('in_stock')) {
-            $query->whereHas('variants', fn ($q) => $q->whereColumn('stock', '>', 'reserved'));
+        if ($r->filled('size') || $r->filled('color') || $r->boolean('in_stock')) {
+            $query->whereHas('variants', function ($q) use ($r) {
+                if ($r->filled('size')) {
+                    $q->where('size', $r->string('size'));
+                }
+                if ($r->filled('color')) {
+                    $q->where('color', $r->string('color'));
+                }
+                if ($r->boolean('in_stock')) {
+                    $q->whereColumn('stock', '>', 'reserved');
+                }
+            });
         }
         $products = $query->get();
         $sort = $r->input('sort');
@@ -46,10 +48,12 @@ class StoreController extends Controller
         if ($sort === 'price_desc') {
             $products = $products->sortByDesc(fn ($p) => $p->variants->min('retail_price'));
         }
-        $categories = Product::where('active', true)->distinct()->pluck('category');
+        $filterVariants = Variant::whereHas('product', fn ($q) => $q->where('active', true))->get();
+        $sizes = $filterVariants->pluck('size')->unique()->sortBy(fn ($v) => array_search($v, ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL']) === false ? (int) $v : 100 + array_search($v, ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL']))->values();
+        $colors = $filterVariants->pluck('color')->unique()->sort()->values();
         $wishIds = $r->user() ? DB::table('wishlists')->where('user_id', $r->user()->id)->pluck('product_id')->all() : [];
 
-        return view('store', compact('products', 'categories', 'wishIds'));
+        return view('store', compact('products', 'sizes', 'colors', 'wishIds'));
     }
 
     public function product(Product $product)
@@ -78,7 +82,7 @@ class StoreController extends Controller
 
     public function cart(Request $r, Pricing $pricing)
     {
-        $summary = $pricing->cart($r->session()->get('cart', []));
+        $summary = $pricing->cart($this->activeCart($r));
 
         return view('cart', compact('summary'));
     }
@@ -117,7 +121,7 @@ class StoreController extends Controller
 
     public function checkout(Request $r, Pricing $pricing, PayMongo $pay, Lalamove $delivery)
     {
-        $summary = $pricing->cart($r->session()->get('cart', []));
+        $summary = $pricing->cart($this->activeCart($r));
         if (! $summary['quantity']) {
             return redirect()->route('cart');
         }
@@ -125,9 +129,14 @@ class StoreController extends Controller
         return view('checkout', ['summary' => $summary, 'payReady' => $pay->ready(), 'deliveryReady' => $delivery->ready()]);
     }
 
-    public function quote(Request $r, Lalamove $delivery)
+    public function quote(Request $r, Lalamove $delivery, StructuredAddress $addresses)
     {
-        $data = $r->validate(['address' => 'required|string|max:500', 'lat' => 'required|numeric|between:-90,90', 'lng' => 'required|numeric|between:-180,180']);
+        $data = $addresses->validatedInput($r, true);
+        $r->validate(['lat' => 'required|numeric|between:-90,90', 'lng' => 'required|numeric|between:-180,180']);
+        $data['address'] = $addresses->format($data);
+        if (strcasecmp($data['country'], 'Philippines') !== 0) {
+            throw ValidationException::withMessages(['country' => 'Lalamove delivery is available in the Philippines only.']);
+        }
         try {
             $quote = $delivery->quote($data['address'], (string) $data['lat'], (string) $data['lng']);
             if (data_get($quote, 'priceBreakdown.currency') !== 'PHP' || ! is_numeric(data_get($quote, 'priceBreakdown.total')) || empty($quote['quotationId'])) {
@@ -144,11 +153,17 @@ class StoreController extends Controller
         }
     }
 
-    public function place(Request $r, PayMongo $pay, OrderFlow $flow)
+    public function place(Request $r, PayMongo $pay, OrderFlow $flow, StructuredAddress $addresses)
     {
         $data = $r->validate(['recipient' => 'required|string|max:100', 'phone' => ['required', 'regex:/^\+?[0-9]{10,15}$/'],
-            'delivery_method' => 'required|in:pickup,lalamove', 'address' => 'required|string|max:500',
+            'delivery_method' => 'required|in:pickup,lalamove',
             'lat' => 'nullable|numeric|between:-90,90', 'lng' => 'nullable|numeric|between:-180,180']);
+        $address = $addresses->validatedInput($r, $data['delivery_method'] === 'lalamove');
+        $data = array_merge($data, $address);
+        $data['address'] = filled($data['street_address']) ? $addresses->format($data) : 'Store pickup';
+        if ($data['delivery_method'] === 'lalamove' && strcasecmp($data['country'], 'Philippines') !== 0) {
+            throw ValidationException::withMessages(['country' => 'Lalamove delivery is available in the Philippines only.']);
+        }
         if (! $pay->ready()) {
             return back()->withErrors(['payment' => 'Configure PayMongo test keys and webhook first.'])->withInput();
         }
@@ -178,6 +193,19 @@ class StoreController extends Controller
             // Provider outcome may be uncertain after a timeout. Retain reservation and do not create another session blindly.
             return redirect()->route('orders.show', $order)->withErrors(['payment' => 'Checkout could not be confirmed. Your order is saved for staff reconciliation; no payment has been confirmed.']);
         }
+    }
+
+    private function activeCart(Request $r): array
+    {
+        $cart = $r->session()->get('cart', []);
+        $active = Variant::whereIn('id', array_keys($cart))->whereHas('product', fn ($q) => $q->where('active', true))->pluck('id')->all();
+        $clean = array_intersect_key($cart, array_flip($active));
+        if (count($clean) !== count($cart)) {
+            $r->session()->put('cart', $clean);
+            $r->session()->flash('notice', 'Your cart was updated because some products are no longer in the catalog.');
+        }
+
+        return $clean;
     }
 
     public function orders(Request $r)
