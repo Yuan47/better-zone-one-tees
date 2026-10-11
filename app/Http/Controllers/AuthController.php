@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Services\ActivityRecorder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rules\Password;
@@ -22,6 +23,8 @@ class AuthController extends Controller
         }
         $r->session()->regenerate();
 
+        ActivityRecorder::mark($r, 'auth.login', $r->user());
+
         return redirect()->intended($r->user()->role === 'customer' ? route('store') : route('admin.dashboard'));
     }
 
@@ -31,15 +34,18 @@ class AuthController extends Controller
         $user = User::create($data);
         Auth::login($user);
         $r->session()->regenerate();
+        ActivityRecorder::mark($r, 'auth.registered', $user);
 
         return redirect()->route('store');
     }
 
     public function logout(Request $r)
     {
+        $user = $r->user();
         Auth::logout();
         $r->session()->invalidate();
         $r->session()->regenerateToken();
+        ActivityRecorder::mark($r, 'auth.logout', $user);
 
         return redirect()->route('store');
     }

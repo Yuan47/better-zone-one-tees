@@ -72,6 +72,12 @@ Lalamove sandbox HMAC adapter, exact-address quotations, re-quotation/booking af
 
 Grok widgets use server credentials and scoped customer/staff context. Without a key, labeled basic FAQ/catalog/order answers work. Customers only access their own orders. AI cannot change orders/payments. Sizing, policies, and recommendations depend on approved store data.
 
+Store settings now separates the FAQ library from store information. Admins can add, edit, activate/deactivate, and delete individual questions and answers, or upload a CSV using the downloadable template. Search/status filters and 12-entry pages keep the library manageable. Only active FAQs are supplied to the chatbot, including its basic mode when Grok is not connected; Grok receives at most ten relevant FAQ entries per question. Pricing, payment confirmation, and order status answers come directly from store facts even when Grok is connected. CSV imports validate all rows before saving, with a limit of 100 rows and 1 MB per file. Opening hours, pickup information, support contacts, and additional approved store notes have their own fields. Previous free-text guidance is preserved in the store note during the upgrade.
+
+The admin-only Activity log records meaningful authenticated actions from the upgrade onward. It covers sign-in/out, registration, profile/password changes, cart/wishlist changes, order creation, staff fulfillment changes, catalog/FAQ/store information changes, and report exports. Filter by person, role, event, and date; results are paginated and displayed in Asia/Manila time. Failed validation and unchanged edits do not create entries. Logs contain actor snapshots and limited action details, never passwords, tokens, raw request bodies, customer addresses, or chat messages. Passive browsing and anonymous activity are not recorded, and the admin interface has no log deletion action.
+
+The web interface adapts to mobile and Android phone browsers: visible storefront search, an accessible admin menu with account/sign-out access, larger touch controls, readable form fields, contained table scrolling, and a chat panel sized for small screens. No Android app installation is required.
+
 ## Forecast formulas
 
 Historical growth:
@@ -109,7 +115,7 @@ External providers have not been end-to-end verified with your credentials. Auto
 
 - Session-linked unpaid reservations need expiry/cancellation reconciliation; automatic expiry/refunds/disputes/replay tools are pending.
 - Uncertain delivery bookings remain in delivery_booking to prevent duplicate bookings until reconciled.
-- Password recovery/email verification, returns/refunds, customer notification jobs, support escalation tickets, map selection, audit logs, backups, and load testing remain.
+- Password recovery/email verification, returns/refunds, customer notification jobs, support escalation tickets, map selection, backup automation, and load testing remain.
 - Run the scheduler locally with php artisan schedule:work. Production needs schedule:run every minute, shared cache, queue workers as async features are added, and backups.
 - Original website/database are untouched. Cutover requires catalog/customer/order migration, provider live testing, mobile acceptance, backups, rollback, domain configuration, HTTPS.
 

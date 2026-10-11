@@ -2,8 +2,10 @@
 
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ChatController;
+use App\Http\Controllers\FaqController;
 use App\Http\Controllers\ReportsController;
 use App\Http\Controllers\StoreController;
 use App\Http\Controllers\WebhookController;
@@ -42,6 +44,7 @@ Route::middleware(['auth', 'staff'])->prefix('admin')->name('admin.')->group(fun
     Route::patch('/orders/{order}', [AdminController::class, 'status'])->name('orders.status');
     Route::post('/orders/{order}/delivery', [AdminController::class, 'book'])->middleware('throttle:5,1')->name('orders.delivery');
     Route::middleware('staff:admin')->group(function () {
+        Route::get('/activity', [ActivityLogController::class, 'index'])->name('activity.index');
         Route::get('/products', [AdminController::class, 'products'])->name('products');
         Route::get('/products/create', [AdminController::class, 'createForm'])->name('products.create');
         Route::post('/products', [AdminController::class, 'save'])->name('products.store');
@@ -53,5 +56,12 @@ Route::middleware(['auth', 'staff'])->prefix('admin')->name('admin.')->group(fun
         Route::get('/customers', [AdminController::class, 'customers'])->name('customers');
         Route::get('/settings', [AdminController::class, 'settings'])->name('settings');
         Route::post('/settings', [AdminController::class, 'saveSettings'])->name('settings.save');
+        Route::get('/settings/faqs/create', [FaqController::class, 'create'])->name('faqs.create');
+        Route::post('/settings/faqs', [FaqController::class, 'store'])->name('faqs.store');
+        Route::post('/settings/faqs/import', [FaqController::class, 'import'])->name('faqs.import');
+        Route::get('/settings/faqs/template', [FaqController::class, 'template'])->name('faqs.template');
+        Route::get('/settings/faqs/{faq}/edit', [FaqController::class, 'edit'])->name('faqs.edit');
+        Route::patch('/settings/faqs/{faq}', [FaqController::class, 'update'])->name('faqs.update');
+        Route::delete('/settings/faqs/{faq}', [FaqController::class, 'destroy'])->name('faqs.destroy');
     });
 });

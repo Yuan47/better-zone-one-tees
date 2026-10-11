@@ -34,6 +34,7 @@
                 </div>
             @endforeach
         </div>
+        <p class="muted chart-scroll-note">Swipe ↔ to see earlier periods.</p>
         @if(!$salesChart['orders'])<p class="empty-note">No verified paid orders in this period yet.</p>@endif
         <details class="forecast-details"><summary>View exact sales amounts</summary><div class="table-scroll"><table><thead><tr><th>Period</th><th>Paid orders</th><th>Confirmed clothing sale</th></tr></thead><tbody>
             @foreach($chart as $point)<tr><td>{{ $point['range'] }}{{ $point['current'] ? ' (in progress)' : '' }}</td><td>{{ $point['orders'] }}</td><td>₱{{ number_format($point['amount'] / 100, 2) }}</td></tr>@endforeach

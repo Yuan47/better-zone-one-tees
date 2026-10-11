@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\ImageUploads;
+use App\Services\ActivityRecorder;
 use App\Services\StructuredAddress;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -63,6 +64,10 @@ class AccountController extends Controller
         if (array_key_exists('avatar_path', $changes) && $oldAvatar !== $changes['avatar_path']) {
             $images->delete($oldAvatar);
         }
+        $changedFields = array_values(array_diff(array_keys($user->getChanges()), ['updated_at']));
+        if ($changedFields) {
+            ActivityRecorder::mark($request, 'account.updated', $user, ['fields' => $changedFields]);
+        }
 
         return redirect()->route('account')->with('notice', 'Your account has been updated.');
     }
@@ -80,6 +85,7 @@ class AccountController extends Controller
         $request->session()->regenerate(true);
         $request->session()->regenerateToken();
         $request->session()->put('password_hash_web', $user->password);
+        ActivityRecorder::mark($request, 'account.password_changed', $user);
 
         return redirect()->route('account')->with('notice', 'Password changed. Other signed-in browser sessions have been signed out.');
     }

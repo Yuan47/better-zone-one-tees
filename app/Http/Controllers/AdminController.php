@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\User;
 use App\Models\Variant;
 use App\Services\ImageUploads;
+use App\Services\ActivityRecorder;
 use App\Services\Lalamove;
 use App\Services\PayMongo;
 use App\Services\Sku;
@@ -80,6 +81,10 @@ class AdminController extends Controller
         if ($oldPhoto && ($newPhoto || $r->boolean('remove_photo'))) {
             $uploads->delete($oldPhoto);
         }
+        $changedFields = array_values(array_diff(array_keys($product->wasRecentlyCreated ? $product->getAttributes() : $product->getChanges()), ['updated_at', 'created_at', 'id']));
+        if ($product->wasRecentlyCreated || $changedFields) {
+            ActivityRecorder::mark($r, $product->wasRecentlyCreated ? 'product.created' : 'product.updated', $product, ['fields' => $changedFields]);
+        }
 
         return redirect()->route('admin.products.edit', $product)->with('notice', 'Product saved.');
     }
@@ -110,7 +115,8 @@ class AdminController extends Controller
         }
         unset($data['photo'],$data['remove_photo']);
         $oldPhoto = $variant?->image_path;
-        DB::transaction(function () use ($r, $product, $variant, $uploads, &$data) {
+        $savedVariant = null;
+        DB::transaction(function () use ($r, $product, $variant, $uploads, &$data, &$savedVariant) {
             Product::whereKey($product->id)->lockForUpdate()->firstOrFail();
             $locked = $variant ? Variant::whereKey($variant->id)->lockForUpdate()->firstOrFail() : null;
             if ($locked && $data['stock'] < $locked->reserved) {
@@ -123,12 +129,17 @@ class AdminController extends Controller
             }
             if ($locked) {
                 $locked->update($data);
+                $savedVariant = $locked;
             } else {
-                $product->variants()->create($data + ['sku' => Sku::forNewVariant($product, $data['size'], $data['color'])]);
+                $savedVariant = $product->variants()->create($data + ['sku' => Sku::forNewVariant($product, $data['size'], $data['color'])]);
             }
         });
         if ($oldPhoto && ($r->file('photo') || $r->boolean('remove_photo'))) {
             $uploads->delete($oldPhoto);
+        }
+        $changedFields = array_values(array_diff(array_keys($savedVariant->wasRecentlyCreated ? $savedVariant->getAttributes() : $savedVariant->getChanges()), ['updated_at', 'created_at', 'id']));
+        if ($savedVariant->wasRecentlyCreated || $changedFields) {
+            ActivityRecorder::mark($r, $savedVariant->wasRecentlyCreated ? 'variant.created' : 'variant.updated', $savedVariant, ['fields' => $changedFields]);
         }
 
         return back()->with('notice', 'Variant saved. SKU is assigned automatically.');
@@ -155,6 +166,7 @@ class AdminController extends Controller
                 ]);
             }
         });
+        ActivityRecorder::mark($r, 'catalog.color_added', $product, ['variant_count' => $templates->count()]);
 
         return back()->with('notice', 'Color added across existing colored sizes. Review its prices and enter counted stock.');
     }
@@ -169,34 +181,43 @@ class AdminController extends Controller
     public function status(Request $r, Order $order)
     {
         $data = $r->validate(['status' => 'required|in:packing,ready,completed']);
-        DB::transaction(function () use ($order, $data) {
+        $previousStatus = null;
+        DB::transaction(function () use ($order, $data, &$previousStatus) {
             $locked = Order::whereKey($order->id)->lockForUpdate()->firstOrFail();
             $allowed = ['to_pack' => ['packing'], 'packing' => ['ready'], 'ready' => $locked->delivery_method === 'pickup' ? ['completed'] : []];
             abort_unless($locked->payment_status === 'paid' && in_array($data['status'], $allowed[$locked->status] ?? []), 422);
+            $previousStatus = $locked->status;
             $locked->update($data);
         });
+        ActivityRecorder::mark($r, 'order.status_changed', $order, ['previous_status' => $previousStatus, 'status' => $data['status']]);
 
         return back()->with('notice', 'Order updated.');
     }
 
-    public function book(Order $order, Lalamove $delivery)
+    public function book(Request $r, Order $order, Lalamove $delivery)
     {
         if (! $delivery->ready()) {
             return back()->withErrors(['delivery' => 'Configure Lalamove sandbox credentials and pickup location first.']);
         }
+        $bookingStarted = false;
         try {
             // Lock stops two staff members booking the same order concurrently.
-            DB::transaction(function () use ($order) {
+            DB::transaction(function () use ($order, &$bookingStarted) {
                 $order = Order::whereKey($order->id)->lockForUpdate()->firstOrFail();
                 abort_unless($order->status === 'ready' && $order->payment_status === 'paid' && $order->delivery_method === 'lalamove' && ! $order->delivery_id, 422);
                 $order->update(['status' => 'delivery_booking']);
+                $bookingStarted = true;
             });
             $result = $delivery->book($order);
             $order->update(['delivery_id' => $result['orderId'], 'tracking_url' => $result['shareLink'] ?? null, 'status' => 'out_for_delivery']);
+            ActivityRecorder::mark($r, 'order.delivery_booked', $order, ['status' => 'out_for_delivery']);
         } catch (ValidationException $e) {
             $order->update(['status' => 'ready']);
             throw $e;
         } catch (\Throwable $e) {
+            if ($bookingStarted && $order->fresh()->status === 'delivery_booking') {
+                ActivityRecorder::mark($r, 'order.delivery_reconciliation_required', $order, ['status' => 'delivery_booking']);
+            }
             return back()->withErrors(['delivery' => 'Booking outcome needs checking in Lalamove before retrying. Staff should reconcile this order.']);
         }
 
@@ -210,8 +231,9 @@ class AdminController extends Controller
         return view('admin.customers', compact('customers'));
     }
 
-    public function export()
+    public function export(Request $r)
     {
+        ActivityRecorder::mark($r, 'reports.exported', null, ['format' => 'csv']);
         return response()->streamDownload(function () {
             $out = fopen('php://output', 'w');
             fputcsv($out, ['Order', 'Paid at', 'Pieces', 'Pricing tier', 'Clothing base PHP', 'Bulk discount PHP', 'Net clothing PHP', 'Delivery PHP', 'Total PHP'], ',', '"', '');
@@ -226,18 +248,35 @@ class AdminController extends Controller
         }, 'zone-one-sales-'.now()->format('Y-m-d').'.csv', ['Content-Type' => 'text/csv']);
     }
 
-    public function settings(PayMongo $pay, Lalamove $delivery)
+    public function settings(Request $r, PayMongo $pay, Lalamove $delivery)
     {
-        $faq = DB::table('shop_settings')->where('key', 'chatbot_faq')->value('value') ?? '';
+        $search = is_string($r->query('faq_search')) ? mb_substr(trim($r->query('faq_search')), 0, 100) : '';
+        $status = in_array($r->query('faq_status'), ['active', 'inactive'], true) ? $r->query('faq_status') : 'all';
+        $faqs = \App\Models\ChatbotFaq::query()
+            ->when($search !== '', fn ($q) => $q->where(fn ($q) => $q->where('question', 'like', '%'.$search.'%')->orWhere('keywords', 'like', '%'.$search.'%')))
+            ->when($status !== 'all', fn ($q) => $q->where('active', $status === 'active'))
+            ->orderBy('sort_order')->orderBy('id')->paginate(12)->withQueryString();
 
-        return view('admin.settings', ['faq' => $faq, 'payReady' => $pay->ready(), 'deliveryReady' => $delivery->ready(), 'grokReady' => filled(config('shop.grok.key'))]);
+        return view('admin.settings', [
+            'faqs' => $faqs, 'faqSearch' => $search, 'faqStatus' => $status,
+            'storeInfo' => app(\App\Services\StoreKnowledge::class)->info(),
+            'payReady' => $pay->ready(), 'deliveryReady' => $delivery->ready(), 'grokReady' => filled(config('shop.grok.key')),
+        ]);
     }
 
     public function saveSettings(Request $r)
     {
-        $data = $r->validate(['faq' => 'nullable|string|max:5000']);
-        DB::table('shop_settings')->updateOrInsert(['key' => 'chatbot_faq'], ['value' => $data['faq'] ?? '']);
+        $data = $r->validate([
+            'opening_hours' => 'nullable|string|max:1000', 'pickup_address' => 'nullable|string|max:2000',
+            'pickup_instructions' => 'nullable|string|max:2000', 'support_email' => 'nullable|email:rfc|max:254',
+            'support_phone' => ['nullable', 'string', 'max:40', 'regex:/^[+0-9().\s-]{7,40}$/'],
+            'store_note' => 'nullable|string|max:5000',
+        ]);
+        $changed = app(\App\Services\StoreKnowledge::class)->saveInfo($data);
+        if ($changed !== []) {
+            \App\Services\ActivityRecorder::mark($r, 'settings.updated', null, ['fields' => $changed]);
+        }
 
-        return back()->with('notice', 'Chatbot store guidance saved.');
+        return back()->with('notice', $changed === [] ? 'No store information changes to save.' : 'Store information updated.');
     }
 }

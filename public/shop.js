@@ -2,9 +2,51 @@ document.addEventListener('DOMContentLoaded', function () {
   var token = document.querySelector('meta[name="csrf-token"]').content;
   function money(cents) { return '₱' + (cents / 100).toLocaleString('en-PH', {minimumFractionDigits:2,maximumFractionDigits:2}); }
   var toggle = document.getElementById('chat-toggle'), panel = document.getElementById('chat-panel'), close = document.getElementById('chat-close'), chat = document.getElementById('chat-form');
-  function showChat(show) { panel.hidden=!show; toggle.setAttribute('aria-expanded',String(show)); if(show) document.getElementById('chat-input').focus(); }
-  toggle.addEventListener('click',function(){showChat(panel.hidden);}); close.addEventListener('click',function(){showChat(false);});
-  document.addEventListener('keydown',function(e){if(e.key==='Escape')showChat(false);});
+  function showChat(show, restoreFocus) { panel.hidden=!show; toggle.setAttribute('aria-expanded',String(show)); if(show) document.getElementById('chat-input').focus({preventScroll:true}); else if(restoreFocus) toggle.focus({preventScroll:true}); }
+  toggle.addEventListener('click',function(){showChat(panel.hidden);}); close.addEventListener('click',function(){showChat(false,true);});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape' && !panel.hidden)showChat(false,true);});
+
+  var menu=document.getElementById('workspace-menu'), menuToggle=document.getElementById('workspace-menu-toggle');
+  if(menu && menuToggle){
+    var menuClose=document.getElementById('workspace-menu-close'), backdrop=document.getElementById('workspace-backdrop'), main=document.querySelector('.admin-main'), mobileMenu=window.matchMedia('(max-width:850px)');
+    function showMenu(show,restoreFocus){
+      show=show && mobileMenu.matches;
+      document.body.classList.toggle('admin-nav-open',show);backdrop.hidden=!show;menuToggle.setAttribute('aria-expanded',String(show));
+      menu.inert=mobileMenu.matches && !show;main.inert=show;toggle.inert=show;
+      if(mobileMenu.matches){menu.setAttribute('aria-hidden',String(!show));if(show){menu.setAttribute('role','dialog');menu.setAttribute('aria-modal','true');menu.setAttribute('aria-label','Store workspace menu');}else{menu.removeAttribute('role');menu.removeAttribute('aria-modal');menu.removeAttribute('aria-label');}}
+      else{menu.removeAttribute('aria-hidden');menu.removeAttribute('role');menu.removeAttribute('aria-modal');menu.removeAttribute('aria-label');}
+      if(show){showChat(false);menuClose.focus({preventScroll:true});}else if(restoreFocus && mobileMenu.matches){menuToggle.focus({preventScroll:true});}
+    }
+    menuToggle.addEventListener('click',function(){showMenu(true);});menuClose.addEventListener('click',function(){showMenu(false,true);});backdrop.addEventListener('click',function(){showMenu(false,true);});
+    menu.querySelectorAll('a[href]').forEach(function(link){link.addEventListener('click',function(){if(mobileMenu.matches)showMenu(false);});});
+    document.addEventListener('keydown',function(e){
+      if(!document.body.classList.contains('admin-nav-open'))return;
+      if(e.key==='Escape'){e.preventDefault();showMenu(false,true);return;}
+      if(e.key==='Tab'){
+        var focusable=[...menu.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]),[tabindex]:not([tabindex="-1"])')].filter(function(el){return el.getClientRects().length>0;}),first=focusable[0],last=focusable[focusable.length-1];
+        if(e.shiftKey && (document.activeElement===first || !menu.contains(document.activeElement))){e.preventDefault();last.focus();}else if(!e.shiftKey && (document.activeElement===last || !menu.contains(document.activeElement))){e.preventDefault();first.focus();}
+      }
+    });
+    mobileMenu.addEventListener('change',function(){showMenu(false);});
+    document.body.classList.add('admin-nav-ready');showMenu(false);
+  }
+
+  function fitChatToViewport(){
+    var viewport=window.visualViewport,height=viewport?viewport.height:window.innerHeight,offset=viewport?Math.max(0,window.innerHeight-height-viewport.offsetTop):0;
+    document.documentElement.style.setProperty('--chat-viewport-height',Math.round(height)+'px');
+    document.documentElement.style.setProperty('--chat-keyboard-offset',Math.round(offset)+'px');
+  }
+  function fitScrollableRegions(){
+    document.querySelectorAll('.table-scroll,.revenue-chart').forEach(function(region){
+      var scrollable=region.scrollWidth>region.clientWidth+1;region.dataset.scrollable=String(scrollable);
+      if(scrollable){region.tabIndex=0;if(region.classList.contains('table-scroll')){region.setAttribute('role','region');region.setAttribute('aria-label','Table: scroll horizontally to see all columns');}else if(!region.dataset.scrollPositioned){region.scrollLeft=region.scrollWidth-region.clientWidth;region.dataset.scrollPositioned='true';}}
+      else{region.removeAttribute('tabindex');if(region.classList.contains('table-scroll')){region.removeAttribute('role');region.removeAttribute('aria-label');}}
+    });
+  }
+  fitChatToViewport();fitScrollableRegions();
+  window.addEventListener('resize',function(){fitChatToViewport();fitScrollableRegions();});
+  if(window.visualViewport){window.visualViewport.addEventListener('resize',fitChatToViewport);window.visualViewport.addEventListener('scroll',fitChatToViewport);}
+  document.addEventListener('toggle',function(){window.requestAnimationFrame(fitScrollableRegions);},true);
   chat.addEventListener('submit',async function(e) {
     e.preventDefault(); var input=document.getElementById('chat-input'), text=input.value.trim(); if(!text)return;
     var log=document.getElementById('chat-messages'), button=chat.querySelector('button');

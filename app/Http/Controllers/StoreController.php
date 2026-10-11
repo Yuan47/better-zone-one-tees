@@ -6,6 +6,7 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\Variant;
 use App\Services\Lalamove;
+use App\Services\ActivityRecorder;
 use App\Services\OrderFlow;
 use App\Services\PayMongo;
 use App\Services\Pricing;
@@ -76,6 +77,7 @@ class StoreController extends Controller
         }
         $cart[$v->id] = $quantity;
         $r->session()->put('cart', $cart);
+        ActivityRecorder::mark($r, 'cart.added', $v, ['quantity' => $quantity, 'previous_quantity' => $quantity - $data['quantity'], 'cart_quantity' => array_sum($cart)]);
 
         return redirect()->route('cart')->with('notice', 'Added to your cart. Your quantity price is applied automatically.');
     }
@@ -97,12 +99,17 @@ class StoreController extends Controller
         if ($data['quantity'] > $variant->available()) {
             return back()->withErrors(['stock' => 'Only '.$variant->available().' pieces are available.']);
         }
+        $previousQuantity = $cart[$variant->id];
         if ($data['quantity'] === 0) {
             unset($cart[$variant->id]);
         } else {
             $cart[$variant->id] = $data['quantity'];
         }
         $r->session()->put('cart', $cart);
+        if ($data['quantity'] !== $previousQuantity) {
+            ActivityRecorder::mark($r, $data['quantity'] === 0 ? 'cart.removed' : 'cart.updated', $variant,
+                ['quantity' => $data['quantity'], 'previous_quantity' => $previousQuantity, 'cart_quantity' => array_sum($cart)]);
+        }
 
         return back();
     }
@@ -112,8 +119,10 @@ class StoreController extends Controller
         $key = ['user_id' => $r->user()->id, 'product_id' => $product->id];
         if (DB::table('wishlists')->where($key)->exists()) {
             DB::table('wishlists')->where($key)->delete();
+            ActivityRecorder::mark($r, 'wishlist.removed', $product);
         } else {
             DB::table('wishlists')->insert($key + ['created_at' => now(), 'updated_at' => now()]);
+            ActivityRecorder::mark($r, 'wishlist.added', $product);
         }
 
         return back()->with('notice', 'Wishlist updated.');
@@ -183,6 +192,7 @@ class StoreController extends Controller
         }
         $order = $flow->reserve($r->session()->get('cart', []), $data, $r->user()->id);
         $r->session()->put('pending_order', $order->id);
+        ActivityRecorder::mark($r, 'order.created', $order, ['quantity' => $order->quantity, 'delivery_method' => $order->delivery_method, 'status' => $order->fresh()->status]);
         try {
             $session = $pay->create($order->load('items', 'user'));
             $order->update($session);

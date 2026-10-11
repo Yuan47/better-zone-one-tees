@@ -6,7 +6,7 @@
 <div class="benefits"><div><span>◇</span><b>Find your perfect fit<small>Sizes and colors for your everyday</small></b></div><div><span>↘</span><b>More pieces, more savings<small>Quantity pricing applied automatically</small></b></div><div><span>▣</span><b>Pay with confidence<small>Hosted checkout through PayMongo</small></b></div><div><span>✧</span><b>A little help, anytime<small>Ask our store assistant</small></b></div></div>
 @endif
 <section id="catalog"><div class="section-heading"><div><span class="eyebrow">THE EVERYDAY EDIT</span><h2>{{ request('wishlist')?'Your wishlist':(request('q')?'Results for “'.request('q').'”':'Find your next favorite') }}</h2></div><span class="muted">{{ $products->count() }} styles to explore</span></div>
-<form class="filters" action="{{ route('store') }}">
+<form class="filters catalog-filters" action="{{ route('store') }}">
 @if(request('wishlist'))<input type="hidden" name="wishlist" value="1">@endif
 <label><span class="sr-only">Search catalog</span><input name="q" placeholder="Search products…" value="{{ request('q') }}"></label>
 
