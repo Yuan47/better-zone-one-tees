@@ -1,5 +1,6 @@
 @extends('layout')
 @section('title', 'Sales & Growth Forecast')
+@section('crumb', 'Sales & Growth Forecast')
 @section('content')
 <div class="section-heading"><div><span class="eyebrow">PLAN AHEAD</span><h1>Sales &amp; Growth Forecast</h1><p class="muted">Demand estimates for {{ $revenueForecast['target'] }}.</p></div><a class="button" href="{{ route('admin.dashboard') }}#reports">← Sales reports</a></div>
 <section class="panel forecast-panel">

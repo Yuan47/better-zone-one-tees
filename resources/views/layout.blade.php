@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="csrf-token" content="{{ csrf_token() }}"><meta name="theme-color" content="#941B0C"><link rel="icon" type="image/png" href="{{ asset('brand/zone-one-tees-logo.png') }}">
-<title>@yield('title','Zone One Tee’s') · 2.0</title><link rel="stylesheet" href="{{ asset('shop.css') }}"><script src="{{ asset('shop.js') }}" defer></script></head>
+<title>@yield('title','Zone One Tee’s') · 2.0</title><link rel="stylesheet" href="{{ asset('shop.css') }}?v={{ filemtime(public_path('shop.css')) }}"><script src="{{ asset('shop.js') }}?v={{ filemtime(public_path('shop.js')) }}" defer></script></head>
 <body class="{{ (request()->routeIs('admin.*') || (request()->routeIs('account*') && auth()->check() && auth()->user()->role!=='customer')) ? 'admin-body' : 'store-body' }}">
 @php($isAdmin=(request()->routeIs('admin.*') || (request()->routeIs('account*') && auth()->check() && auth()->user()->role!=='customer')))
 @if($isAdmin)

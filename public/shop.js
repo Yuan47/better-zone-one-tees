@@ -21,7 +21,8 @@ document.addEventListener('DOMContentLoaded', function () {
     var selectedImage=document.getElementById('selected-product-photo'), placeholder=document.getElementById('product-photo-placeholder');
     function options(select, values, previous){select.replaceChildren();values.forEach(function(value){var opt=document.createElement('option');opt.value=value;opt.textContent=value;select.appendChild(opt);});if(values.includes(previous))select.value=previous;}
     function refreshColors(){options(color,[...new Set(variants.filter(function(v){return v.group===group.value;}).map(function(v){return v.color;}))],color.value);refreshSizes();}
-    function refreshSizes(){options(size,[...new Set(variants.filter(function(v){return v.group===group.value && v.color===color.value;}).map(function(v){return v.size;}))],size.value);refreshVariant();}
+    function compareSizes(a,b){var adult=['XS','S','M','L','XL','2XL','3XL','4XL','5XL'], ai=adult.indexOf(a),bi=adult.indexOf(b);if(ai!==-1 && bi!==-1)return ai-bi;return a.localeCompare(b,'en',{numeric:true});}
+    function refreshSizes(){options(size,[...new Set(variants.filter(function(v){return v.group===group.value && v.color===color.value;}).map(function(v){return v.size;}))].sort(compareSizes),size.value);refreshVariant();}
     function refreshVariant(){
       var v=variants.find(function(v){return v.group===group.value && v.color===color.value && v.size===size.value;}), add=document.getElementById('add-to-cart');
       document.getElementById('variant-id').value=v?v.id:'';add.disabled=!v||v.stock===0;
