@@ -13,6 +13,9 @@ class RefundVerification
 {
     public function check(Refund $refund, ?string $reference = null): Refund
     {
+        if ($reference !== null && ($refund->order->status !== 'completed' || ! $refund->order->customer_confirmed_at)) {
+            $this->fail('Refund processing is available only after customer-confirmed delivery.');
+        }
         $id = $reference ?? $refund->provider_refund_id;
         if (! app(PayMongo::class)->ready() || ! is_string($id) || ! preg_match('/^ref_[A-Za-z0-9_]{1,120}$/D', $id)) {
             $this->fail('Configure PayMongo and supply a valid refund reference before verification.');
@@ -24,6 +27,9 @@ class RefundVerification
             // All refund requests for an order serialize against the same order lock.
             $order = Order::whereKey($refund->order_id)->lockForUpdate()->firstOrFail();
             $locked = Refund::whereKey($refund->id)->lockForUpdate()->firstOrFail();
+            if (! $locked->provider_refund_id && ($order->status !== 'completed' || ! $order->customer_confirmed_at)) {
+                $this->fail('Refund processing is available only after customer-confirmed delivery.');
+            }
             $amount = data_get($data, 'attributes.amount');
             $status = data_get($data, 'attributes.status');
             if ($order->payment_status !== 'paid' || ! $order->payment_id || ($data['id'] ?? null) !== $id

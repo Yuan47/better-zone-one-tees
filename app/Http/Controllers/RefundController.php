@@ -40,6 +40,9 @@ class RefundController extends Controller
             if ($locked->payment_status !== 'paid' || ! $locked->payment_id) {
                 $this->fail('Refund requests are available only for verified paid orders.');
             }
+            if ($locked->status !== 'completed' || ! $locked->customer_confirmed_at) {
+                $this->fail('Refund requests are available only after you confirm Delivered and submit your review.');
+            }
             if ($locked->refunds()->whereIn('status', ['requested', 'approved', 'pending', 'processing'])->exists()) {
                 $this->fail('This order already has a refund request under review or processing.');
             }
@@ -66,11 +69,11 @@ class RefundController extends Controller
             if ($order->payment_status !== 'paid' || ! $order->payment_id) {
                 $this->fail('Only a verified paid order can be reviewed for a refund.');
             }
+            if ($order->status !== 'completed' || ! $order->customer_confirmed_at) {
+                $this->fail('Refunds can be reviewed only after the customer confirms delivery and reviews the order.');
+            }
             if ($locked->status !== 'requested') {
                 $this->fail('This request has already been reviewed.');
-            }
-            if ($data['decision'] === 'approved' && $order->status === 'delivery_booking') {
-                $this->fail('Resolve the delivery booking outcome before approving this refund.');
             }
             $amount = $data['decision'] === 'approved' ? (int) round((float) $data['approved_amount'] * 100) : null;
             $remaining = $order->total - (int) $order->refunds()->where('status', 'succeeded')->sum('amount');

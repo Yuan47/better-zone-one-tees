@@ -23,6 +23,7 @@ class ActivityLog extends Model
         'wishlist.removed' => 'Removed from wishlist',
         'order.created' => 'Created an order',
         'order.status_changed' => 'Changed order status',
+        'order.received' => 'Customer confirmed delivery and reviewed order',
         'order.delivery_booked' => 'Booked a delivery',
         'order.delivery_reconciliation_required' => 'Delivery booking needs reconciliation',
         'order.delivery_reconciled' => 'Verified delivery recovery',
@@ -85,6 +86,9 @@ class ActivityLog extends Model
         }
         if (isset($data['status'])) {
             $details[] = 'Status: '.(isset($data['previous_status']) ? str_replace('_', ' ', $data['previous_status']).' → ' : '').str_replace('_', ' ', $data['status']);
+        }
+        if (isset($data['reason'])) {
+            $details[] = 'Reason: '.$data['reason'];
         }
         if (isset($data['delivery_method'])) {
             $details[] = 'Delivery: '.($data['delivery_method'] === 'lalamove' ? 'Lalamove' : 'Store pickup');

@@ -71,6 +71,6 @@ class OrderFlow
             }
             $v->update(['stock' => $v->stock - $item->quantity, 'reserved' => $v->reserved - $item->quantity]);
         }
-        $order->update(['payment_status' => 'paid', 'payment_id' => $paymentId, 'paid_at' => $paidAt ?? now(), 'status' => 'to_pack', 'inventory_committed' => true]);
+        $order->update(['payment_status' => 'paid', 'payment_id' => $paymentId, 'paid_at' => $paidAt ?? now(), 'status' => 'packing', 'inventory_committed' => true]);
     }
 }

@@ -40,9 +40,10 @@ class DeliveryRecoveryController extends Controller
         if ($result['changed']) {
             ActivityRecorder::mark($request, 'order.delivery_reconciled', $order, ['previous_status' => $result['previous_status'], 'status' => $result['status']]);
         }
-        $notice = match ($result['status']) {
-            'ready' => 'Lalamove confirmed that the previous delivery ended. Its history was saved and the order is ready for a new booking.',
-            'completed' => 'Lalamove confirmed that the delivery is completed.',
+        $notice = match (true) {
+            $result['status'] === 'ready' => 'Lalamove confirmed that the previous delivery ended. Its history was saved and the order is ready for a new booking.',
+            $result['status'] === 'completed' => 'The customer has already confirmed receipt and submitted a review.',
+            $result['provider_status'] === 'COMPLETED' => 'Lalamove reported the delivery complete. The order stays With courier until the customer confirms receipt and submits a review.',
             default => 'Lalamove confirmed the existing delivery. It remains attached to this order.',
         };
 

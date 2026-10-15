@@ -88,7 +88,8 @@ class ActivityRecorder
             'account.updated', 'product.created', 'product.updated', 'variant.created', 'variant.updated', 'settings.updated', 'faq.created', 'faq.updated', 'faq.deleted' => ['fields'],
             'cart.added', 'cart.updated', 'cart.removed' => ['quantity', 'previous_quantity', 'cart_quantity'],
             'order.created' => ['quantity', 'delivery_method', 'status'],
-            'order.status_changed', 'order.delivery_reconciled', 'order.payment_reconciled' => ['previous_status', 'status'], 'order.delivery_booked', 'order.delivery_reconciliation_required' => ['status'],
+            'order.status_changed', 'order.received' => ['previous_status', 'status', 'reason'],
+            'order.delivery_reconciled', 'order.payment_reconciled' => ['previous_status', 'status'], 'order.delivery_booked', 'order.delivery_reconciliation_required' => ['status'],
             'catalog.color_added' => ['variant_count'], 'faq.imported' => ['imported_count'], 'reports.exported' => ['format'],
             default => [],
         };
@@ -107,6 +108,8 @@ class ActivityRecorder
                 $safe[$key] = $value;
             } elseif ($key === 'delivery_method' && in_array($value, ['pickup', 'lalamove'], true)) {
                 $safe[$key] = $value;
+            } elseif ($key === 'reason' && is_string($value)) {
+                $safe[$key] = mb_substr(trim($value), 0, 1000);
             } elseif ($key === 'format' && $value === 'csv') {
                 $safe[$key] = $value;
             }

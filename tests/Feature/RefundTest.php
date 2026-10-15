@@ -46,7 +46,18 @@ class RefundTest extends TestCase
         DB::transaction(function () use ($flow, $order) {
             $flow->paid(Order::whereKey($order->id)->lockForUpdate()->firstOrFail(), 'pay_'.uniqid());
         });
-        $order->refresh()->update(['status' => 'completed', 'paid_at' => now()->subHours(2), 'created_at' => now()->subHours(3)]);
+        $order->refresh()->update(['status' => 'completed', 'paid_at' => now()->subHours(2), 'created_at' => now()->subHours(3),
+            'customer_confirmed_at' => now()->subHour()]);
+        $order->review()->create(['user_id' => $customer->id, 'rating' => 4, 'comment' => 'The clothing arrived and I have checked the order.']);
+
+        return $order->fresh();
+    }
+
+    private function beforeReceipt(Order $order, string $status, string $method = 'lalamove'): Order
+    {
+        $order->review()->delete();
+        $order->update(['status' => $status, 'delivery_method' => $method, 'customer_confirmed_at' => null,
+            'provider_completed_at' => null]);
 
         return $order->fresh();
     }
@@ -200,10 +211,10 @@ class RefundTest extends TestCase
         $this->assertNull($refund->fresh()->approved_amount);
     }
 
-    public function test_owner_cannot_approve_while_a_delivery_booking_claim_is_unresolved(): void
+    public function test_unresolved_booking_or_prebooking_failure_cannot_enable_owner_refund_approval(): void
     {
-        $order = $this->order();
-        $order->update(['status' => 'ready', 'delivery_method' => 'lalamove', 'lat' => '14.676', 'lng' => '121.0437']);
+        $order = $this->beforeReceipt($this->order(), 'ready');
+        $order->update(['lat' => '14.676', 'lng' => '121.0437']);
         $refund = $this->refund($order);
         $recovery = app(DeliveryRecovery::class);
         $recovery->beginBooking($order);
@@ -214,27 +225,73 @@ class RefundTest extends TestCase
         $this->assertSame('delivery_booking', $order->fresh()->status);
         $this->assertSame($before, $refund->fresh()->getAttributes());
 
-        // A verified pre-POST failure releases the claim and makes review safe again.
+        // Releasing the booking claim does not replace customer receipt confirmation.
         $recovery->rejectBooking($order);
         $this->patch('/admin/refunds/'.$refund->id,
             ['decision' => 'approved', 'approved_amount' => '100', 'decision_note' => 'Courier booking did not start.'])
-            ->assertSessionHasNoErrors();
-        $this->assertSame('approved', $refund->fresh()->status);
-        $this->assertTrue($order->fresh()->fulfillmentOnHold());
+            ->assertSessionHasErrors('refund');
+        $this->assertSame('requested', $refund->fresh()->status);
+        $this->assertFalse($order->fresh()->fulfillmentOnHold());
         Http::assertNothingSent();
     }
 
-    public function test_owner_can_decline_a_request_while_delivery_booking_is_unresolved(): void
+    public function test_owner_cannot_decline_a_legacy_request_before_customer_receipt(): void
     {
-        $order = $this->order();
-        $order->update(['status' => 'delivery_booking', 'delivery_method' => 'lalamove']);
+        $order = $this->beforeReceipt($this->order(), 'delivery_booking');
         $refund = $this->refund($order);
         $this->actingAs($this->user('admin'))->patch('/admin/refunds/'.$refund->id,
             ['decision' => 'rejected', 'decision_note' => 'The issue does not qualify for a refund.'])
-            ->assertSessionHasNoErrors();
-        $this->assertSame('rejected', $refund->fresh()->status);
+            ->assertSessionHasErrors('refund');
+        $this->assertSame('requested', $refund->fresh()->status);
         $this->assertSame('delivery_booking', $order->fresh()->status);
         Http::assertNothingSent();
+    }
+
+    public static function beforeDeliveryStates(): array
+    {
+        return [['packing'], ['ready'], ['out_for_delivery'], ['completed']];
+    }
+
+    #[DataProvider('beforeDeliveryStates')]
+    public function test_new_refund_requests_owner_review_and_new_provider_attachment_require_customer_receipt(string $status): void
+    {
+        $order = $this->beforeReceipt($this->order(), $status);
+        if ($status === 'out_for_delivery') {
+            $order->update(['provider_completed_at' => now()]);
+        }
+        $this->actingAs($order->user)->post('/orders/'.$order->id.'/refunds', ['reason' => 'Requesting a refund before confirming receipt.'])
+            ->assertSessionHasErrors('refund');
+        $this->assertDatabaseCount('refunds', 0);
+        $refund = $this->refund($order);
+        $before = $refund->getAttributes();
+        $this->actingAs($this->user('admin'))->patch('/admin/refunds/'.$refund->id,
+            ['decision' => 'approved', 'approved_amount' => '100', 'decision_note' => 'Owner cannot approve before customer receipt.'])
+            ->assertSessionHasErrors('refund');
+        $this->patch('/admin/refunds/'.$refund->id,
+            ['decision' => 'rejected', 'decision_note' => 'Owner cannot review before customer receipt.'])
+            ->assertSessionHasErrors('refund');
+        $this->assertSame($before, $refund->fresh()->getAttributes());
+        $approved = $this->approved($order);
+        $approvedBefore = $approved->getAttributes();
+        $this->post('/admin/refunds/'.$approved->id.'/recover', ['provider_refund_id' => 'ref_test'])->assertSessionHasErrors('refund');
+        $this->assertSame($approvedBefore, $approved->fresh()->getAttributes());
+        Http::assertNothingSent();
+    }
+
+    public function test_existing_attached_provider_refund_can_be_reconciled_before_receipt_without_starting_another_refund(): void
+    {
+        $order = $this->beforeReceipt($this->order(), 'ready');
+        $refund = $this->approved($order, 10000, ['status' => 'processing', 'amount' => 10000,
+            'provider_refund_id' => 'ref_legacy', 'provider_updated_at' => time() - 300]);
+        $this->assertTrue($order->fulfillmentOnHold());
+        $this->fakeRefund($this->provider($refund, ['status' => 'failed', 'updated_at' => time() - 60], 'ref_legacy'));
+        $this->actingAs($this->user('staff'))->post('/admin/refunds/'.$refund->id.'/check')->assertSessionHasNoErrors();
+        $this->assertSame('failed', $refund->fresh()->status);
+        $this->assertFalse($order->fresh()->fulfillmentOnHold());
+        $this->assertSame('ready', $order->fresh()->status);
+        $this->assertNull($order->fresh()->customer_confirmed_at);
+        Http::assertSentCount(1);
+        Http::assertSent(fn ($request) => $request->method() === 'GET' && $request->url() === 'https://api.paymongo.com/refunds/ref_legacy');
     }
 
     public function test_staff_cannot_approve_reject_or_adopt_a_provider_refund(): void
@@ -555,17 +612,16 @@ class RefundTest extends TestCase
 
     public static function fulfillmentHolds(): array
     {
-        return [['approved'], ['pending'], ['processing'], ['succeeded']];
+        return [['pending'], ['processing'], ['succeeded']];
     }
 
     #[DataProvider('fulfillmentHolds')]
-    public function test_approved_processing_or_full_refund_stops_packing_and_delivery_booking(string $status): void
+    public function test_attached_processing_or_full_confirmed_refund_stops_packing_and_delivery_booking(string $status): void
     {
-        $order = $this->order();
-        $order->update(['status' => 'to_pack']);
-        $this->approved($order, $order->total, ['status' => $status, 'amount' => $order->total]);
-        $this->actingAs($this->user('staff'))->patch('/admin/orders/'.$order->id, ['status' => 'packing'])->assertSessionHasErrors('refund');
-        $this->assertSame('to_pack', $order->fresh()->status);
+        $order = $this->beforeReceipt($this->order(), 'packing');
+        $this->approved($order, $order->total, ['status' => $status, 'amount' => $order->total, 'provider_refund_id' => 'ref_legacy']);
+        $this->actingAs($this->user('staff'))->patch('/admin/orders/'.$order->id, ['status' => 'ready', 'reason' => 'The clothing has been packed for delivery.'])->assertSessionHasErrors('refund');
+        $this->assertSame('packing', $order->fresh()->status);
         $order->update(['status' => 'ready', 'delivery_method' => 'lalamove', 'lat' => '14.676', 'lng' => '121.0437']);
         config(['shop.lalamove.mode' => 'sandbox', 'shop.lalamove.key' => 'pk_test_refund_delivery', 'shop.lalamove.secret' => 'sk_test_refund_delivery',
             'shop.lalamove.address' => '10 Store Street', 'shop.lalamove.lat' => '14.65', 'shop.lalamove.lng' => '121.03', 'shop.lalamove.phone' => '+639123456789']);
@@ -575,18 +631,19 @@ class RefundTest extends TestCase
         Http::assertNothingSent();
     }
 
-    public function test_requested_only_or_partial_confirmed_refund_does_not_automatically_stop_fulfillment(): void
+    public function test_legacy_requested_or_approved_and_partial_confirmed_refund_do_not_automatically_stop_fulfillment(): void
     {
-        $order = $this->order();
-        $order->update(['status' => 'to_pack']);
-        $this->refund($order);
-        $this->actingAs($this->user('staff'))->patch('/admin/orders/'.$order->id, ['status' => 'packing'])->assertSessionHasNoErrors();
-        $this->assertSame('packing', $order->fresh()->status);
-        $other = $this->order();
-        $other->update(['status' => 'to_pack']);
+        $staff = $this->user('staff');
+        foreach (['requested', 'approved'] as $status) {
+            $order = $this->beforeReceipt($this->order(), 'packing');
+            $this->refund($order, ['status' => $status, 'approved_amount' => $status === 'approved' ? 10000 : null]);
+            $this->actingAs($staff)->patch('/admin/orders/'.$order->id, ['status' => 'ready', 'reason' => 'The clothing has been packed for delivery.'])->assertSessionHasNoErrors();
+            $this->assertSame('ready', $order->fresh()->status);
+        }
+        $other = $this->beforeReceipt($this->order(), 'packing');
         $this->approved($other, 10000, ['status' => 'succeeded', 'amount' => 10000, 'provider_refund_id' => 'ref_partial', 'confirmed_at' => now()->subMinute()]);
-        $this->patch('/admin/orders/'.$other->id, ['status' => 'packing'])->assertSessionHasNoErrors();
-        $this->assertSame('packing', $other->fresh()->status);
+        $this->patch('/admin/orders/'.$other->id, ['status' => 'ready', 'reason' => 'The clothing has been packed for delivery.'])->assertSessionHasNoErrors();
+        $this->assertSame('ready', $other->fresh()->status);
         Http::assertNothingSent();
     }
 }

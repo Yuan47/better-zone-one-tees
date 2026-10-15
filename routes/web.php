@@ -8,6 +8,7 @@ use App\Http\Controllers\ChatController;
 use App\Http\Controllers\DeliveryRecoveryController;
 use App\Http\Controllers\FaqController;
 use App\Http\Controllers\OperationsController;
+use App\Http\Controllers\OrderReceiptController;
 use App\Http\Controllers\PaymentRecoveryController;
 use App\Http\Controllers\RefundController;
 use App\Http\Controllers\ReportsController;
@@ -39,6 +40,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/checkout', [StoreController::class, 'place'])->middleware('throttle:10,1')->block(40, 40)->name('checkout.place');
     Route::get('/orders', [StoreController::class, 'orders'])->name('orders');
     Route::get('/orders/{order}', [StoreController::class, 'order'])->name('orders.show');
+    Route::post('/orders/{order}/receipt', [OrderReceiptController::class, 'store'])->middleware('throttle:3,1')->name('orders.receipt');
     Route::post('/orders/{order}/payment/check', [PaymentRecoveryController::class, 'check'])->middleware('throttle:6,1')->name('orders.payment.check');
     Route::post('/orders/{order}/payment/close', [PaymentRecoveryController::class, 'close'])->middleware('throttle:3,1')->name('orders.payment.close');
     Route::post('/orders/{order}/refunds', [RefundController::class, 'store'])->middleware('throttle:3,1')->name('orders.refunds.store');

@@ -8,8 +8,8 @@ use App\Models\Product;
 use App\Models\User;
 use App\Models\Variant;
 use App\Services\ActivityRecorder;
-use App\Services\OrderFlow;
 use App\Services\Lalamove;
+use App\Services\OrderFlow;
 use App\Services\PayMongo;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery\MockInterface;
@@ -134,14 +134,19 @@ class ActivityLogTest extends TestCase
     {
         $variant = $this->variant();
         $order = app(OrderFlow::class)->reserve([$variant->id => 1], ['recipient' => 'Buyer', 'phone' => '09123456789', 'delivery_method' => 'pickup', 'address' => 'Store pickup', 'shipping' => 0], $this->user()->id);
-        $order->update(['payment_status' => 'paid', 'status' => 'to_pack']);
+        $order->update(['payment_status' => 'paid', 'status' => 'packing']);
         $staff = $this->user('staff');
-        $this->actingAs($staff)->patch('/admin/orders/'.$order->id, ['status' => 'packing'])->assertRedirect();
+        $reason = 'The clothing has been packed and checked for pickup.';
+        $this->actingAs($staff)->patch('/admin/orders/'.$order->id, ['status' => 'ready'])->assertSessionHasErrors('reason');
+        $this->assertSame('packing', $order->fresh()->status);
+        $this->assertDatabaseCount('activity_logs', 0);
+        $this->patch('/admin/orders/'.$order->id, ['status' => 'ready', 'reason' => $reason])->assertRedirect()->assertSessionHasNoErrors();
         $log = ActivityLog::sole();
         $this->assertSame('order.status_changed', $log->action);
         $this->assertSame('staff', $log->actor_role);
-        $this->assertSame(['previous_status' => 'to_pack', 'status' => 'packing'], $log->metadata);
-        $this->patch('/admin/orders/'.$order->id, ['status' => 'completed'])->assertUnprocessable();
+        $this->assertSame(['previous_status' => 'packing', 'status' => 'ready', 'reason' => $reason], $log->metadata);
+        $this->patchJson('/admin/orders/'.$order->id, ['status' => 'completed', 'reason' => 'Staff must not confirm receipt for the customer.'])->assertUnprocessable();
+        $this->assertSame('ready', $order->fresh()->status);
         $this->assertDatabaseCount('activity_logs', 1);
     }
 

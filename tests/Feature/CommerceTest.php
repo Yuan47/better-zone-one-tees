@@ -166,6 +166,7 @@ class CommerceTest extends TestCase
         $this->webhook($body)->assertOk();
         $this->webhook($body)->assertOk();
         $this->assertSame('paid', $o->fresh()->payment_status);
+        $this->assertSame('packing', $o->fresh()->status);
         $this->assertSame(4, $v->fresh()->stock);
         $this->assertSame(0, $v->fresh()->reserved);
         $this->assertDatabaseCount('webhook_events', 1);
@@ -258,7 +259,7 @@ class CommerceTest extends TestCase
     public function test_staff_cannot_advance_unpaid_orders(): void
     {
         $o = $this->reserved($this->variant(), $this->user());
-        $this->actingAs($this->user('staff'))->patch('/admin/orders/'.$o->id, ['status' => 'packing'])->assertStatus(422);
+        $this->actingAs($this->user('staff'))->patch('/admin/orders/'.$o->id, ['status' => 'packing', 'reason' => 'Preparing the clothing for delivery.'])->assertStatus(422);
     }
 
     public function test_admin_stock_cannot_be_less_than_reserved(): void

@@ -23,7 +23,8 @@ class DeliveryRecovery
                 $this->fail('A refund is approved or processing, or this payment was fully refunded. Review its refund before booking a courier.');
             }
             if ($locked->status !== 'ready' || $locked->payment_status !== 'paid'
-                || $locked->delivery_method !== 'lalamove' || $locked->delivery_id) {
+                || $locked->delivery_method !== 'lalamove' || $locked->delivery_id
+                || $locked->provider_completed_at || $locked->customer_confirmed_at) {
                 $this->fail('This order is not eligible for another delivery booking. Refresh or recover its existing delivery first.');
             }
             $locked->update(['status' => 'delivery_booking', 'delivery_booking_context' => $this->snapshot($locked)]);
@@ -78,9 +79,6 @@ class DeliveryRecovery
             $locked = Order::whereKey($order->id)->lockForUpdate()->firstOrFail();
             if ($locked->delivery_id !== $id || ! in_array($locked->status, ['delivery_booking', 'out_for_delivery', 'delivery_attention', 'completed'], true)) {
                 $this->fail('The delivery changed during the status check. Refresh the order and try again.');
-            }
-            if ($locked->status === 'completed' && $status !== 'COMPLETED') {
-                $this->fail('The provider status conflicts with this completed order. No order state was changed.');
             }
 
             return $this->apply($locked, $id, $status, $data);
@@ -181,6 +179,12 @@ class DeliveryRecovery
 
     private function apply(Order $order, string $id, string $status, array $data): array
     {
+        if (($order->provider_completed_at || $order->customer_confirmed_at || $order->status === 'completed') && $status !== 'COMPLETED') {
+            $this->fail('The provider status conflicts with the recorded delivery completion. No order state was changed.');
+        }
+        if ($order->status === 'completed' && $order->customer_confirmed_at) {
+            return ['provider_status' => $status, 'previous_status' => 'completed', 'status' => 'completed', 'changed' => false];
+        }
         $attempt = DB::table('delivery_attempts')->where('provider_delivery_id', $id)->lockForUpdate()->first();
         if (($attempt && ((int) $attempt->order_id !== $order->id || $attempt->cleared_at !== null || $attempt->provider_mode !== config('shop.lalamove.mode')))
             || Order::where('delivery_id', $id)->whereKeyNot($order->id)->exists()) {
@@ -188,9 +192,11 @@ class DeliveryRecovery
         }
         $terminal = in_array($status, self::TERMINAL, true);
         $previousStatus = $order->status;
-        $newStatus = $terminal ? 'ready' : ($status === 'COMPLETED' ? 'completed' : 'out_for_delivery');
+        $newStatus = $terminal ? 'ready' : 'out_for_delivery';
         $link = $this->trackingLink($data['shareLink'] ?? null) ?: $this->trackingLink($order->tracking_url);
-        $updates = ['status' => $newStatus, 'delivery_id' => $terminal ? null : $id, 'tracking_url' => $terminal ? null : $link];
+        $updates = ['status' => $newStatus, 'delivery_id' => $terminal ? null : $id, 'tracking_url' => $terminal ? null : $link,
+            'delivery_last_status' => $status,
+            'provider_completed_at' => $status === 'COMPLETED' ? ($order->provider_completed_at ?? now()) : null];
         $order->fill($updates);
         $changed = $order->isDirty();
         $order->save();

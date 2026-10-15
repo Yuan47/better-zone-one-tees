@@ -16,7 +16,7 @@ Artisan::command('shop:sync-deliveries', function () {
 
         return;
     }
-    Order::whereIn('status', ['out_for_delivery', 'delivery_attention'])->whereNotNull('delivery_id')->each(function ($order) {
+    Order::whereIn('status', ['out_for_delivery', 'delivery_attention'])->whereNull('provider_completed_at')->whereNotNull('delivery_id')->each(function ($order) {
         try {
             app(DeliveryRecovery::class)->refresh($order);
         } catch (Throwable $e) {

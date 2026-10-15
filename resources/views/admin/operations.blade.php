@@ -23,34 +23,34 @@
 @if($stats['other_delivery'])<p class="muted">{{ number_format($stats['other_delivery']) }} paid orders use another delivery method.</p>@endif
 @include('admin.partials.delivery-status')
 <section aria-labelledby="fulfillment-heading">
-    <div class="section-heading"><div><h2 id="fulfillment-heading">Current fulfillment status</h2><p class="muted">Only paid orders placed in the selected dates. Each order appears in exactly one status.</p></div></div>
+    <div class="section-heading"><div><h2 id="fulfillment-heading">Current fulfillment status</h2><p class="muted">Only paid, non-cancelled orders placed in the selected dates. Each order appears in exactly one stage. Pickup orders in Ready for delivery are ready for collection.</p></div></div>
+    @if($stats['cancelled_paid'])<p class="muted">{{ number_format($stats['cancelled_paid']) }} cancelled paid orders are excluded from fulfillment stages and remain in paid-order totals for reconciliation.</p>@endif
     <div class="stat-grid operations-stat-grid">
         @foreach($statusRows as $row)
-            @if($row['status'] !== 'other' || $row['count'])
-                @if($row['url'])<a class="panel stat operations-card operations-status-card" href="{{ $row['url'] }}" aria-label="{{ $row['label'] }}: {{ $row['count'] }} paid orders; open filtered orders"><span>{{ $row['label'] }}</span><h2>{{ number_format($row['count']) }}</h2><small>View orders →</small></a>
-                @else<article class="panel stat operations-card operations-status-card"><span>{{ $row['label'] }}</span><h2>{{ number_format($row['count']) }}</h2><small>Paid orders outside the listed fulfillment stages</small></article>@endif
-            @endif
+            <a class="panel stat operations-card operations-status-card" href="{{ $row['url'] }}" aria-label="{{ $row['label'] }}: {{ $row['count'] }} paid orders; open filtered orders"><span>{{ $row['label'] }}</span><h2>{{ number_format($row['count']) }}</h2><small>View orders →</small></a>
         @endforeach
     </div>
 </section>
 <div class="dashboard-grid operations-support-grid">
     <section class="panel">
-        <div class="section-heading"><h3>Fulfillment breakdown</h3><span class="badge">{{ number_format($stats['paid_orders']) }} paid orders</span></div>
-        <div class="operations-status-chart" role="img" aria-label="Current fulfillment status of paid orders placed from {{ $startDate }} through {{ $endDate }}. Exact counts and percentages appear in the table below.">
+        <div class="section-heading"><h3>Fulfillment breakdown</h3><span class="badge">{{ number_format($stats['fulfillment_orders']) }} paid, non-cancelled orders</span></div>
+        <div class="operations-status-chart" role="img" aria-label="Current fulfillment stage of paid, non-cancelled orders placed from {{ $startDate }} through {{ $endDate }}. Exact counts and percentages appear in the table below.">
             @foreach($statusRows as $row)
-                @if($row['status'] !== 'other' || $row['count'])<div class="operations-status-row" aria-hidden="true"><span>{{ $row['label'] }}</span><div class="operations-status-track"><div class="operations-status-fill" style="width:{{ $row['percentage'] }}%"></div></div><b>{{ number_format($row['count']) }}</b></div>@endif
+                <div class="operations-status-row" aria-hidden="true"><span>{{ $row['label'] }}</span><div class="operations-status-track"><div class="operations-status-fill" style="width:{{ $row['percentage'] }}%"></div></div><b>{{ number_format($row['count']) }}</b></div>
             @endforeach
         </div>
         @if(!$stats['paid_orders'])<p class="empty-note">No confirmed paid orders were placed in these dates.</p>@endif
-        <details class="forecast-details"><summary>View exact fulfillment counts</summary><div class="table-scroll"><table><caption class="sr-only">Current status of paid orders placed in the selected range</caption><thead><tr><th>Status</th><th>Orders</th><th>Share of paid orders</th></tr></thead><tbody>
+        @if($stats['paid_orders'] && !$stats['fulfillment_orders'])<p class="empty-note">No paid orders are eligible for fulfillment in these dates.</p>@endif
+        <details class="forecast-details"><summary>View exact fulfillment counts</summary><div class="table-scroll"><table><caption class="sr-only">Current stage of paid, non-cancelled orders placed in the selected range</caption><thead><tr><th>Stage</th><th>Orders</th><th>Share of fulfillment orders</th></tr></thead><tbody>
             @foreach($statusRows as $row)<tr><td>{{ $row['label'] }}</td><td>{{ number_format($row['count']) }}</td><td>{{ number_format($row['percentage'], 1) }}%</td></tr>@endforeach
-        </tbody><tfoot><tr><th>Total paid orders</th><th>{{ number_format($stats['paid_orders']) }}</th><th>{{ $stats['paid_orders'] ? '100%' : '0%' }}</th></tr></tfoot></table></div></details>
+        </tbody><tfoot><tr><th>Total fulfillment orders</th><th>{{ number_format($stats['fulfillment_orders']) }}</th><th>{{ $stats['fulfillment_orders'] ? '100%' : '0%' }}</th></tr></tfoot></table></div></details>
     </section>
     <section class="panel">
         <div class="section-heading"><h3>Payment & refund queues</h3></div>
         <div class="rank-row"><b>Awaiting payment<small>Unpaid orders placed in range · excludes cancellations</small></b><span>{{ number_format($stats['unpaid_pending']) }}</span></div>
         <div class="rank-row"><b>Cancelled unpaid orders<small>Excluded from every paid-order card and chart</small></b><span>{{ number_format($stats['cancelled_unpaid']) }}</span></div>
         <div class="rank-row"><b>Open refund requests<small>Requested, approved or provider processing · request placed in range</small></b><span>{{ number_format($stats['open_refund_requests']) }}</span></div>
+        <p class="muted">Customers can request a refund only after confirming delivery and submitting their review.</p>
         <a class="text-link" href="{{ route('admin.refunds.index') }}">View refund request queue →</a>
         @if($stats['other_unpaid'])<div class="rank-row"><b>Other unconfirmed payments</b><span>{{ number_format($stats['other_unpaid']) }}</span></div>@endif
         <p class="muted">{{ number_format($stats['placed_orders']) }} total orders were placed in this range, including paid, unpaid and cancelled orders. Pending payments are excluded from confirmed order counts.</p>

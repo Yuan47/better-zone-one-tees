@@ -131,6 +131,7 @@ class StoreController extends Controller
 
     public function checkout(Request $r, Pricing $pricing, PayMongo $pay, Lalamove $delivery)
     {
+        $this->requireCustomerCheckout($r);
         $summary = $pricing->cart($this->activeCart($r));
         if (! $summary['quantity']) {
             return redirect()->route('cart');
@@ -141,6 +142,7 @@ class StoreController extends Controller
 
     public function quote(Request $r, Lalamove $delivery, StructuredAddress $addresses)
     {
+        $this->requireCustomerCheckout($r);
         $data = $addresses->validatedInput($r, true);
         $r->validate(['lat' => 'required|numeric|between:-90,90', 'lng' => 'required|numeric|between:-180,180']);
         $data['address'] = $addresses->format($data);
@@ -165,6 +167,7 @@ class StoreController extends Controller
 
     public function place(Request $r, PayMongo $pay, OrderFlow $flow, StructuredAddress $addresses)
     {
+        $this->requireCustomerCheckout($r);
         $data = $r->validate(['recipient' => 'required|string|max:100', 'phone' => ['required', 'regex:/^\+?[0-9]{10,15}$/'],
             'delivery_method' => 'required|in:pickup,lalamove',
             'lat' => 'nullable|numeric|between:-90,90', 'lng' => 'nullable|numeric|between:-180,180']);
@@ -206,6 +209,15 @@ class StoreController extends Controller
         }
     }
 
+    private function requireCustomerCheckout(Request $request): void
+    {
+        $user = $request->user();
+        if ($user && $user->role === null && $user->exists) {
+            $user = $user->fresh();
+        }
+        abort_unless($user?->role === 'customer', 403, 'Please sign in with a customer account to check out.');
+    }
+
     private function activeCart(Request $r): array
     {
         $cart = $r->session()->get('cart', []);
@@ -229,7 +241,7 @@ class StoreController extends Controller
     public function order(Request $r, Order $order)
     {
         abort_unless($r->user()->id === $order->user_id || in_array($r->user()->role, ['admin', 'staff']), 403);
-        $order->load('items', 'user', 'refunds');
+        $order->load('items', 'user', 'refunds', 'review');
 
         return view('order', compact('order'));
     }

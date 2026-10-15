@@ -1,7 +1,7 @@
 @extends('layout')
 @section('title',$order->number)
 @section('content')
-<div class="page-heading"><span class="eyebrow">ORDER DETAILS</span><h1>{{ $order->number }}</h1><span class="badge">{{ str_replace('_',' ',$order->status) }}</span></div>
+<div class="page-heading"><span class="eyebrow">ORDER DETAILS</span><h1>{{ $order->number }}</h1><span class="badge">{{ $order->payment_status==='paid' && $order->status!=='cancelled' ? $order->customerDeliveryLabel() : ucfirst(str_replace('_',' ',$order->status)) }}</span></div>
 <div class="checkout-grid"><div class="panel"><h2>Your order</h2><div class="table-scroll"><table><thead><tr><th>Product</th><th>Quantity</th><th>Amount</th></tr></thead><tbody>@foreach($order->items as $item)<tr><td>{{ $item->name }}<small>{{ $item->size }} / {{ $item->color }}</small></td><td>{{ $item->quantity }}</td><td>₱{{ number_format($item->total/100,2) }}</td></tr>@endforeach</tbody></table></div>
 <h3>Contact & delivery</h3><p>{{ $order->recipient }} · {{ $order->phone }}</p><p>{{ $order->address }}</p><p>{{ $order->delivery_method==='pickup'?'Store pickup':'Lalamove delivery' }}</p>
 @if($order->tracking_url && str_starts_with($order->tracking_url,'https://share.lalamove.com/'))<a class="button" href="{{ $order->tracking_url }}" target="_blank" rel="noopener">Track delivery ↗</a>@endif</div>
@@ -18,14 +18,15 @@
 @else<p>Payment confirmed {{ $order->paid_at?->format('M d, Y · g:i A') }}.</p>@endif
 <a class="text-link" href="{{ route('orders.show',$order) }}">Refresh order status ↻</a>
 @if(auth()->user()->role!=='customer' && $order->payment_status==='paid')
-@if($order->fulfillmentOnHold())<div class="notice">Fulfillment is paused for an approved or processing refund, or a fully refunded payment. Review the refund below before another packing or booking action.</div>@endif
-@php($next=['to_pack'=>'packing','packing'=>'ready','ready'=>$order->delivery_method==='pickup'?'completed':null][$order->status]??null)
-@if($next && !$order->fulfillmentOnHold())<form action="{{ route('admin.orders.status',$order) }}" method="post">@csrf @method('PATCH')<button class="button dark" name="status" value="{{ $next }}">Mark {{ $next }}</button></form>@endif
+@if($order->fulfillmentOnHold())<div class="notice">Fulfillment is paused for an approved or processing refund, or a fully refunded payment. Review the refund request before another packing or booking action.</div>@endif
+@php($next=in_array($order->status,['to_pack','packing'])?'ready':null)
+@if($next && !$order->fulfillmentOnHold())<form action="{{ route('admin.orders.status',$order) }}" method="post">@csrf @method('PATCH')<label class="order-change-reason">Reason for this change<textarea name="reason" required minlength="10" maxlength="1000" rows="2" placeholder="Explain why this order is ready, for example: all pieces packed and checked.">{{ old('reason') }}</textarea></label><button class="button dark" name="status" value="{{ $next }}">Mark Ready for delivery</button></form>@endif
 @if($order->status==='ready' && $order->delivery_method==='lalamove' && !$order->delivery_id && !$order->fulfillmentOnHold())<form action="{{ route('admin.orders.delivery',$order) }}" method="post">@csrf<button class="button dark">Book Lalamove {{ config('shop.lalamove.mode')==='sandbox'?'sandbox':'' }} delivery</button></form>@endif
 @if($order->delivery_id && in_array($order->status,['out_for_delivery','delivery_attention','delivery_booking','completed']))<form action="{{ route('admin.orders.delivery.refresh',$order) }}" method="post">@csrf<button class="button">Check delivery with Lalamove</button></form>@endif
 @if($order->status==='delivery_booking' && !$order->delivery_id)<div class="notice">The delivery booking response is uncertain. Check the original booking in Lalamove before requesting another courier.</div><form class="stack" action="{{ route('admin.orders.delivery.recover',$order) }}" method="post">@csrf<label>Lalamove delivery ID<input name="delivery_id" required maxlength="100" pattern="[A-Za-z0-9_-]+"></label><button class="button">Verify and recover delivery</button></form>@endif
 @endif</aside></div>
-@if($order->payment_status==='paid')
+@include('partials.order-receipt')
+@if($order->payment_status==='paid' && $order->status==='completed' && $order->customer_confirmed_at)
 <section class="panel refund-order"><h2>Refunds & returns</h2>
 @forelse($order->refunds->sortByDesc('id') as $refund)<article><h3>Request #{{ $refund->id }} · {{ $refund->label() }}</h3><p>Requested ₱{{ number_format($refund->requested_amount/100,2) }} on {{ $refund->created_at->format('M d, Y') }}.</p><p class="preserve-lines">Your request: {{ $refund->reason }}</p>@if($refund->decision_note)<p class="preserve-lines">Store response: {{ $refund->decision_note }}</p>@endif @if($refund->status==='succeeded')<p>PayMongo confirmed ₱{{ number_format($refund->amount/100,2) }} on {{ $refund->confirmed_at?->format('M d, Y') }}. Your payment provider determines when it appears in your account.</p>@endif @if(auth()->user()->role!=='customer')<a class="text-link" href="{{ route('admin.refunds.show',$refund) }}">Review refund →</a>@endif</article>@empty<p class="muted">No refund request for this order.</p>@endforelse
 @php($remainingRefund=$order->total-$order->refunds->where('status','succeeded')->sum('amount'))

@@ -59,7 +59,7 @@
     <section class="panel">
         <div class="section-heading"><h3>Recent orders</h3><a class="text-link" href="{{ route('admin.orders') }}">View all →</a></div>
         <div class="table-scroll"><table><thead><tr><th>Order</th><th>Customer</th><th>Total</th><th>Status</th></tr></thead><tbody>
-            @forelse($recent as $order)<tr><td><a class="text-link" href="{{ route('orders.show', $order) }}">{{ $order->number }}</a></td><td>{{ $order->user->name }}</td><td>₱{{ number_format($order->total / 100, 2) }}</td><td><span class="badge">{{ str_replace('_', ' ', $order->status) }}</span></td></tr>
+            @forelse($recent as $order)<tr><td><a class="text-link" href="{{ route('orders.show', $order) }}">{{ $order->number }}</a></td><td>{{ $order->user->name }}</td><td>₱{{ number_format($order->total / 100, 2) }}</td><td><span class="badge">{{ $order->payment_status==='paid' && $order->status!=='cancelled' ? $order->customerDeliveryLabel() : ucfirst(str_replace('_',' ',$order->status)) }}</span></td></tr>
             @empty<tr><td colspan="4" class="empty-note">Orders will appear here as customers check out.</td></tr>@endforelse
         </tbody></table></div>
     </section>

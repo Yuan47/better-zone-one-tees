@@ -96,7 +96,7 @@ class PaymentRecoveryTest extends TestCase
         $this->actingAs($order->user)->post('/orders/'.$order->id.'/payment/check')->assertRedirect()->assertSessionHasNoErrors();
         $fresh = $order->fresh();
         $this->assertSame('paid', $fresh->payment_status);
-        $this->assertSame('to_pack', $fresh->status);
+        $this->assertSame('packing', $fresh->status);
         $this->assertSame('pay_recovery_'.$order->id, $fresh->payment_id);
         $this->assertTrue($fresh->inventory_committed);
         $this->assertFalse($fresh->inventory_released);

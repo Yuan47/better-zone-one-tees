@@ -11,11 +11,7 @@ use Illuminate\Validation\ValidationException;
 
 class OperationsController extends Controller
 {
-    public const STATUSES = [
-        'to_pack' => 'To pack', 'packing' => 'Packing', 'ready' => 'Ready for handover',
-        'delivery_booking' => 'Delivery booking', 'delivery_attention' => 'Delivery needs attention',
-        'out_for_delivery' => 'Out for delivery', 'completed' => 'Completed',
-    ];
+    public const STATUSES = Order::DELIVERY_STAGES;
 
     public function index(Request $request)
     {
@@ -44,12 +40,14 @@ class OperationsController extends Controller
         $chart = $this->buckets($start, $end, $period);
         $lookup = array_flip(array_column($chart, 'key'));
         $stats = ['placed_orders' => 0, 'paid_orders' => 0, 'paid_pieces' => 0, 'pickup' => 0, 'lalamove' => 0, 'other_delivery' => 0,
+            'fulfillment_orders' => 0, 'cancelled_paid' => 0, 'cancelled_paid_lalamove' => 0,
             'unpaid_pending' => 0, 'cancelled_unpaid' => 0, 'other_unpaid' => 0, 'confirmed_refunds' => 0, 'refund_amount' => 0, 'open_refund_requests' => 0];
-        $statusCounts = array_fill_keys(array_keys(self::STATUSES), 0) + ['other' => 0];
+        $statusCounts = array_fill_keys(array_keys(self::STATUSES), 0);
         $deliveryCounts = $statusCounts;
+        $deliveryAttention = 0;
         Order::where('created_at', '>=', $from)->where('created_at', '<', $endExclusive)->where('created_at', '<=', $asOf)
-            ->select(['id', 'created_at', 'payment_status', 'status', 'delivery_method', 'quantity'])
-            ->chunkById(500, function ($orders) use (&$stats, &$statusCounts, &$deliveryCounts, &$chart, $lookup, $period) {
+            ->select(['id', 'created_at', 'payment_status', 'status', 'delivery_method', 'quantity', 'customer_confirmed_at'])
+            ->chunkById(500, function ($orders) use (&$stats, &$statusCounts, &$deliveryCounts, &$deliveryAttention, &$chart, $lookup, $period) {
                 foreach ($orders as $order) {
                     $stats['placed_orders']++;
                     if ($order->payment_status !== 'paid') {
@@ -62,10 +60,17 @@ class OperationsController extends Controller
                     $stats['paid_pieces'] += $order->quantity;
                     $method = in_array($order->delivery_method, ['pickup', 'lalamove'], true) ? $order->delivery_method : 'other_delivery';
                     $stats[$method]++;
-                    $status = array_key_exists($order->status, self::STATUSES) ? $order->status : 'other';
-                    $statusCounts[$status]++;
-                    if ($method === 'lalamove') {
-                        $deliveryCounts[$status]++;
+                    if ($order->status === 'cancelled') {
+                        $stats['cancelled_paid']++;
+                        $stats['cancelled_paid_lalamove'] += $method === 'lalamove' ? 1 : 0;
+                    } else {
+                        $stats['fulfillment_orders']++;
+                        $stage = $order->customerDeliveryStage();
+                        $statusCounts[$stage]++;
+                        if ($method === 'lalamove') {
+                            $deliveryCounts[$stage]++;
+                            $deliveryAttention += in_array($order->status, ['delivery_booking', 'delivery_attention'], true) ? 1 : 0;
+                        }
                     }
                     $key = CarbonImmutable::instance($order->created_at)->setTimezone('Asia/Manila')->format($period === 'daily' ? 'Y-m-d' : 'Y-m');
                     $chart[$lookup[$key]]['orders']++;
@@ -87,31 +92,27 @@ class OperationsController extends Controller
             ->where('created_at', '>=', $from)->where('created_at', '<', $endExclusive)->where('created_at', '<=', $asOf)->count();
         $filters = ['start_date' => $startDate, 'end_date' => $endDate];
         $statusRows = [];
-        foreach (self::STATUSES + ['other' => 'Other paid statuses'] as $status => $label) {
+        foreach (self::STATUSES as $status => $label) {
             $statusRows[] = ['status' => $status, 'label' => $label, 'count' => $statusCounts[$status],
-                'percentage' => $stats['paid_orders'] ? $statusCounts[$status] / $stats['paid_orders'] * 100 : 0,
-                'url' => $status === 'other' ? null : route('admin.orders', $filters + ['status' => $status, 'payment_status' => 'paid'])];
+                'percentage' => $stats['fulfillment_orders'] ? $statusCounts[$status] / $stats['fulfillment_orders'] * 100 : 0,
+                'url' => route('admin.orders', $filters + ['fulfillment' => $status, 'payment_status' => 'paid'])];
         }
 
         $deliveryStages = [
-            'to_pack' => ['Waiting to pack', 'Payment is confirmed. Pack the clothing before arranging a courier.', '#220901'],
-            'packing' => ['Being packed', 'The team is preparing the clothing. Mark the order ready when packing is complete.', '#621708'],
-            'ready' => ['Ready for courier', 'Packing is complete. Arrange a courier booking for this order.', '#941B0C'],
-            'delivery_booking' => ['Booking being checked', 'Check the existing Lalamove booking before trying to book again.', '#BC3908'],
-            'delivery_attention' => ['Needs attention', 'Review this order and check its courier details before continuing.', '#F6AA1C'],
-            'out_for_delivery' => ['With courier', 'A courier booking is active. Open the order to check its latest Lalamove status.', '#795548'],
-            'completed' => ['Delivered', 'The order is marked delivered. Open it to review the delivery details.', '#b17b4a'],
-            'other' => ['Other status', 'This order uses another status. Open it to decide the next step.', '#d8c3b8'],
+            'packing' => ['Packing', 'Payment is confirmed. Pack the clothing before arranging a courier.', '#220901'],
+            'ready' => ['Ready for delivery', 'Packing is complete. Arrange a courier booking for this order.', '#941B0C'],
+            'courier' => ['With courier', 'A courier booking is active. Open the order to check its latest Lalamove status.', '#BC3908'],
+            'delivered' => ['Delivered', 'The order is marked delivered. Open it to review the delivery details.', '#F6AA1C'],
         ];
+        $deliveryTotal = array_sum($deliveryCounts);
         $deliveryRows = [];
         foreach ($deliveryStages as $status => [$label, $description, $color]) {
             $deliveryRows[] = ['status' => $status, 'label' => $label, 'description' => $description, 'color' => $color,
-                'count' => $deliveryCounts[$status], 'percentage' => $stats['lalamove'] ? $deliveryCounts[$status] / $stats['lalamove'] * 100 : 0,
-                'url' => route('admin.orders', $filters + ['status' => $status, 'payment_status' => 'paid', 'delivery_method' => 'lalamove'])];
+                'count' => $deliveryCounts[$status], 'percentage' => $deliveryTotal ? $deliveryCounts[$status] / $deliveryTotal * 100 : 0,
+                'url' => route('admin.orders', $filters + ['fulfillment' => $status, 'payment_status' => 'paid', 'delivery_method' => 'lalamove'])];
         }
-        $deliveryTotals = ['total' => $stats['lalamove'], 'completed' => $deliveryCounts['completed'],
-            'active' => $stats['lalamove'] - $deliveryCounts['completed'],
-            'attention' => $deliveryCounts['delivery_booking'] + $deliveryCounts['delivery_attention'], 'ready' => $deliveryCounts['ready']];
+        $deliveryTotals = ['total' => $deliveryTotal, 'completed' => $deliveryCounts['delivered'],
+            'active' => $deliveryTotal - $deliveryCounts['delivered'], 'attention' => $deliveryAttention, 'ready' => $deliveryCounts['ready']];
 
         return view('admin.operations', compact('stats', 'statusRows', 'deliveryRows', 'deliveryTotals', 'chart', 'startDate', 'endDate', 'period', 'now', 'today', 'filters'));
     }

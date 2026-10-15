@@ -146,16 +146,184 @@ class DeliveryRecoveryTest extends TestCase
         $this->assertSame(10000, $order->fresh()->shipping);
     }
 
-    public function test_completed_provider_delivery_completes_order_and_repeated_status_check_is_not_an_action(): void
+    public function test_provider_completion_waits_for_customer_receipt_and_repeated_check_keeps_first_verification_time(): void
     {
         $order = $this->attached();
         $this->tracking($this->provider($order, 'COMPLETED'));
         $this->actingAs($this->user())->post('/admin/orders/'.$order->id.'/delivery/refresh')->assertSessionHasNoErrors();
-        $this->assertSame('completed', $order->fresh()->status);
+        $order->refresh();
+        $this->assertSame('out_for_delivery', $order->status);
+        $this->assertSame('With courier', $order->customerDeliveryLabel());
+        $this->assertSame('COMPLETED', $order->delivery_last_status);
+        $this->assertNotNull($order->provider_completed_at);
+        $this->assertNull($order->customer_confirmed_at);
+        $verifiedAt = $order->getRawOriginal('provider_completed_at');
         $this->assertDatabaseHas('delivery_attempts', ['provider_status' => 'COMPLETED', 'cleared_at' => null]);
         $this->post('/admin/orders/'.$order->id.'/delivery/refresh')->assertSessionHasNoErrors();
+        $this->assertSame('out_for_delivery', $order->fresh()->status);
+        $this->assertSame($verifiedAt, $order->fresh()->getRawOriginal('provider_completed_at'));
         $this->assertDatabaseCount('activity_logs', 1);
         $this->assertDatabaseCount('delivery_attempts', 1);
+    }
+
+    public function test_uncertain_delivery_recovered_as_provider_complete_still_requires_customer_confirmation(): void
+    {
+        $order = $this->uncertain();
+        $this->tracking($this->provider($order, 'COMPLETED'));
+        $this->actingAs($this->user())->post('/admin/orders/'.$order->id.'/delivery/recover', ['delivery_id' => '107900701184'])
+            ->assertSessionHasNoErrors()->assertSessionHas('notice', fn ($notice) => str_contains($notice, 'customer confirms receipt'));
+        $order->refresh();
+        $this->assertSame('out_for_delivery', $order->status);
+        $this->assertSame('COMPLETED', $order->delivery_last_status);
+        $this->assertNotNull($order->provider_completed_at);
+        $this->assertNull($order->customer_confirmed_at);
+        $this->assertSame('courier', $order->customerDeliveryStage());
+        $this->assertSame('paid', $order->payment_status);
+        $this->assertSame(40000, $order->total);
+    }
+
+    public function test_successful_booking_response_reporting_provider_complete_does_not_mark_customer_receipt(): void
+    {
+        $order = $this->uncertain();
+        app(DeliveryRecovery::class)->acceptBooking($order, ['orderId' => '107900701184', 'status' => 'COMPLETED']);
+        $order->refresh();
+        $this->assertSame('out_for_delivery', $order->status);
+        $this->assertNotNull($order->provider_completed_at);
+        $this->assertNull($order->customer_confirmed_at);
+        $this->assertSame('With courier', $order->customerDeliveryLabel());
+        $this->assertDatabaseHas('delivery_attempts', ['provider_status' => 'COMPLETED', 'cleared_at' => null]);
+        Http::assertNothingSent();
+    }
+
+    public static function completionConflicts(): array
+    {
+        $cases = [];
+        foreach ([false, true] as $customerConfirmed) {
+            foreach (['ON_GOING', 'CANCELED', 'REJECTED', 'EXPIRED'] as $status) {
+                $cases[] = [$customerConfirmed, $status];
+            }
+        }
+
+        return $cases;
+    }
+
+    #[DataProvider('completionConflicts')]
+    public function test_provider_cannot_reverse_verified_or_customer_confirmed_receipt(bool $customerConfirmed, string $status): void
+    {
+        $order = $this->uncertain();
+        app(DeliveryRecovery::class)->acceptBooking($order, ['orderId' => '107900701184', 'status' => 'COMPLETED']);
+        $order->refresh();
+        if ($customerConfirmed) {
+            $order->update(['status' => 'completed', 'customer_confirmed_at' => now()]);
+        }
+        $before = $order->getAttributes();
+        $this->tracking($this->provider($order, $status));
+        $this->actingAs($this->user())->post('/admin/orders/'.$order->id.'/delivery/refresh')->assertSessionHasErrors('delivery');
+        $this->assertSame($before, $order->fresh()->getAttributes());
+        $this->assertDatabaseHas('delivery_attempts', ['provider_status' => 'COMPLETED', 'cleared_at' => null]);
+        $this->post('/admin/orders/'.$order->id.'/delivery')->assertSessionHasErrors('delivery');
+        Http::assertSentCount(1);
+        $this->assertDatabaseCount('activity_logs', 0);
+    }
+
+    public function test_matching_provider_refresh_after_customer_receipt_does_not_change_the_closed_order(): void
+    {
+        $order = $this->uncertain();
+        app(DeliveryRecovery::class)->acceptBooking($order, ['orderId' => '107900701184', 'status' => 'COMPLETED', 'shareLink' => 'https://share.lalamove.com/original']);
+        $order->refresh()->update(['status' => 'completed', 'customer_confirmed_at' => now()]);
+        $before = $order->getAttributes();
+        $this->tracking($this->provider($order, 'COMPLETED'));
+        $this->actingAs($this->user())->post('/admin/orders/'.$order->id.'/delivery/refresh')->assertSessionHasNoErrors();
+        $this->assertSame($before, $order->fresh()->getAttributes());
+        $this->assertSame('Delivered', $order->fresh()->customerDeliveryLabel());
+        $this->assertDatabaseCount('activity_logs', 0);
+    }
+
+    public function test_refresh_cannot_reopen_customer_receipt_saved_while_provider_request_was_running(): void
+    {
+        $order = $this->uncertain();
+        app(DeliveryRecovery::class)->acceptBooking($order, ['orderId' => '107900701184', 'status' => 'COMPLETED']);
+        $order->refresh();
+        $data = $this->provider($order, 'COMPLETED');
+        $closed = null;
+        Http::fake(function () use ($order, $data, &$closed) {
+            $order->update(['status' => 'completed', 'customer_confirmed_at' => now()]);
+            $closed = $order->getAttributes();
+
+            return Http::response(['data' => $data]);
+        });
+        $this->actingAs($this->user())->post('/admin/orders/'.$order->id.'/delivery/refresh')->assertSessionHasNoErrors();
+        $this->assertSame($closed, $order->fresh()->getAttributes());
+        $this->assertSame('Delivered', $order->fresh()->customerDeliveryLabel());
+        $this->assertDatabaseCount('activity_logs', 0);
+    }
+
+    public function test_unverified_provider_completion_cannot_unlock_customer_receipt(): void
+    {
+        $order = $this->uncertain();
+        $data = $this->provider($order, 'COMPLETED');
+        $data['metadata']['order_number'] = 'ZOT-ANOTHER-ORDER';
+        $this->tracking($data);
+        $this->actingAs($this->user())->post('/admin/orders/'.$order->id.'/delivery/recover', ['delivery_id' => '107900701184'])
+            ->assertSessionHasErrors('delivery');
+        $order->refresh();
+        $this->assertNull($order->provider_completed_at);
+        $this->assertNull($order->customer_confirmed_at);
+        $this->assertNull($order->delivery_last_status);
+        $this->assertSame('ready', $order->customerDeliveryStage());
+    }
+
+    public function test_customer_delivery_stages_and_filter_groups_share_the_four_stage_contract(): void
+    {
+        $cases = [
+            ['to_pack', 'lalamove', false, 'packing'], ['packing', 'pickup', false, 'packing'],
+            ['ready', 'lalamove', false, 'ready'], ['delivery_booking', 'lalamove', false, 'ready'],
+            ['delivery_attention', 'lalamove', false, 'ready'], ['unknown_legacy', 'lalamove', false, 'ready'],
+            ['out_for_delivery', 'lalamove', false, 'courier'], ['completed', 'lalamove', false, 'courier'],
+            ['completed', 'pickup', false, 'ready'], ['completed', 'lalamove', true, 'delivered'], ['completed', 'pickup', true, 'delivered'],
+        ];
+        $expected = array_fill_keys(array_keys(Order::DELIVERY_STAGES), []);
+        foreach ($cases as [$status, $method, $confirmed, $stage]) {
+            $order = $this->order(['status' => $status, 'delivery_method' => $method, 'customer_confirmed_at' => $confirmed ? now() : null]);
+            $this->assertSame($stage, $order->customerDeliveryStage());
+            $this->assertSame(Order::DELIVERY_STAGES[$stage], $order->customerDeliveryLabel());
+            $expected[$stage][] = $order->id;
+        }
+        $this->order(['status' => 'cancelled']);
+        $this->order(['status' => 'packing', 'payment_status' => 'pending']);
+        foreach ($expected as $stage => $ids) {
+            $this->assertSame($ids, Order::whereDeliveryStage($stage)->orderBy('id')->pluck('id')->all());
+        }
+        $this->assertSame(['Packing', 'Ready for delivery', 'With courier', 'Delivered'], array_values(Order::DELIVERY_STAGES));
+    }
+
+    public function test_legacy_approval_does_not_prevent_shipping_before_customer_can_confirm_receipt(): void
+    {
+        $order = $this->order();
+        $order->refunds()->create(['requested_by' => $order->user_id, 'requested_amount' => $order->total,
+            'approved_amount' => $order->total, 'status' => 'approved', 'reason' => 'Legacy request created before the receipt policy.']);
+        $this->assertFalse($order->fulfillmentOnHold());
+        $claimed = app(DeliveryRecovery::class)->beginBooking($order);
+        $this->assertSame('delivery_booking', $claimed->status);
+        Http::assertNothingSent();
+    }
+
+    public static function financiallyCommittedRefunds(): array
+    {
+        return [['pending'], ['processing'], ['succeeded']];
+    }
+
+    #[DataProvider('financiallyCommittedRefunds')]
+    public function test_attached_processing_or_full_confirmed_legacy_refund_keeps_shipping_blocked(string $status): void
+    {
+        $order = $this->order();
+        $order->refunds()->create(['requested_by' => $order->user_id, 'requested_amount' => $order->total,
+            'approved_amount' => $order->total, 'amount' => $order->total, 'status' => $status, 'provider_refund_id' => 'ref_legacy',
+            'reason' => 'Legacy provider refund already affects the payment.']);
+        $this->assertTrue($order->fulfillmentOnHold());
+        $this->actingAs($this->user())->post('/admin/orders/'.$order->id.'/delivery')->assertSessionHasErrors('delivery');
+        $this->assertSame('ready', $order->fresh()->status);
+        Http::assertNothingSent();
     }
 
     public static function mismatches(): array

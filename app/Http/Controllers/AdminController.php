@@ -182,15 +182,16 @@ class AdminController extends Controller
         $now = CarbonImmutable::now('Asia/Manila');
         $today = $now->toDateString();
         $filters = $r->validate(['status' => 'nullable|in:awaiting_payment,to_pack,packing,ready,delivery_booking,out_for_delivery,completed,delivery_attention,cancelled,other',
-            'payment_status' => 'nullable|in:paid,pending', 'delivery_method' => 'nullable|in:pickup,lalamove', 'q' => 'nullable|string|max:100',
+            'payment_status' => 'nullable|in:paid,pending', 'delivery_method' => 'nullable|in:pickup,lalamove', 'fulfillment' => 'nullable|in:packing,ready,courier,delivered', 'q' => 'nullable|string|max:100',
             'start_date' => 'nullable|required_with:end_date|date_format:Y-m-d|before_or_equal:'.$today,
             'end_date' => 'nullable|required_with:start_date|date_format:Y-m-d|after_or_equal:start_date|before_or_equal:'.$today]);
         if (! empty($filters['start_date']) && CarbonImmutable::parse($filters['start_date'])->diffInDays(CarbonImmutable::parse($filters['end_date'])) > 365) {
             throw ValidationException::withMessages(['end_date' => 'Choose a range of up to 366 days.']);
         }
         $orders = Order::with('user')->where('created_at', '<=', $now->toDateTimeString())
+            ->when($filters['fulfillment'] ?? null, fn ($q, $v) => $q->whereDeliveryStage($v))
             ->when($filters['status'] ?? null, fn ($q, $v) => $v === 'other'
-                ? $q->whereNotIn('status', array_keys(OperationsController::STATUSES)) : $q->where('status', $v))
+                ? $q->whereNotIn('status', ['to_pack', 'packing', 'ready', 'delivery_booking', 'delivery_attention', 'out_for_delivery', 'completed']) : $q->where('status', $v))
             ->when($filters['payment_status'] ?? null, fn ($q, $v) => $q->where('payment_status', $v))
             ->when($filters['delivery_method'] ?? null, fn ($q, $v) => $q->where('delivery_method', $v))
             ->when($filters['q'] ?? null, fn ($q, $v) => $q->where('number', 'like', '%'.$v.'%'))
@@ -201,21 +202,23 @@ class AdminController extends Controller
         return view('admin.orders', compact('orders'));
     }
 
-    public function status(Request $r, Order $order)
+    public function status(Request $r, Order $order, ActivityRecorder $audit)
     {
-        $data = $r->validate(['status' => 'required|in:packing,ready,completed']);
+        $data = $r->validate(['status' => 'required|in:packing,ready', 'reason' => 'required|string|min:10|max:1000']);
         $previousStatus = null;
-        DB::transaction(function () use ($order, $data, &$previousStatus) {
+        DB::transaction(function () use ($r, $order, $data, $audit, &$previousStatus) {
             $locked = Order::whereKey($order->id)->lockForUpdate()->firstOrFail();
             if ($locked->fulfillmentOnHold()) {
                 throw ValidationException::withMessages(['refund' => 'Review the approved, processing or fully completed refund before advancing fulfillment.']);
             }
-            $allowed = ['to_pack' => ['packing'], 'packing' => ['ready'], 'ready' => $locked->delivery_method === 'pickup' ? ['completed'] : []];
+            $allowed = ['to_pack' => ['packing', 'ready'], 'packing' => ['ready']];
             abort_unless($locked->payment_status === 'paid' && in_array($data['status'], $allowed[$locked->status] ?? []), 422);
             $previousStatus = $locked->status;
-            $locked->update($data);
+            $locked->update(['status' => $data['status']]);
+            if (! $audit->record($r->user(), 'order.status_changed', $locked, ['previous_status' => $previousStatus, 'status' => $data['status'], 'reason' => $data['reason']])) {
+                throw new \RuntimeException('The order change could not be audited.');
+            }
         });
-        ActivityRecorder::mark($r, 'order.status_changed', $order, ['previous_status' => $previousStatus, 'status' => $data['status']]);
 
         return back()->with('notice', 'Order updated.');
     }
