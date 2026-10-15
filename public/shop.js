@@ -54,7 +54,7 @@ document.addEventListener('DOMContentLoaded', function () {
     append(text,'user-message'); input.value=''; button.disabled=true;
     try {var res=await fetch(chat.dataset.url,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':token},body:JSON.stringify({message:text,side:chat.dataset.side})});
       var data=await res.json();append(res.ok?data.reply:(res.status===429?'Please wait a minute before sending another message.':data.message||'Unable to send. Refresh the page and try again.'),'assistant-message');
-    }catch(error){append('The assistant could not connect. Please try again.','assistant-message');}finally{button.disabled=false;input.focus();}
+    }catch(error){append('The assistant could not connect. Please try again.','assistant-message');}finally{button.disabled=false;}
   });
 
   var variantData=document.getElementById('product-variants');
@@ -87,17 +87,28 @@ document.addEventListener('DOMContentLoaded', function () {
   if(method){
     var fields=document.getElementById('delivery-fields'), quote=document.getElementById('quote-button'), result=document.getElementById('quote-result'), total=document.getElementById('checkout-total'), shipping=document.getElementById('shipping-value');
     var addressFields={street_address:document.getElementById('address-street'),city:document.getElementById('address-city'),province:document.getElementById('address-province'),postal_code:document.getElementById('address-postal'),country:document.getElementById('address-country')}, lat=document.getElementById('delivery-lat'),lng=document.getElementById('delivery-lng');
-    var quoteRevision=0;
-    function resetQuote(){quoteRevision++;result.textContent='';shipping.textContent=method.value==='pickup'?'Free pickup':'Get a quote';total.textContent=money(Number(total.dataset.subtotal));}
-    function updateDelivery(){fields.hidden=method.value!=='lalamove';lat.required=lng.required=method.value==='lalamove';Object.values(addressFields).forEach(function(el){el.required=method.value==='lalamove';});resetQuote();}
+    var quoteRevision=0, expiryTimer, quoteFresh=false, payButton=document.getElementById('pay-button'), payConfigured=!payButton.disabled;
+    var mapElement=document.getElementById('delivery-map'), map, marker, locate=document.getElementById('locate-button'), pinStatus=document.getElementById('pin-status');
+    function hasPin(){return lat.value.trim()!=='' && lng.value.trim()!=='' && Number.isFinite(Number(lat.value)) && Number.isFinite(Number(lng.value));}
+    function pinMessage(){pinStatus.textContent=hasPin()?'Delivery pin selected. Confirm that it matches your address.':'No delivery pin selected.';}
+    function setPin(point){lat.value=Number(point.lat).toFixed(6);lng.value=Number(point.lng).toFixed(6);resetQuote();pinMessage();if(map){if(!marker){marker=L.marker(point,{draggable:true,icon:L.divIcon({className:'delivery-pin',html:'<span aria-hidden="true">●</span>',iconSize:[28,28],iconAnchor:[14,14]})}).addTo(map);marker.on('dragend',function(){setPin(marker.getLatLng());});}else marker.setLatLng(point);}}
+    function showMap(){
+      if(!mapElement || !window.L){pinStatus.textContent='Map could not load. Use your current location or enter coordinates below.';return;}
+      if(!map){var start=hasPin()?[Number(lat.value),Number(lng.value)]:[Number(mapElement.dataset.startLat),Number(mapElement.dataset.startLng)];map=L.map(mapElement,{scrollWheelZoom:false}).setView(start,14);L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>'}).addTo(map);map.on('click',function(e){setPin(e.latlng);});if(hasPin())setPin({lat:Number(lat.value),lng:Number(lng.value)});}
+      requestAnimationFrame(function(){map.invalidateSize();});
+    }
+    locate.addEventListener('click',function(){if(!navigator.geolocation){pinStatus.textContent='Location is unavailable. Tap the map or enter coordinates below.';return;}locate.disabled=true;pinStatus.textContent='Finding your current location…';navigator.geolocation.getCurrentPosition(function(position){setPin({lat:position.coords.latitude,lng:position.coords.longitude});if(map)map.setView([Number(lat.value),Number(lng.value)],17);locate.disabled=false;},function(){locate.disabled=false;pinStatus.textContent='Location was unavailable or permission was declined. Tap the map or enter coordinates below.';},{enableHighAccuracy:true,timeout:10000,maximumAge:60000});});
+    [lat,lng].forEach(function(el){el.addEventListener('change',function(){if(hasPin()){setPin({lat:Number(lat.value),lng:Number(lng.value)});if(map)map.panTo([Number(lat.value),Number(lng.value)]);}else pinMessage();});});
+    function resetQuote(){quoteRevision++;quoteFresh=false;clearTimeout(expiryTimer);payButton.disabled=!payConfigured||method.value==='lalamove';result.textContent='';shipping.textContent=method.value==='pickup'?'Free pickup':'Get a quote';total.textContent=money(Number(total.dataset.subtotal));}
+    function updateDelivery(){fields.hidden=method.value!=='lalamove';lat.required=lng.required=method.value==='lalamove';Object.values(addressFields).forEach(function(el){el.required=method.value==='lalamove';});resetQuote();if(method.value==='lalamove')showMap();}
     method.addEventListener('change',updateDelivery);[...Object.values(addressFields),lat,lng].forEach(function(el){el.addEventListener('input',resetQuote);});updateDelivery();
     quote.addEventListener('click',async function(){
       var body={lat:lat.value,lng:lng.value};Object.entries(addressFields).forEach(function(pair){body[pair[0]]=pair[1].value;});
-      if(Object.values(body).some(function(value){return !value.trim();})){result.textContent='Enter all address fields and coordinates first.';return;}
+      if(Object.values(body).some(function(value){return !value.trim();})){result.textContent='Complete your address and choose a delivery pin first.';return;}
       var requestedRevision=quoteRevision;
       quote.disabled=true;result.textContent='Getting your delivery quote…';
-      try{var res=await fetch(quote.dataset.url,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':token},body:JSON.stringify(body)});var data=await res.json();if(requestedRevision!==quoteRevision)return;if(!res.ok)throw new Error(Object.values(data.errors||{}).flat().join(' ')||data.message||'Quote is unavailable.');result.textContent='Delivery: '+money(data.amount)+' · Valid until '+new Date(data.expires_at).toLocaleTimeString();shipping.textContent=money(data.amount);total.textContent=money(Number(total.dataset.subtotal)+data.amount);}catch(error){if(requestedRevision===quoteRevision)result.textContent=error.message;}finally{quote.disabled=false;}
+      try{var res=await fetch(quote.dataset.url,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':token},body:JSON.stringify(body)});var data=await res.json();if(requestedRevision!==quoteRevision)return;if(!res.ok)throw new Error(Object.values(data.errors||{}).flat().join(' ')||data.message||'Quote is unavailable.');result.textContent='Delivery: '+money(data.amount)+' · Valid until '+new Date(data.expires_at).toLocaleTimeString();shipping.textContent=money(data.amount);total.textContent=money(Number(total.dataset.subtotal)+data.amount);var remaining=new Date(data.expires_at).getTime()-Date.now();if(remaining<=0)throw new Error('This quote has expired. Request another quote.');quoteFresh=true;payButton.disabled=!payConfigured;expiryTimer=setTimeout(function(){resetQuote();result.textContent='The delivery quote expired. Request a fresh quote before payment.';},Math.min(remaining,2147483647));}catch(error){if(requestedRevision===quoteRevision)result.textContent=error.message;}finally{quote.disabled=false;}
     });
-    document.getElementById('checkout-form').addEventListener('submit',function(){var button=document.getElementById('pay-button');button.disabled=true;button.textContent='Preparing checkout…';});
+    document.getElementById('checkout-form').addEventListener('submit',function(e){if(method.value==='lalamove'&&!quoteFresh){e.preventDefault();result.textContent='Request a fresh delivery quote before payment.';return;}var button=document.getElementById('pay-button');button.disabled=true;button.textContent='Preparing checkout…';});
   }
 });

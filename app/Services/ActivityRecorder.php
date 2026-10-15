@@ -18,7 +18,7 @@ class ActivityRecorder
         'opening_hours', 'pickup_address', 'pickup_instructions', 'support_email', 'support_phone', 'store_note',
     ];
 
-    private const STATUSES = ['awaiting_payment', 'to_pack', 'packing', 'ready', 'delivery_booking', 'out_for_delivery', 'completed', 'cancelled'];
+    private const STATUSES = ['awaiting_payment', 'to_pack', 'packing', 'ready', 'delivery_booking', 'delivery_attention', 'out_for_delivery', 'completed', 'cancelled'];
 
     /** Controllers mark only completed actions, after validation and actual changes. */
     public static function mark(Request $request, string $action, ?Model $target = null, array $metadata = []): void
@@ -73,7 +73,7 @@ class ActivityRecorder
     {
         if ($target) {
             return match (class_basename($target)) {
-                'User' => 'account', 'Product' => 'product', 'Variant' => 'variant', 'Order' => 'order', 'ChatbotFaq' => 'faq', default => null,
+                'User' => 'account', 'Product' => 'product', 'Variant' => 'variant', 'Order' => 'order', 'ChatbotFaq' => 'faq', 'Refund' => 'refund', default => null,
             };
         }
 
@@ -88,7 +88,7 @@ class ActivityRecorder
             'account.updated', 'product.created', 'product.updated', 'variant.created', 'variant.updated', 'settings.updated', 'faq.created', 'faq.updated', 'faq.deleted' => ['fields'],
             'cart.added', 'cart.updated', 'cart.removed' => ['quantity', 'previous_quantity', 'cart_quantity'],
             'order.created' => ['quantity', 'delivery_method', 'status'],
-            'order.status_changed' => ['previous_status', 'status'], 'order.delivery_booked', 'order.delivery_reconciliation_required' => ['status'],
+            'order.status_changed', 'order.delivery_reconciled', 'order.payment_reconciled' => ['previous_status', 'status'], 'order.delivery_booked', 'order.delivery_reconciliation_required' => ['status'],
             'catalog.color_added' => ['variant_count'], 'faq.imported' => ['imported_count'], 'reports.exported' => ['format'],
             default => [],
         };

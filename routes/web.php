@@ -1,11 +1,15 @@
 <?php
 
 use App\Http\Controllers\AccountController;
-use App\Http\Controllers\AdminController;
 use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ChatController;
+use App\Http\Controllers\DeliveryRecoveryController;
 use App\Http\Controllers\FaqController;
+use App\Http\Controllers\OperationsController;
+use App\Http\Controllers\PaymentRecoveryController;
+use App\Http\Controllers\RefundController;
 use App\Http\Controllers\ReportsController;
 use App\Http\Controllers\StoreController;
 use App\Http\Controllers\WebhookController;
@@ -35,15 +39,28 @@ Route::middleware('auth')->group(function () {
     Route::post('/checkout', [StoreController::class, 'place'])->middleware('throttle:10,1')->block(40, 40)->name('checkout.place');
     Route::get('/orders', [StoreController::class, 'orders'])->name('orders');
     Route::get('/orders/{order}', [StoreController::class, 'order'])->name('orders.show');
+    Route::post('/orders/{order}/payment/check', [PaymentRecoveryController::class, 'check'])->middleware('throttle:6,1')->name('orders.payment.check');
+    Route::post('/orders/{order}/payment/close', [PaymentRecoveryController::class, 'close'])->middleware('throttle:3,1')->name('orders.payment.close');
+    Route::post('/orders/{order}/refunds', [RefundController::class, 'store'])->middleware('throttle:3,1')->name('orders.refunds.store');
 });
 Route::middleware(['auth', 'staff'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [ReportsController::class, 'dashboard'])->name('dashboard');
     Route::get('/forecast', [ReportsController::class, 'forecast'])->name('forecast');
+    Route::get('/inventory-attention', [ReportsController::class, 'inventoryAttention'])->name('inventory-attention');
+    Route::get('/operations', [OperationsController::class, 'index'])->name('operations');
+    Route::get('/refunds', [RefundController::class, 'index'])->name('refunds.index');
+    Route::get('/refunds/{refund}', [RefundController::class, 'show'])->name('refunds.show');
+    Route::post('/refunds/{refund}/check', [RefundController::class, 'check'])->middleware('throttle:6,1')->name('refunds.check');
     Route::get('/orders', [AdminController::class, 'orders'])->name('orders');
     Route::get('/reports/export', [AdminController::class, 'export'])->name('reports.export');
     Route::patch('/orders/{order}', [AdminController::class, 'status'])->name('orders.status');
     Route::post('/orders/{order}/delivery', [AdminController::class, 'book'])->middleware('throttle:5,1')->name('orders.delivery');
+    Route::post('/orders/{order}/delivery/refresh', [DeliveryRecoveryController::class, 'refresh'])->middleware('throttle:6,1')->name('orders.delivery.refresh');
+    Route::post('/orders/{order}/delivery/recover', [DeliveryRecoveryController::class, 'recover'])->middleware('throttle:3,1')->name('orders.delivery.recover');
     Route::middleware('staff:admin')->group(function () {
+        Route::patch('/refunds/{refund}', [RefundController::class, 'review'])->name('refunds.review');
+        Route::post('/refunds/{refund}/recover', [RefundController::class, 'recover'])->middleware('throttle:3,1')->name('refunds.recover');
+        Route::post('/orders/{order}/payment/recover', [PaymentRecoveryController::class, 'recover'])->middleware('throttle:3,1')->name('orders.payment.recover');
         Route::get('/activity', [ActivityLogController::class, 'index'])->name('activity.index');
         Route::get('/products', [AdminController::class, 'products'])->name('products');
         Route::get('/products/create', [AdminController::class, 'createForm'])->name('products.create');

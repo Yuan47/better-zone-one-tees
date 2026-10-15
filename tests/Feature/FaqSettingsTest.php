@@ -221,13 +221,20 @@ class FaqSettingsTest extends TestCase
         $this->chat('Can you stitch names?')->assertDontSee('Inactive private answer.');
     }
 
-    public function test_approved_size_help_edits_and_bulk_return_questions_are_used_by_basic_chat(): void
+    public function test_approved_size_help_edits_and_paid_or_bulk_return_questions_are_used_by_chat(): void
     {
         config(['shop.grok.key' => null]);
         ChatbotFaq::where('question', 'Where can I see the size chart?')->firstOrFail()->update(['answer' => 'Check the chart on each product and ask staff for fit assistance.']);
         ChatbotFaq::create($this->faqInput(['question' => 'Can I return bulk orders?', 'answer' => 'Ask staff to review your return request.', 'keywords' => 'return bulk orders']));
+        ChatbotFaq::create($this->faqInput(['question' => 'Can I return my paid order?', 'answer' => 'Ask staff to review the approved return policy.', 'keywords' => 'return paid order']));
         $this->chat('Where can I see the size chart?')->assertJsonPath('reply', 'Check the chart on each product and ask staff for fit assistance.');
         $this->chat('Can I return bulk orders?')->assertJsonPath('reply', 'Ask staff to review your return request.');
+        $this->chat('Can I return my paid order?')->assertJsonPath('reply', 'Ask staff to review the approved return policy.');
+        config(['shop.grok.key' => 'test-grok']);
+        Http::fake();
+        $this->chat('Can I return my paid order?')->assertJsonPath('mode', 'store')->assertJsonPath('reply', 'Ask staff to review the approved return policy.');
+        $this->chat('Can I return bulk orders?')->assertJsonPath('mode', 'store')->assertJsonPath('reply', 'Ask staff to review your return request.');
+        Http::assertNothingSent();
     }
 
     public function test_grok_receives_relevant_active_faqs_and_store_info_with_at_most_ten_entries(): void
@@ -244,7 +251,7 @@ class FaqSettingsTest extends TestCase
                 'choices' => [['message' => ['content' => 'Approved AI reply.']]],
             ]),
         ]);
-        $this->chat('Can I request embroidery?')->assertJsonPath('mode', 'grok');
+        $this->chat('Please explain your embroidery service')->assertJsonPath('mode', 'grok');
         Http::assertSent(function ($request) {
             $content = $request['messages'][0]['content'];
             $context = json_decode(substr($content, strpos($content, 'Context: ') + 9), true);

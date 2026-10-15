@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content"><meta name="csrf-token" content="{{ csrf_token() }}"><meta name="theme-color" content="#941B0C"><link rel="icon" type="image/png" href="{{ asset('brand/zone-one-tees-logo.png') }}">
-<title>@yield('title','Zone One Tee’s') · 2.0</title><link rel="stylesheet" href="{{ asset('shop.css') }}?v={{ filemtime(public_path('shop.css')) }}"><script src="{{ asset('shop.js') }}?v={{ filemtime(public_path('shop.js')) }}" defer></script></head>
-<body class="{{ (request()->routeIs('admin.*') || (request()->routeIs('account*') && auth()->check() && auth()->user()->role!=='customer')) ? 'admin-body' : 'store-body' }}">
+<title>@yield('title','Zone One Tee’s') · 2.0</title>
+@if(request()->routeIs('checkout'))<link rel="stylesheet" href="{{ asset('vendor/leaflet/leaflet.css') }}"><script src="{{ asset('vendor/leaflet/leaflet.js') }}" defer></script>@endif
+<link rel="stylesheet" href="{{ asset('shop.css') }}?v={{ filemtime(public_path('shop.css')) }}"><script src="{{ asset('shop.js') }}?v={{ filemtime(public_path('shop.js')) }}" defer></script></head>
+<body class="{{ (request()->routeIs('admin.*') || ((request()->routeIs('account*') || request()->routeIs('orders.show')) && auth()->check() && auth()->user()->role!=='customer')) ? 'admin-body' : 'store-body' }}">
 <a class="skip-link" href="#main-content">Skip to content</a>
-@php($isAdmin=(request()->routeIs('admin.*') || (request()->routeIs('account*') && auth()->check() && auth()->user()->role!=='customer')))
+@php($isAdmin=(request()->routeIs('admin.*') || ((request()->routeIs('account*') || request()->routeIs('orders.show')) && auth()->check() && auth()->user()->role!=='customer')))
 @if($isAdmin)
 <aside class="sidebar" id="workspace-menu"><div class="sidebar-heading"><a class="brand" href="{{ route('admin.dashboard') }}"><img class="brand-logo" src="{{ asset('brand/zone-one-tees-logo.png') }}" alt="Zone One Tee’s logo"><span>Zone One Tee’s<small>STORE WORKSPACE</small></span></a><button type="button" class="icon-btn admin-menu-close" id="workspace-menu-close" aria-label="Close workspace menu">×</button></div>
 <div class="workspace"><span class="dot"></span> Zone One Tee’s 2.0 <small>{{ config('shop.demo')?'Local demo':'Store workspace' }}</small></div>
@@ -11,6 +13,8 @@
 <span class="nav-caption">YOUR STORE</span>
 <a class="{{ request()->routeIs('admin.dashboard')?'active':'' }}" href="{{ route('admin.dashboard') }}"><span>◫</span> Overview</a>
 <a class="{{ request()->routeIs('admin.orders')?'active':'' }}" href="{{ route('admin.orders') }}"><span>▤</span> Orders</a>
+<a class="{{ request()->routeIs('admin.operations')?'active':'' }}" href="{{ route('admin.operations') }}"><span>◴</span> Orders & delivery</a>
+<a class="{{ request()->routeIs('admin.refunds.*')?'active':'' }}" href="{{ route('admin.refunds.index') }}"><span>↶</span> Refund requests</a>
 @if(auth()->user()->role==='admin')
 <a class="{{ request()->routeIs('admin.products*')?'active':'' }}" href="{{ route('admin.products') }}"><span>◇</span> Products & inventory</a>
 <a class="{{ request()->routeIs('admin.customers')?'active':'' }}" href="{{ route('admin.customers') }}"><span>♧</span> Customers</a>

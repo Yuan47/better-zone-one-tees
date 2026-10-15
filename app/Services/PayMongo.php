@@ -66,4 +66,30 @@ class PayMongo
 
         return hash_equals(hash_hmac('sha256', $time.'.'.$body, config('shop.paymongo.webhook_secret')), $signature);
     }
+
+    public function retrieve(string $id): array
+    {
+        $this->assertSession($id);
+        $data = Http::withBasicAuth(config('shop.paymongo.secret'), '')->connectTimeout(5)->timeout(20)
+            ->get('https://api.paymongo.com/v1/checkout_sessions/'.$id)->throw()->json('data');
+        if (! is_array($data)) {
+            throw new \RuntimeException('Invalid payment response');
+        }
+
+        return $data;
+    }
+
+    public function expire(string $id): void
+    {
+        $this->assertSession($id);
+        Http::withBasicAuth(config('shop.paymongo.secret'), '')->connectTimeout(5)->timeout(20)
+            ->post('https://api.paymongo.com/v1/checkout_sessions/'.$id.'/expire')->throw();
+    }
+
+    private function assertSession(string $id): void
+    {
+        if (! $this->ready() || ! preg_match('/^cs_[A-Za-z0-9_]{1,120}$/', $id)) {
+            throw ValidationException::withMessages(['payment' => 'A configured PayMongo account and valid checkout reference are required.']);
+        }
+    }
 }

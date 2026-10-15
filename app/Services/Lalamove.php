@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
+use App\Exceptions\DeliveryBookingNotStarted;
 use App\Models\Order;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -53,13 +55,41 @@ class Lalamove
     public function book(Order $order): array
     {
         // Quotes expire quickly; re-quote when packing is complete.
-        $quote = $this->quote($order->address, $order->lat, $order->lng);
+        try {
+            $quote = $this->quote($order->address, $order->lat, $order->lng);
+        } catch (\Throwable $exception) {
+            throw new DeliveryBookingNotStarted('Lalamove could not prepare the delivery quotation. No delivery was booked; this order remains ready.', 0, $exception);
+        }
+        $id = $quote['quotationId'] ?? null;
+        $stops = $quote['stops'] ?? null;
+        $expires = $quote['expiresAt'] ?? null;
+        $validStops = is_array($stops) && count($stops) === 2;
+        foreach ([0, 1] as $index) {
+            $stopId = $stops[$index]['stopId'] ?? null;
+            $validStops = $validStops && (is_string($stopId) || is_int($stopId)) && preg_match('/^[A-Za-z0-9_-]{1,100}$/D', (string) $stopId);
+        }
+        $validExpiry = is_string($expires) && preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})$/D', $expires);
+        if ($validExpiry) {
+            try {
+                $validExpiry = CarbonImmutable::parse($expires)->isFuture();
+            } catch (\Throwable $exception) {
+                $validExpiry = false;
+            }
+        }
+        if (! is_string($id) || ! preg_match('/^[A-Za-z0-9_-]{1,100}$/D', $id) || ! $validStops || ! $validExpiry
+            || (string) $stops[0]['stopId'] === (string) $stops[1]['stopId']) {
+            throw ValidationException::withMessages(['delivery' => 'The delivery quotation is incomplete or expired. No delivery was booked; this order remains ready. Request a fresh quote before trying again.']);
+        }
         if (data_get($quote, 'priceBreakdown.currency') !== 'PHP' || ! is_numeric(data_get($quote, 'priceBreakdown.total'))) {
             throw ValidationException::withMessages(['delivery' => 'The delivery quote is invalid.']);
         }
-        $cost = (int) round((float) data_get($quote, 'priceBreakdown.total') * 100);
+        $total = (float) data_get($quote, 'priceBreakdown.total');
+        if (! is_finite($total) || $total < 0 || $total > PHP_INT_MAX / 100) {
+            throw ValidationException::withMessages(['delivery' => 'The delivery quote amount is invalid. No delivery was booked; this order remains ready.']);
+        }
+        $cost = (int) round($total * 100);
         if ($cost > $order->shipping) {
-            throw ValidationException::withMessages(['delivery' => 'The new delivery quote exceeds the amount collected. Arrange the difference with the customer before booking.']);
+            throw ValidationException::withMessages(['delivery' => 'The current delivery quote is higher than the delivery fee paid. No delivery was booked; this order remains ready. Review the delivery cost before trying again.']);
         }
 
         return $this->call('POST', '/v3/orders', [

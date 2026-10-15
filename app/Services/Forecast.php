@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\Product;
 use Carbon\CarbonImmutable;
 
@@ -53,7 +54,11 @@ class Forecast
         if (! $first) {
             return [];
         }
-        $start = CarbonImmutable::parse($first, 'Asia/Manila')->startOfMonth();
+        return $this->completedPeriods(CarbonImmutable::parse($first, 'Asia/Manila')->startOfMonth(), $end);
+    }
+
+    private function completedPeriods(CarbonImmutable $start, CarbonImmutable $end): array
+    {
         if ($start->lt($end->subMonths(6))) {
             $start = $end->subMonths(6);
         }
@@ -88,25 +93,45 @@ class Forecast
 
     public function rows(): array
     {
-        $months = $this->periods();
-        $orders = Order::with('items')->where('payment_status', 'paid')->where('paid_at', '<', CarbonImmutable::now('Asia/Manila')->startOfMonth())
-            ->when(count($months) > 0, fn ($q) => $q->where('paid_at', '>=', $months[0].'-01'))->get();
-
-        return Product::with('variants')->where('active', true)->get()->map(function ($product) use ($months, $orders) {
-            $totals = array_fill_keys($months, 0);
-            $ids = $product->variants->pluck('id');
-            foreach ($orders as $order) {
-                $month = $order->paid_at->setTimezone('Asia/Manila')->format('Y-m');
-                if (array_key_exists($month, $totals)) {
-                    $totals[$month] += $order->items->whereIn('variant_id', $ids)->sum('quantity');
+        $end = CarbonImmutable::now('Asia/Manila')->startOfMonth();
+        $paidItems = OrderItem::query()->join('orders', 'orders.id', '=', 'order_items.order_id')
+            ->join('variants', 'variants.id', '=', 'order_items.variant_id')
+            ->where('orders.payment_status', 'paid')->where('orders.paid_at', '<', $end)
+            ->where('order_items.quantity', '>', 0);
+        $firstSales = (clone $paidItems)->selectRaw('variants.product_id, MIN(orders.paid_at) AS first_paid_at')
+            ->groupBy('variants.product_id')->pluck('first_paid_at', 'product_id');
+        $monthlyUnits = [];
+        (clone $paidItems)->where('orders.paid_at', '>=', $end->subMonths(6))
+            ->select(['order_items.id', 'variants.product_id', 'orders.paid_at', 'order_items.quantity'])
+            ->chunkById(500, function ($items) use (&$monthlyUnits) {
+                foreach ($items as $item) {
+                    $month = CarbonImmutable::parse($item->paid_at, 'Asia/Manila')->format('Y-m');
+                    $monthlyUnits[$item->product_id][$month] = ($monthlyUnits[$item->product_id][$month] ?? 0) + $item->quantity;
                 }
+            }, 'order_items.id', 'id');
+
+        return Product::with('variants')->where('active', true)->get()->map(function ($product) use ($end, $firstSales, $monthlyUnits) {
+            $firstSale = isset($firstSales[$product->id]) ? CarbonImmutable::parse($firstSales[$product->id], 'Asia/Manila')->startOfMonth() : null;
+            $created = $product->created_at ? CarbonImmutable::instance($product->created_at)->setTimezone('Asia/Manila')->startOfMonth() : $end;
+            // Imported orders may legitimately predate the product's local creation date.
+            $start = $firstSale && $firstSale->lt($created) ? $firstSale : $created;
+            $months = $this->completedPeriods($start, $end);
+            $totals = [];
+            foreach ($months as $month) {
+                $totals[$month] = $monthlyUnits[$product->id][$month] ?? 0;
             }
             $values = array_values($totals);
             $summary = $this->summarize($values, $months);
+            // Time in the catalog alone cannot establish observed product demand.
+            if (! $firstSale) {
+                $summary['regression'] = $this->linear([]);
+                $summary['growth'] = $this->growth([]);
+            }
             $prediction = $summary['regression']['prediction'];
             $available = $product->variants->sum(fn ($v) => $v->available());
 
-            return $summary + ['name' => $product->name, 'sold' => array_sum($values),
+            return $summary + ['name' => $product->name, 'sold' => array_sum($values), 'observed_history' => $firstSale !== null,
+                'history_basis' => $firstSale && $firstSale->lt($created) ? 'Earlier verified paid sales' : 'Product added to the catalog',
                 'forecast' => $prediction === null ? null : (int) ceil($prediction), 'available' => $available,
                 'reorder' => $prediction === null ? null : max(0, (int) ceil($prediction) - $available)];
         })->all();

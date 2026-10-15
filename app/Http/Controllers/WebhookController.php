@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Order;
 use App\Services\OrderFlow;
 use App\Services\PayMongo;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -47,7 +48,11 @@ class WebhookController extends Controller
             if (! $payment || data_get($session, 'attributes.reference_number') !== $order->number) {
                 return 'mismatch';
             }
-            $flow->paid($order, $payment['id']);
+            $timestamp = data_get($payment, 'attributes.paid_at');
+            if ($timestamp !== null && (! is_int($timestamp) || $timestamp < 1 || $timestamp > now()->timestamp + 300 || $timestamp < $order->created_at->timestamp - 300)) {
+                return 'mismatch';
+            }
+            $flow->paid($order, $payment['id'], $timestamp ? Carbon::createFromTimestamp($timestamp, 'Asia/Manila') : null);
             DB::table('webhook_events')->insert(['event_id' => $eventId, 'type' => $type, 'outcome' => 'paid', 'created_at' => now(), 'updated_at' => now()]);
 
             return 'paid';

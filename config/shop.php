@@ -3,6 +3,7 @@
 return [
     'demo' => env('SHOP_DEMO', true),
     'bulk_base' => 'reseller',
+    'unpaid_minutes' => max(15, (int) env('UNPAID_CHECKOUT_MINUTES', 30)),
     'paymongo' => [
         'mode' => env('PAYMONGO_MODE', 'test'),
         'secret' => env('PAYMONGO_SECRET_KEY'),

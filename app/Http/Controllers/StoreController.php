@@ -5,8 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Variant;
-use App\Services\Lalamove;
 use App\Services\ActivityRecorder;
+use App\Services\Lalamove;
 use App\Services\OrderFlow;
 use App\Services\PayMongo;
 use App\Services\Pricing;
@@ -92,6 +92,7 @@ class StoreController extends Controller
     public function update(Request $r, Variant $variant)
     {
         $data = $r->validate(['quantity' => 'required|integer|min:0|max:10000']);
+        $data['quantity'] = (int) $data['quantity'];
         $cart = $r->session()->get('cart', []);
         if (! isset($cart[$variant->id])) {
             abort(404);
@@ -228,7 +229,7 @@ class StoreController extends Controller
     public function order(Request $r, Order $order)
     {
         abort_unless($r->user()->id === $order->user_id || in_array($r->user()->role, ['admin', 'staff']), 403);
-        $order->load('items', 'user');
+        $order->load('items', 'user', 'refunds');
 
         return view('order', compact('order'));
     }

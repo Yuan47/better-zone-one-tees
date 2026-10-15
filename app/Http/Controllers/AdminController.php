@@ -2,15 +2,21 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\DeliveryBookingNotStarted;
+use App\Models\ChatbotFaq;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
 use App\Models\Variant;
-use App\Services\ImageUploads;
 use App\Services\ActivityRecorder;
+use App\Services\DeliveryRecovery;
+use App\Services\ImageUploads;
 use App\Services\Lalamove;
 use App\Services\PayMongo;
+use App\Services\SalesReport;
 use App\Services\Sku;
+use App\Services\StoreKnowledge;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -173,7 +179,24 @@ class AdminController extends Controller
 
     public function orders(Request $r)
     {
-        $orders = Order::with('user')->when($r->filled('status'), fn ($q) => $q->where('status', $r->string('status')))->latest()->paginate(20);
+        $now = CarbonImmutable::now('Asia/Manila');
+        $today = $now->toDateString();
+        $filters = $r->validate(['status' => 'nullable|in:awaiting_payment,to_pack,packing,ready,delivery_booking,out_for_delivery,completed,delivery_attention,cancelled,other',
+            'payment_status' => 'nullable|in:paid,pending', 'delivery_method' => 'nullable|in:pickup,lalamove', 'q' => 'nullable|string|max:100',
+            'start_date' => 'nullable|required_with:end_date|date_format:Y-m-d|before_or_equal:'.$today,
+            'end_date' => 'nullable|required_with:start_date|date_format:Y-m-d|after_or_equal:start_date|before_or_equal:'.$today]);
+        if (! empty($filters['start_date']) && CarbonImmutable::parse($filters['start_date'])->diffInDays(CarbonImmutable::parse($filters['end_date'])) > 365) {
+            throw ValidationException::withMessages(['end_date' => 'Choose a range of up to 366 days.']);
+        }
+        $orders = Order::with('user')->where('created_at', '<=', $now->toDateTimeString())
+            ->when($filters['status'] ?? null, fn ($q, $v) => $v === 'other'
+                ? $q->whereNotIn('status', array_keys(OperationsController::STATUSES)) : $q->where('status', $v))
+            ->when($filters['payment_status'] ?? null, fn ($q, $v) => $q->where('payment_status', $v))
+            ->when($filters['delivery_method'] ?? null, fn ($q, $v) => $q->where('delivery_method', $v))
+            ->when($filters['q'] ?? null, fn ($q, $v) => $q->where('number', 'like', '%'.$v.'%'))
+            ->when($filters['start_date'] ?? null, fn ($q, $v) => $q->where('created_at', '>=', $v.' 00:00:00'))
+            ->when($filters['end_date'] ?? null, fn ($q, $v) => $q->where('created_at', '<', CarbonImmutable::parse($v)->addDay()->toDateTimeString()))
+            ->latest()->paginate(20)->withQueryString();
 
         return view('admin.orders', compact('orders'));
     }
@@ -184,6 +207,9 @@ class AdminController extends Controller
         $previousStatus = null;
         DB::transaction(function () use ($order, $data, &$previousStatus) {
             $locked = Order::whereKey($order->id)->lockForUpdate()->firstOrFail();
+            if ($locked->fulfillmentOnHold()) {
+                throw ValidationException::withMessages(['refund' => 'Review the approved, processing or fully completed refund before advancing fulfillment.']);
+            }
             $allowed = ['to_pack' => ['packing'], 'packing' => ['ready'], 'ready' => $locked->delivery_method === 'pickup' ? ['completed'] : []];
             abort_unless($locked->payment_status === 'paid' && in_array($data['status'], $allowed[$locked->status] ?? []), 422);
             $previousStatus = $locked->status;
@@ -194,34 +220,39 @@ class AdminController extends Controller
         return back()->with('notice', 'Order updated.');
     }
 
-    public function book(Request $r, Order $order, Lalamove $delivery)
+    public function book(Request $r, Order $order, Lalamove $delivery, DeliveryRecovery $recovery)
     {
         if (! $delivery->ready()) {
             return back()->withErrors(['delivery' => 'Configure Lalamove sandbox credentials and pickup location first.']);
         }
-        $bookingStarted = false;
+        // Invalid or repeated bookings fail before any provider request or state change.
+        $claimed = $recovery->beginBooking($order);
         try {
-            // Lock stops two staff members booking the same order concurrently.
-            DB::transaction(function () use ($order, &$bookingStarted) {
-                $order = Order::whereKey($order->id)->lockForUpdate()->firstOrFail();
-                abort_unless($order->status === 'ready' && $order->payment_status === 'paid' && $order->delivery_method === 'lalamove' && ! $order->delivery_id, 422);
-                $order->update(['status' => 'delivery_booking']);
-                $bookingStarted = true;
-            });
-            $result = $delivery->book($order);
-            $order->update(['delivery_id' => $result['orderId'], 'tracking_url' => $result['shareLink'] ?? null, 'status' => 'out_for_delivery']);
-            ActivityRecorder::mark($r, 'order.delivery_booked', $order, ['status' => 'out_for_delivery']);
+            $result = $delivery->book($claimed);
+        } catch (DeliveryBookingNotStarted $e) {
+            $recovery->rejectBooking($claimed);
+
+            return back()->withErrors(['delivery' => $e->getMessage()]);
         } catch (ValidationException $e) {
-            $order->update(['status' => 'ready']);
+            // Lalamove validates the fresh quotation before sending the booking request.
+            $recovery->rejectBooking($claimed);
             throw $e;
         } catch (\Throwable $e) {
-            if ($bookingStarted && $order->fresh()->status === 'delivery_booking') {
-                ActivityRecorder::mark($r, 'order.delivery_reconciliation_required', $order, ['status' => 'delivery_booking']);
-            }
+            ActivityRecorder::mark($r, 'order.delivery_reconciliation_required', $order, ['status' => 'delivery_booking']);
+
             return back()->withErrors(['delivery' => 'Booking outcome needs checking in Lalamove before retrying. Staff should reconcile this order.']);
         }
+        try {
+            $settled = $recovery->acceptBooking($claimed, $result);
+        } catch (\Throwable $e) {
+            // A malformed success response or database failure may still mean a delivery exists.
+            ActivityRecorder::mark($r, 'order.delivery_reconciliation_required', $order, ['status' => 'delivery_booking']);
 
-        return back()->with('notice', 'Delivery booked.');
+            return back()->withErrors(['delivery' => 'Lalamove returned an incomplete booking result. Check its delivery ID and recover the original booking before retrying.']);
+        }
+        ActivityRecorder::mark($r, 'order.delivery_booked', $order, ['status' => $settled['status']]);
+
+        return back()->with('notice', $settled['status'] === 'ready' ? 'The delivery ended at Lalamove. Its history was saved and this order is ready for another booking.' : 'Delivery booked.');
     }
 
     public function customers()
@@ -233,11 +264,14 @@ class AdminController extends Controller
 
     public function export(Request $r)
     {
+        $report = app(SalesReport::class);
+        $filters = $report->filters($r->all());
         ActivityRecorder::mark($r, 'reports.exported', null, ['format' => 'csv']);
-        return response()->streamDownload(function () {
+
+        return response()->streamDownload(function () use ($report, $filters) {
             $out = fopen('php://output', 'w');
             fputcsv($out, ['Order', 'Paid at', 'Pieces', 'Pricing tier', 'Clothing base PHP', 'Bulk discount PHP', 'Net clothing PHP', 'Delivery PHP', 'Total PHP'], ',', '"', '');
-            Order::where('payment_status', 'paid')->orderBy('id')->chunk(100, function ($orders) use ($out) {
+            $report->paidOrders($filters['start_date'], $filters['end_date'])->orderBy('id')->chunk(100, function ($orders) use ($out) {
                 foreach ($orders as $o) {
                     fputcsv($out, [$o->number, $o->paid_at?->toIso8601String(), $o->quantity, $o->tier,
                         number_format($o->merchandise_base / 100, 2, '.', ''), number_format($o->discount / 100, 2, '.', ''), number_format($o->subtotal / 100, 2, '.', ''),
@@ -252,14 +286,14 @@ class AdminController extends Controller
     {
         $search = is_string($r->query('faq_search')) ? mb_substr(trim($r->query('faq_search')), 0, 100) : '';
         $status = in_array($r->query('faq_status'), ['active', 'inactive'], true) ? $r->query('faq_status') : 'all';
-        $faqs = \App\Models\ChatbotFaq::query()
+        $faqs = ChatbotFaq::query()
             ->when($search !== '', fn ($q) => $q->where(fn ($q) => $q->where('question', 'like', '%'.$search.'%')->orWhere('keywords', 'like', '%'.$search.'%')))
             ->when($status !== 'all', fn ($q) => $q->where('active', $status === 'active'))
             ->orderBy('sort_order')->orderBy('id')->paginate(12)->withQueryString();
 
         return view('admin.settings', [
             'faqs' => $faqs, 'faqSearch' => $search, 'faqStatus' => $status,
-            'storeInfo' => app(\App\Services\StoreKnowledge::class)->info(),
+            'storeInfo' => app(StoreKnowledge::class)->info(),
             'payReady' => $pay->ready(), 'deliveryReady' => $delivery->ready(), 'grokReady' => filled(config('shop.grok.key')),
         ]);
     }
@@ -272,9 +306,9 @@ class AdminController extends Controller
             'support_phone' => ['nullable', 'string', 'max:40', 'regex:/^[+0-9().\s-]{7,40}$/'],
             'store_note' => 'nullable|string|max:5000',
         ]);
-        $changed = app(\App\Services\StoreKnowledge::class)->saveInfo($data);
+        $changed = app(StoreKnowledge::class)->saveInfo($data);
         if ($changed !== []) {
-            \App\Services\ActivityRecorder::mark($r, 'settings.updated', null, ['fields' => $changed]);
+            ActivityRecorder::mark($r, 'settings.updated', null, ['fields' => $changed]);
         }
 
         return back()->with('notice', $changed === [] ? 'No store information changes to save.' : 'Store information updated.');

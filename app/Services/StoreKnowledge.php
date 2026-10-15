@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\ChatbotFaq;
+use App\Models\Product;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -86,6 +87,140 @@ class StoreKnowledge
         $normalized = $this->normalize($message);
 
         return $faqs->sortByDesc(fn ($faq) => $this->score($normalized, $faq))->take($limit)->values();
+    }
+
+    public function isExactFaq(string $message, ChatbotFaq $faq): bool
+    {
+        return $this->normalize($message) === $this->normalize($faq->question);
+    }
+
+    public function matchingProducts(string $message, Collection $products): Collection
+    {
+        $message = $this->normalize($message);
+        $matches = [];
+        foreach ($products as $product) {
+            foreach ($this->productAliases($product) as $alias) {
+                if (preg_match_all('/(?<![\pL\pN])'.preg_quote($alias, '/').'(?![\pL\pN])/u', $message, $found, PREG_OFFSET_CAPTURE)) {
+                    foreach ($found[0] as [$text, $offset]) {
+                        $matches[] = ['product' => $product, 'start' => $offset, 'end' => $offset + strlen($text)];
+                    }
+                }
+            }
+        }
+
+        // A kids style must not also resolve to the adult name contained inside it.
+        return collect($matches)->reject(function ($candidate) use ($matches) {
+            foreach ($matches as $other) {
+                if ($candidate['product']->id !== $other['product']->id && $other['start'] <= $candidate['start'] && $other['end'] >= $candidate['end']
+                    && ($other['start'] < $candidate['start'] || $other['end'] > $candidate['end'])) {
+                    return true;
+                }
+            }
+
+            return false;
+        })->pluck('product')->unique('id')->values();
+    }
+
+    public function variantAnswer(string $message, Collection $matches): string
+    {
+        if ($matches->count() !== 1) {
+            return 'Please specify one product name, one size, and one color so I can check its exact price and stock. Use the name shown on the product page.';
+        }
+        $product = $matches->first();
+        [$sizes, $colors] = $this->requestedOptions($message, $product);
+        if (count($sizes) !== 1 || count($colors) !== 1 || preg_match('/\bor\b/i', $message)) {
+            return $product->name.': please specify one size and one color from its product page. Prices and availability depend on that exact combination. '.self::QUANTITY_PRICING;
+        }
+        $variant = $product->variants->first(fn ($variant) => strcasecmp($variant->size, $sizes[0]) === 0 && strcasecmp($variant->color, $colors[0]) === 0);
+        $label = $product->name.' · '.$sizes[0].' / '.$colors[0];
+        if (! $variant) {
+            return $label.' is not an offered variant. Choose a size and color listed on its product page. Size chart references do not establish availability.';
+        }
+        $available = $variant->available();
+        $reply = $label.': '.($available ? $available.' pieces currently available.' : 'currently out of stock (0 pieces available).')
+            .' Retail / SRP (1–5): '.$this->money($variant->retail_price)
+            .'; Wholesale (6–50): '.$this->money($variant->wholesale_price)
+            .'; Re-seller (51–100): '.$this->money($variant->reseller_price).' per piece. '
+            .'101+ pieces receive 5% off the Re-seller clothing subtotal, rounded once on the entire subtotal. Delivery is separate. Stock is checked again at checkout.';
+        if (preg_match_all('/\b([1-9][0-9]{0,4})\s*(?:pcs?\.?|pieces?|units?|shirts?|tees?)\b/i', $message, $quantities) && count(array_unique($quantities[1])) === 1) {
+            $quantity = (int) $quantities[1][0];
+            if ($quantity <= 10000) {
+                $summary = app(Pricing::class)->cart([$variant->id => $quantity]);
+                $reply .= ' Pricing reference for '.$quantity.' pieces of this variant: '.$this->money($summary['subtotal']).' clothing subtotal ('.$summary['label'].'). This does not reserve stock or confirm an order.';
+            }
+        }
+
+        return $reply;
+    }
+
+    public function catalogContext(string $message, Collection $products, Collection $matches): Collection
+    {
+        $selected = $matches->isNotEmpty() ? $matches : $products->sortByDesc(fn ($product) => count(array_intersect($this->words($this->normalize($message)), $this->words($this->normalize($product->name)))));
+
+        return $selected->take(3)->map(function ($product) use ($message) {
+            [$sizes, $colors] = $this->requestedOptions($message, $product);
+            $variants = $product->variants->filter(fn ($variant) => ($sizes === [] || in_array($variant->size, $sizes, true)) && ($colors === [] || in_array($variant->color, $colors, true)));
+
+            return [
+                'name' => $product->name, 'size_chart' => $product->size_chart, 'size_chart_note' => $product->size_chart_note,
+                'currency' => 'PHP', 'price_unit' => 'integer centavos per piece',
+                'variant_scope' => ['sizes' => $sizes, 'colors' => $colors],
+                'matching_variant_count' => $variants->count(), 'variants_complete' => $variants->count() <= 40,
+                'variants' => $variants->sortByDesc(fn ($variant) => $variant->available())->take(40)->map(fn ($variant) => [
+                    'size' => $variant->size, 'color' => $variant->color, 'color_group' => $variant->color_group, 'available_pieces' => $variant->available(),
+                    'retail_price' => $variant->retail_price, 'wholesale_price' => $variant->wholesale_price, 'reseller_price' => $variant->reseller_price,
+                ])->values(),
+            ];
+        })->values();
+    }
+
+    private function productAliases(Product $product): array
+    {
+        $aliases = [$product->name, $product->slug];
+        if (preg_match('/^(.+?)\s+-\s+(.+?)\s*\/\s*(.+)$/u', $product->name, $parts)) {
+            $suffix = preg_match('/\s+KIDS$/i', $parts[3]) ? ' KIDS' : '';
+            $aliases[] = $parts[1].' '.$parts[2].$suffix;
+            $aliases[] = $parts[1].' '.$parts[3];
+        }
+        if ($product->isPolo()) {
+            $aliases[] = str_ireplace('WITH COLLAR', 'POLO', $product->name);
+            $aliases[] = str_ireplace('WITH COLLAR', 'POLO SHIRT', $product->name);
+        }
+        foreach ($aliases as $alias) {
+            $aliases[] = preg_replace('/\bwith\b/i', '', $alias);
+        }
+
+        return array_values(array_unique(array_filter(array_map(fn ($alias) => $this->normalize($alias), $aliases))));
+    }
+
+    private function requestedOptions(string $message, Product $product): array
+    {
+        $knownSizes = $product->variants->pluck('size')->merge(collect($product->size_chart)->pluck('size'))
+            ->merge(['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL'])->unique()->all();
+        $sizes = [];
+        foreach ($knownSizes as $size) {
+            $size = (string) $size;
+            // Single-letter sizes inside contractions and quantities such as "12 pieces" are not selections.
+            if (preg_match('/(?<![\pL\pN\x{2019}\x{0027}])'.preg_quote($size, '/').'(?![\pL\pN\x{2019}\x{0027}])'.(ctype_digit($size) ? '(?!\s*(?:pcs?\.?|pieces?|units?|shirts?|tees?)\b)' : '').'/iu', $message)) {
+                $sizes[] = $size;
+            }
+        }
+        $colors = [];
+        $remaining = ' '.$this->normalize($message).' ';
+        foreach ($product->variants->pluck('color')->push('White')->unique()->sortByDesc(fn ($color) => strlen($color)) as $color) {
+            $phrase = ' '.$this->normalize($color).' ';
+            if (str_contains($remaining, $phrase)) {
+                $colors[] = $color;
+                $remaining = str_replace($phrase, ' ', $remaining);
+            }
+        }
+
+        return [$sizes, $colors];
+    }
+
+    private function money(int $centavos): string
+    {
+        return '₱'.number_format($centavos / 100, 2);
     }
 
     private function score(string $normalized, ChatbotFaq $faq): int

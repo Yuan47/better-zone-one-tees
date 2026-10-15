@@ -25,6 +25,11 @@ class ActivityLog extends Model
         'order.status_changed' => 'Changed order status',
         'order.delivery_booked' => 'Booked a delivery',
         'order.delivery_reconciliation_required' => 'Delivery booking needs reconciliation',
+        'order.delivery_reconciled' => 'Verified delivery recovery',
+        'order.payment_reconciled' => 'Verified payment status',
+        'refund.requested' => 'Requested a refund',
+        'refund.reviewed' => 'Reviewed a refund request',
+        'refund.verified' => 'Verified refund with PayMongo',
         'product.created' => 'Created a product',
         'product.updated' => 'Updated a product',
         'variant.created' => 'Created a variant',
@@ -58,6 +63,7 @@ class ActivityLog extends Model
         $label = match ($this->target_type) {
             'account' => 'Account', 'product' => 'Product', 'variant' => 'Variant', 'order' => 'Order',
             'faq' => 'FAQ', 'faq_collection' => 'FAQ collection', 'store' => 'Store information', 'report' => 'Sales report',
+            'refund' => 'Refund request',
             default => '—',
         };
 

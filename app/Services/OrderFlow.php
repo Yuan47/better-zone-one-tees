@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Order;
 use App\Models\Variant;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -54,7 +55,7 @@ class OrderFlow
         }, 3);
     }
 
-    public function paid(Order $order, string $paymentId): void
+    public function paid(Order $order, string $paymentId, ?CarbonInterface $paidAt = null): void
     {
         // Caller must lock the order in a transaction and verify provider payment first.
         if ($order->inventory_committed) {
@@ -70,6 +71,6 @@ class OrderFlow
             }
             $v->update(['stock' => $v->stock - $item->quantity, 'reserved' => $v->reserved - $item->quantity]);
         }
-        $order->update(['payment_status' => 'paid', 'payment_id' => $paymentId, 'paid_at' => now(), 'status' => 'to_pack', 'inventory_committed' => true]);
+        $order->update(['payment_status' => 'paid', 'payment_id' => $paymentId, 'paid_at' => $paidAt ?? now(), 'status' => 'to_pack', 'inventory_committed' => true]);
     }
 }
