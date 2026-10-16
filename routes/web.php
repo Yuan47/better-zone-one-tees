@@ -12,9 +12,11 @@ use App\Http\Controllers\GuestInvoiceController;
 use App\Http\Controllers\InvoicePaymentController;
 use App\Http\Controllers\OperationsController;
 use App\Http\Controllers\OrderReceiptController;
+use App\Http\Controllers\PasswordRecoveryController;
 use App\Http\Controllers\PaymentRecoveryController;
 use App\Http\Controllers\RefundController;
 use App\Http\Controllers\ReportsController;
+use App\Http\Controllers\StaffAccountController;
 use App\Http\Controllers\StoreController;
 use App\Http\Controllers\WalkInController;
 use App\Http\Controllers\WebhookController;
@@ -32,6 +34,10 @@ Route::middleware('guest')->group(function () {
     Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:5,1');
 });
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
+Route::get('/forgot-password', [PasswordRecoveryController::class, 'requestForm'])->name('password.request');
+Route::post('/forgot-password', [PasswordRecoveryController::class, 'send'])->middleware('throttle:5,1,password-recovery-email')->name('password.email');
+Route::get('/reset-password/{token}', [PasswordRecoveryController::class, 'resetForm'])->name('password.reset');
+Route::post('/reset-password', [PasswordRecoveryController::class, 'update'])->middleware('throttle:6,1,password-recovery-reset')->name('password.update');
 Route::post('/chat', [ChatController::class, '__invoke'])->middleware('throttle:12,1')->name('chat');
 Route::post('/webhooks/paymongo', WebhookController::class)->name('webhooks.paymongo');
 Route::middleware(['signed', 'throttle:20,1,guest-invoices'])->prefix('guest/invoices/{order}')->name('guest.orders.')->group(function () {
@@ -77,6 +83,12 @@ Route::middleware(['auth', 'staff'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/orders/{order}/delivery/refresh', [DeliveryRecoveryController::class, 'refresh'])->middleware('throttle:6,1')->name('orders.delivery.refresh');
     Route::post('/orders/{order}/delivery/recover', [DeliveryRecoveryController::class, 'recover'])->middleware('throttle:3,1')->name('orders.delivery.recover');
     Route::middleware('staff:admin')->group(function () {
+        Route::get('/staff', [StaffAccountController::class, 'index'])->name('staff.index');
+        Route::get('/staff/create', [StaffAccountController::class, 'create'])->name('staff.create');
+        Route::post('/staff', [StaffAccountController::class, 'store'])->middleware('throttle:10,1,staff-create')->name('staff.store');
+        Route::get('/staff/{invitation}', [StaffAccountController::class, 'show'])->name('staff.show');
+        Route::post('/staff/{invitation}/send', [StaffAccountController::class, 'send'])->middleware('throttle:5,1,staff-code-send')->name('staff.send');
+        Route::post('/staff/{invitation}/verify', [StaffAccountController::class, 'verify'])->middleware('throttle:10,1,staff-code-verify')->name('staff.verify');
         Route::post('/orders/{order}/due', [InvoicePaymentController::class, 'due'])->name('orders.due');
         Route::post('/settings/payment-terms', [InvoicePaymentController::class, 'terms'])->name('payment-terms.save');
         Route::post('/refunds/{refund}/cash', [RefundController::class, 'cash'])->name('refunds.cash');

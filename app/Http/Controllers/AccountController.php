@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\ImageUploads;
+use App\Rules\AccountPasswordSize;
 use App\Services\ActivityRecorder;
+use App\Services\ImageUploads;
 use App\Services\StructuredAddress;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -76,7 +77,7 @@ class AccountController extends Controller
     {
         $data = $request->validate([
             'current_password' => ['required', 'string', 'current_password:web'],
-            'password' => ['required', 'string', 'confirmed', 'different:current_password', Password::min(10)],
+            'password' => ['required', 'string', 'confirmed', 'different:current_password', Password::min(10), new AccountPasswordSize],
         ]);
         $user = $request->user();
         $user->update(['password' => $data['password'], 'remember_token' => Str::random(60)]);

@@ -6,7 +6,7 @@
     $usernameBase = \Illuminate\Support\Str::slug($user->name, '');
     $suggestedUsername = $user->username ?? (strlen($usernameBase) >= 3 ? substr($usernameBase, 0, 25) : 'user').$user->id;
 @endphp
-<div class="page-heading"><span class="eyebrow">YOUR PROFILE</span><h1>My Account</h1><p class="muted">Keep your profile and delivery details up to date.</p></div>
+<div class="page-heading"><span class="eyebrow">YOUR PROFILE</span><h1>My Account</h1><p class="muted">{{ $user->role==='customer' ? 'Keep your profile and delivery details up to date.' : 'Manage your profile and account security.' }}</p></div>
 <div class="checkout-grid account-grid">
 <form class="panel stack" method="post" action="{{ route('account.update') }}" enctype="multipart/form-data">@csrf @method('patch')
 <h2>Profile</h2>

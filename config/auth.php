@@ -4,6 +4,13 @@ use App\Models\User;
 
 return [
 
+    'staff_setup' => [
+        'enabled' => (bool) env('STAFF_ACCOUNT_SETUP_ENABLED', env('APP_ENV', 'production') === 'production'),
+    ],
+    'password_recovery' => [
+        'enabled' => (bool) env('PASSWORD_RECOVERY_ENABLED', env('APP_ENV', 'production') === 'production'),
+    ],
+
     'email_verification' => [
         // Production fails closed unless explicitly configured otherwise.
         'required' => (bool) env('EMAIL_VERIFICATION_REQUIRED', env('APP_ENV', 'production') === 'production'),

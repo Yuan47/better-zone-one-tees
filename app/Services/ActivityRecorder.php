@@ -73,7 +73,8 @@ class ActivityRecorder
     {
         if ($target) {
             return match (class_basename($target)) {
-                'User' => 'account', 'Product' => 'product', 'Variant' => 'variant', 'Order' => 'order', 'ChatbotFaq' => 'faq', 'Refund' => 'refund', default => null,
+                'User' => 'account', 'Product' => 'product', 'Variant' => 'variant', 'Order' => 'order', 'ChatbotFaq' => 'faq', 'Refund' => 'refund',
+                'StaffInvitation' => 'staff_invitation', default => null,
             };
         }
 

@@ -66,6 +66,16 @@ When required, unverified accounts can browse public products and view their acc
 
 The responsive verification screen includes one-time-code autofill, a resend countdown, safe errors, sign-out, and help for the fixed account email. My Account shows verified/unverified status; owner settings show setup readiness without displaying credentials. Provider acceptance does not prove inbox delivery. Follow [Email verification setup](docs/email-verification-setup.md) for temporary-domain HTTPS, sender authentication, safe activation, and real-inbox checks.
 
+## Staff accounts and password recovery
+
+The owner can open Staff accounts to prepare a name, staff-owned email, and initial password. A pending setup does not create a user or grant sign-in access. Brevo sends a separate staff setup code to that email; the owner enters the code received by the staff member to activate one verified staff account. Codes expire in ten minutes, permit five incorrect attempts, and have a sixty-second resend wait and five-send hourly limit. Initial passwords are stored only as hashes and removed from the invitation after activation. Existing customer/admin accounts cannot be converted through staff setup. Account creation, code acceptance, and activation are recorded in the activity log without passwords or codes.
+
+Forgot your password on the sign-in screen uses Laravel's password broker and its hashed, sixty-minute, single-use reset tokens. Brevo sends the link using the configured APP_URL. New requests have a sixty-second account cooldown and route request limits; known and unknown addresses receive the same public message. This does not claim constant response timing or real inbox delivery. Password reset requires a matching confirmation, changes no verification status, invalidates account verification codes, rotates remembered sign-in tokens, and revokes existing sessions. Laravel session authentication also rejects stale file/database sessions after a password changes. Reset tokens and passwords are not flashed to session input. Configure upstream access logs to redact reset-link URLs and email query values.
+
+STAFF_ACCOUNT_SETUP_ENABLED and PASSWORD_RECOVERY_ENABLED are independent switches, off in the local example until the shared Brevo sender is configured. Production defaults enable each if its flag is absent; always set explicit deployment values. The owner can save a pending staff setup while sending is off. Sign-in, staff, and recovery pages use readable spacing and responsive controls; setup and recovery screens hide the chat launcher. New passwords reject null characters and values beyond bcrypt's byte limit rather than silently truncating them.
+
+Follow [Staff setup and recovery](docs/staff-accounts-and-recovery.md) for configuration and controlled acceptance checks. Existing account passwords and store financial records are preserved.
+
 ## Invoices, installments, and walk-in sales
 
 Customers may choose partial payment only when the discounted clothing subtotal is **more than ₱1,000.00**, excluding delivery. Exactly ₱1,000.00 does not qualify. Each payment must be at least ₱1.00 and cannot exceed the outstanding invoice balance; an initial partial payment must be less than the full invoice total. Deposits remain separate from confirmed clothing sales and do not make an order eligible for packing or delivery.
@@ -191,6 +201,10 @@ External providers have not been end-to-end verified with your credentials. Auto
 
 Google sign-in is not implemented in this Laravel project. Configuring a Google client alone will not add authentication routes, account linking, or callback protections. ngrok/public webhook reachability and provider credentials remain unconfigured and untested here.
 
+## Staff and recovery checks · 16 October 2026
+
+The complete SQLite suite passed **855 tests / 6,960 assertions**. A guarded MariaDB run passed **225 tests / 1,754 assertions** covering the new features and existing account/OTP behavior. Independent processes passed **44 contention assertions**: one verified staff account and audit, one password reset/token consumption and audit, and one staff-code email claim under competing requests. Only the disposable database was rebuilt; its accounts/grants were retired and the old credentials rejected. Tests use fake providers, not real mail. Browser checks cover owner setup, staff email-code activation, staff login with limited navigation, a recovery request and emailed-link form, plus phone layouts. Evidence is retained locally under work/staff-recovery-full-junit.xml and work/staff-recovery-mysql-20261016. These are exercised local scenarios, not exhaustive security, load, or production certification.
+
 ## Email verification checks · 16 October 2026
 
 The complete SQLite suite passed **749 tests / 6,037 assertions**. The 114 new OTP service and account-flow cases also passed on isolated MariaDB with **765 assertions**. Independent two-process checks passed **27 assertions**: competing verification requests produced one success and one activity entry, and competing sends produced one claim and one mocked provider request. The disposable schema, accounts, and grants were removed after verification. Provider requests were mocked; no real email was sent. Evidence is retained locally under work/email-otp-final-junit.xml and work/email-verification-mysql-20261016.
@@ -212,7 +226,7 @@ Evidence is retained in the workspace: work/installments-final-junit.xml, work/i
 - For each further installation, apply migrations only after a verified backup and review of existing financial data; the ledger migration preserves receipts and refuses destructive rollback. The completed local upgrade does not migrate the old hosted store.
 - Configure provider credentials, public webhook HTTPS reachability, pickup details, and scheduler execution; verify payment success/expiry/recovery and delivery booking/recovery with the real sandbox accounts. Keep Brevo reminders off until sender/inbox behavior is verified.
 - Confirm product photos, remaining kids' measurements, stock counts, opening hours, support details, and the store's refund/physical-return procedures. PayMongo refunds are processed externally and cash returns are performed manually by the owner; disputes, return inspection, and clothing/delivery refund allocation still need a defined workflow.
-- Password recovery, notifications beyond the implemented verification codes and three-day/one-day balance reminders, support escalation tickets, backup automation, and load testing remain. Activate and verify real Brevo inbox delivery before requiring account verification on the deployed domain. Guest phone identity is unverified; store credit/collection procedures still need acceptance.
+- Notifications beyond the implemented account codes, password-reset links, and three-day/one-day balance reminders, support escalation tickets, backup automation, and load testing remain. Activate and verify real Brevo inbox delivery before enabling these account email flows on the deployed domain. Guest phone identity is unverified; store credit/collection procedures still need acceptance.
 - Test the deployed site on physical mobile devices and verify backups can be restored. Forecast accuracy needs historical-data backtesting.
 - Replacing the earlier website still requires a reviewed catalog/customer/order migration, controlled provider live testing, acceptance, rollback, domain configuration, and HTTPS. This source update does not perform hosting or database cutover.
 
@@ -220,7 +234,7 @@ Evidence is retained in the workspace: work/installments-final-junit.xml, work/i
 
 GitHub hosts source; the web store needs a PHP/MySQL host. Commit source/composer.lock; never .env, vendor, customer data, database dumps. Included GitHub Actions runs tests and compiles templates.
 
-Production requires APP_ENV=production, APP_DEBUG=false, SHOP_DEMO=false, a fresh secure APP_KEY, restricted database credentials, HTTPS/session cookie security, public document root, and verified provider live accounts. Remove/rotate demo users and replace sample inventory. PayMongo live keys require demo mode off plus HTTPS APP_URL. Lalamove production is blocked in demo mode. Configure trusted proxies and shared infrastructure for the host.
+Production requires APP_ENV=production, APP_DEBUG=false, SHOP_DEMO=false, a secure APP_KEY preserved across upgrades, restricted database credentials, HTTPS/session cookie security, public document root, and verified provider live accounts. Remove/rotate demo users and replace sample inventory. PayMongo live keys require demo mode off plus HTTPS APP_URL. Lalamove production is blocked in demo mode. Configure trusted proxies and shared infrastructure for the host.
 
 Deploy via Git, install dependencies, run reviewed migrations with php artisan migrate --force, and cache configuration/views. Public hosting/domain cutover has not been performed.
 

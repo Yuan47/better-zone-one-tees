@@ -15,6 +15,10 @@ class ActivityLog extends Model
         'auth.logout' => 'Signed out',
         'auth.registered' => 'Created an account',
         'auth.email_verified' => 'Verified account email',
+        'auth.password_reset' => 'Recovered account password',
+        'staff.invited' => 'Prepared a staff account',
+        'staff.activated' => 'Activated a verified staff account',
+        'staff.code_sent' => 'Requested a staff setup code',
         'account.updated' => 'Updated account',
         'account.password_changed' => 'Changed password',
         'cart.added' => 'Added to cart',
@@ -70,6 +74,7 @@ class ActivityLog extends Model
             'account' => 'Account', 'product' => 'Product', 'variant' => 'Variant', 'order' => 'Order',
             'faq' => 'FAQ', 'faq_collection' => 'FAQ collection', 'store' => 'Store information', 'report' => 'Sales report',
             'refund' => 'Refund request',
+            'staff_invitation' => 'Staff setup',
             default => '—',
         };
 

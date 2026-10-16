@@ -3,7 +3,7 @@
 <title>@yield('title','Zone One Tee’s') · 2.0</title>
 @if(request()->routeIs('checkout'))<link rel="stylesheet" href="{{ asset('vendor/leaflet/leaflet.css') }}"><script src="{{ asset('vendor/leaflet/leaflet.js') }}" defer></script>@endif
 <link rel="stylesheet" href="{{ asset('shop.css') }}?v={{ filemtime(public_path('shop.css')) }}"><script src="{{ asset('shop.js') }}?v={{ filemtime(public_path('shop.js')) }}" defer></script></head>
-<body class="{{ (request()->routeIs('admin.*') || ((request()->routeIs('account*') || request()->routeIs('orders.show')) && auth()->check() && auth()->user()->role!=='customer')) ? 'admin-body' : 'store-body' }}{{ request()->routeIs('verification.*') ? ' verification-page' : '' }}">
+<body class="{{ (request()->routeIs('admin.*') || ((request()->routeIs('account*') || request()->routeIs('orders.show')) && auth()->check() && auth()->user()->role!=='customer')) ? 'admin-body' : 'store-body' }}{{ request()->routeIs('verification.*', 'password.*', 'admin.staff.create', 'admin.staff.show') ? ' verification-page' : '' }}{{ request()->routeIs('admin.staff.*') ? ' staff-setup-page' : '' }}">
 <a class="skip-link" href="#main-content">Skip to content</a>
 @php($isAdmin=(request()->routeIs('admin.*') || ((request()->routeIs('account*') || request()->routeIs('orders.show')) && auth()->check() && auth()->user()->role!=='customer')))
 @if($isAdmin)
@@ -19,6 +19,7 @@
 @if(auth()->user()->role==='admin')
 <a class="{{ request()->routeIs('admin.products*')?'active':'' }}" href="{{ route('admin.products') }}"><span>◇</span> Products & inventory</a>
 <a class="{{ request()->routeIs('admin.customers')?'active':'' }}" href="{{ route('admin.customers') }}"><span>♧</span> Customers</a>
+<a class="{{ request()->routeIs('admin.staff.*')?'active':'' }}" href="{{ route('admin.staff.index') }}"><span>♙</span> Staff accounts</a>
 @endif
 <span class="nav-caption">INSIGHTS & TOOLS</span><a href="{{ route('admin.dashboard') }}#reports"><span>▥</span> Reports</a><a class="{{ request()->routeIs('admin.forecast')?'active':'' }}" href="{{ route('admin.forecast') }}"><span>✧</span> Sales & Growth Forecast</a>
 @if(auth()->user()->role==='admin')<a class="{{ request()->routeIs('admin.activity.*')?'active':'' }}" href="{{ route('admin.activity.index') }}"><span>◷</span> Activity log</a><a class="{{ request()->routeIs('admin.settings*','admin.faqs.*')?'active':'' }}" href="{{ route('admin.settings') }}"><span>⚙</span> Store settings</a>@endif

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Rules\AccountPasswordSize;
 use App\Services\ActivityRecorder;
 use App\Services\EmailVerificationCodes;
 use App\Services\InstallmentCredit;
@@ -38,7 +39,7 @@ class AuthController extends Controller
 
     public function register(Request $r)
     {
-        $data = $r->validate(['name' => 'required|string|max:100', 'email' => 'required|email|max:254|unique:users', 'password' => ['required', 'confirmed', Password::min(10)]]);
+        $data = $r->validate(['name' => 'required|string|max:100', 'email' => 'required|email|max:254|unique:users', 'password' => ['required', 'string', 'confirmed', Password::min(10), new AccountPasswordSize]]);
         $user = User::create($data);
         Auth::login($user);
         $r->session()->regenerate();
