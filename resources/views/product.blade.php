@@ -3,12 +3,14 @@
 @section('content')
 <div class="breadcrumb"><a href="{{ route('store') }}">Shop all</a> / {{ $product->name }}</div>
 @php($variantData=$product->variants->map(fn($v)=>['id'=>$v->id,'size'=>$v->size,'color'=>$v->color,'group'=>$v->color_group,'stock'=>$v->available(),'retail'=>$v->retail_price,'wholesale'=>$v->wholesale_price,'reseller'=>$v->reseller_price,'photo'=>$v->photoUrl(),'sku'=>$v->sku])->values())
+@php($colorGroups=$product->variants->pluck('color_group')->unique()->values())
+@php($styleOptions=$product->variants->isNotEmpty() && $product->variants->every(fn($variant)=>in_array($variant->color,['Plain','Reflector'],true)))
 <div class="product-detail"><div class="detail-art">
 <img id="selected-product-photo" src="{{ $product->photoUrl()??'' }}" alt="{{ $product->name }}" @if(!$product->photoUrl()) hidden @endif>
 <div id="product-photo-placeholder" @if($product->photoUrl()) hidden @endif><x-shirt :color="$product->art_color" :polo="$product->isPolo()"/><span class="art-caption">PHOTO PENDING · SAMPLE ILLUSTRATION</span></div>
-</div><div class="detail-copy"><span class="eyebrow">WHITE + COLORED · MIX YOUR SIZES</span><h1>{{ $product->name }}</h1><p class="detail-price" id="selected-price">From ₱{{ number_format(($product->variants->min('retail_price')??0)/100,2) }}<small> / piece · SRP</small></p><p>{{ $product->description }}</p>
+</div><div class="detail-copy"><span class="eyebrow">{{ $styleOptions?'CHOOSE YOUR STYLE AND SIZE':($colorGroups->count()>1?'WHITE + COLORED · MIX YOUR SIZES':'CHOOSE YOUR COLOR AND SIZE') }}</span><h1>{{ $product->name }}</h1><p class="detail-price" id="selected-price">From ₱{{ number_format(($product->variants->min('retail_price')??0)/100,2) }}<small> / piece · SRP</small></p><p>{{ $product->description }}</p>
 <form action="{{ route('cart.add') }}" method="post" class="stack" id="product-cart-form">@csrf
-<div class="two-col"><label>Color group<select id="color-group"><option>WHITE</option><option>COLORED</option></select></label><label>Color<select id="variant-color"></select></label></div>
+<div @class(['two-col'=>$colorGroups->count()>1])><label @if($colorGroups->count()<2) hidden @endif>Color group<select id="color-group">@foreach($colorGroups as $colorGroup)<option>{{ $colorGroup }}</option>@endforeach</select></label><label>{{ $styleOptions?'Style':'Color' }}<select id="variant-color"></select></label></div>
 <label>Size<select id="variant-size"></select></label><input type="hidden" name="variant_id" id="variant-id">
 <p class="muted" id="variant-availability"></p><small class="muted" id="variant-sku"></small>
 <label>Quantity<input id="variant-quantity" type="number" name="quantity" value="1" min="1" max="10000" required></label><button id="add-to-cart" class="button dark" disabled>Add to cart →</button>

@@ -36,7 +36,7 @@
 @else<a class="login-link" href="{{ route('login') }}">Sign in ↗</a>@endauth</nav></header>
 <nav class="store-nav" aria-label="Store navigation"><a href="{{ route('store') }}">Shop all</a><a href="{{ route('store') }}#catalog">Our brands</a><a href="{{ route('store') }}#quantity">Buy more, save more</a><span>Made for your everyday.</span></nav>
 @endif
-@if(config('shop.demo'))<div class="demo-banner {{ $isAdmin?'admin-demo':'' }}">LOCAL PREVIEW · First catalog batch. No live payments or delivery bookings.</div>@endif
+@if(config('shop.demo'))<div class="demo-banner {{ $isAdmin?'admin-demo':'' }}">LOCAL PREVIEW · Permanent product catalog. No live payments or delivery bookings.</div>@endif
 <main id="main-content" tabindex="-1" class="{{ $isAdmin?'admin-content':'container' }}">
 @if(session('notice'))<div class="notice" role="status">{{ session('notice') }}</div>@endif
 @if($errors->any())<div class="error" role="alert">@foreach($errors->all() as $error)<div>{{ $error }}</div>@endforeach</div>@endif

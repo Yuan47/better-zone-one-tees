@@ -9,7 +9,7 @@ class ImportCatalogBatch extends Command
 {
     protected $signature = 'shop:import-catalog';
 
-    protected $description = 'Add the first six clothing products and archive the original sample catalog without changing owner updates.';
+    protected $description = 'Add missing permanent catalog products and variants without changing owner updates.';
 
     public function handle(CatalogBatch $catalog): int
     {

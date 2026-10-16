@@ -35,7 +35,7 @@ No frontend build step or external CDN is required. Uses Blade, CSS, JavaScript,
 | Staff | staff@zoneone.test | ZoneOneDemo!2026 |
 | Customer | customer@zoneone.test | ZoneOneDemo!2026 |
 
-Demo user seeding is limited to local/testing. The first catalog batch contains the six supplied Dannon, Lucky Hanna, and Thanos products, with WHITE and COLORED options in one product. It includes 13 named colors and 628 size/color variants at the supplied Retail, Wholesale, and Re-seller prices. Inventory starts at zero until the owner enters physical counts. Existing passwords and inventory are preserved on repeated imports.
+Demo user seeding is limited to local/testing. The permanent catalog is tracked in database/data/catalog.json: the six supplied Dannon, Lucky Hanna, and Thanos products remain alongside twelve additional Yalex, Softex, Flipper, and Apple Tees products, for 18 products and 1,049 size/color variants. New Light Color rows expand to Light Green, Light Red, and Light Yellow; Dark Color rows expand to Dark Green, Dark Red, and Dark Yellow; Color/Colored rows expand to Green, Red, and Yellow. New Re-seller prices are Retail/SRP less ₱20, while the original six products keep their supplied prices and 13 named colors. Inventory starts at zero until the owner enters physical counts. Existing passwords and inventory are preserved on repeated imports.
 
 To upgrade an existing installation without reseeding accounts:
 
@@ -43,7 +43,7 @@ To upgrade an existing installation without reseeding accounts:
     php artisan shop:import-catalog
     php artisan view:clear
 
-The import archives the eight original sample styles once and preserves their variants and order history. Repeated imports leave owner changes intact. Hidden products can still be reviewed in the admin catalog.
+The import adds missing products and variants, archives the eight original sample styles once, and preserves their variants and order history. Repeated imports leave owner names, prices, stock, photos, charts, and visibility changes intact; it does not reset accounts or invoices. Hidden products can still be reviewed in the admin catalog. See [Permanent catalog and backup](docs/permanent-catalog.md) for the source data and safe update procedure.
 
 ## Quantity pricing
 

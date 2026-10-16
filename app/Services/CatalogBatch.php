@@ -34,9 +34,17 @@ class CatalogBatch
                 $counts['products_created'] += (int) $product->wasRecentlyCreated;
 
                 foreach ($line['variants'] as $lineVariant) {
-                    $variant = $product->variants()->firstOrCreate([
-                        'sku' => Sku::forVariant($product, $lineVariant['size'], $lineVariant['color']),
-                    ], $lineVariant + ['stock' => 0, 'reserved' => 0]);
+                    // Imported SKUs stay stable when the owner renames a size or color.
+                    $variant = $product->variants()->where('sku', Sku::forVariant($product, $lineVariant['size'], $lineVariant['color']))->first();
+                    if (! $variant) {
+                        // An owner may already have added this size/color with a different SKU.
+                        $variant = $product->variants()->firstOrCreate([
+                            'size' => $lineVariant['size'], 'color' => $lineVariant['color'],
+                        ], $lineVariant + [
+                            'sku' => Sku::forNewVariant($product, $lineVariant['size'], $lineVariant['color']),
+                            'stock' => 0, 'reserved' => 0,
+                        ]);
+                    }
                     $counts['variants_created'] += (int) $variant->wasRecentlyCreated;
                 }
             }

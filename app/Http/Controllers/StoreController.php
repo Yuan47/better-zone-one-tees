@@ -54,7 +54,7 @@ class StoreController extends Controller
             $products = $products->sortByDesc(fn ($p) => $p->variants->min('retail_price'));
         }
         $filterVariants = Variant::whereHas('product', fn ($q) => $q->where('active', true))->get();
-        $sizes = $filterVariants->pluck('size')->unique()->sortBy(fn ($v) => array_search($v, ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL']) === false ? (int) $v : 100 + array_search($v, ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL']))->values();
+        $sizes = $filterVariants->pluck('size')->unique()->sortBy(fn ($size) => $this->sizeSortKey($size))->values();
         $colors = $filterVariants->pluck('color')->unique()->sort()->values();
         $wishIds = $r->user() ? DB::table('wishlists')->where('user_id', $r->user()->id)->pluck('product_id')->all() : [];
         $paymentAlerts = app(InstallmentCredit::class)->alertsFor($r->user());
@@ -66,8 +66,26 @@ class StoreController extends Controller
     {
         abort_unless($product->active, 404);
         $product->load('variants');
+        $product->setRelation('variants', $product->variants->sortBy(fn ($variant) => $this->sizeSortKey($variant->size))->values());
 
         return view('product', compact('product'));
+    }
+
+    private function sizeSortKey(string $size): array
+    {
+        $label = strtoupper(trim($size));
+        if (preg_match('/^#?(\d+)$/D', $label, $matches)) {
+            return [0, (int) $matches[1], $label];
+        }
+
+        $adult = ['TN', 'XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL'];
+        $normalized = preg_replace('/^([2-5])X$/D', '${1}XL', $label);
+        $rank = array_search($normalized, $adult, true);
+        if ($rank !== false) {
+            return [1, $rank, $label];
+        }
+
+        return $label === 'FREE SIZE' ? [2, 0, $label] : [3, 0, $label];
     }
 
     public function add(Request $r)

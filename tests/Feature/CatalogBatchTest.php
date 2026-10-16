@@ -15,13 +15,13 @@ class CatalogBatchTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_first_batch_has_six_products_and_every_requested_color_size_and_price(): void
+    public function test_permanent_catalog_keeps_the_first_six_products_and_every_requested_color_size_and_price(): void
     {
         $counts = app(CatalogBatch::class)->import();
-        $this->assertSame(['products_created' => 6, 'variants_created' => 628, 'samples_archived' => 0], $counts);
-        $this->assertSame(6, Product::where('active', true)->count());
-        $this->assertSame(628, Variant::count());
-        $this->assertSame(628, Variant::distinct()->count('sku'));
+        $this->assertSame(['products_created' => 18, 'variants_created' => 1049, 'samples_archived' => 0], $counts);
+        $this->assertSame(18, Product::where('active', true)->count());
+        $this->assertSame(1049, Variant::count());
+        $this->assertSame(1049, Variant::distinct()->count('sku'));
         $this->assertSame(0, Variant::sum('stock'));
         $this->assertSame(0, Variant::sum('reserved'));
 
@@ -53,6 +53,9 @@ class CatalogBatchTest extends TestCase
                 'COLORED' => ['XS' => 107, 'S' => 114, 'M' => 114, 'L' => 124, 'XL' => 124, '2XL' => 137],
             ],
         ];
+        $firstBatch = Product::whereIn('slug', array_keys($expected))->get();
+        $this->assertCount(6, $firstBatch);
+        $this->assertSame(628, Variant::whereIn('product_id', $firstBatch->modelKeys())->count());
 
         foreach ($expected as $slug => $groups) {
             $product = Product::where('slug', $slug)->firstOrFail();
@@ -130,6 +133,65 @@ class CatalogBatchTest extends TestCase
         $this->assertStringContainsString('-M-LIGHT-BLUE-', $lightBlue->sku);
         $this->assertNotSame(Sku::forVariant($product, 'M', 'Sky Blue'), Sku::forVariant($product, 'M', 'Sky-Blue'));
         $this->artisan('shop:import-catalog')->assertSuccessful();
-        $this->assertDatabaseCount('variants', 628);
+        $this->assertDatabaseCount('variants', 1049);
+    }
+
+    public function test_import_preserves_owner_created_variant_with_a_custom_sku(): void
+    {
+        $product = Product::create(['name' => 'Owner title', 'slug' => 'thanos', 'category' => '', 'description' => 'Owner details']);
+        $variant = $product->variants()->create([
+            'sku' => 'OWNER-THANOS-XS-WHITE', 'size' => 'XS', 'color' => 'White', 'color_group' => 'WHITE',
+            'stock' => 37, 'reserved' => 2, 'retail_price' => 25000, 'wholesale_price' => 22000, 'reseller_price' => 20000,
+            'image_path' => 'uploads/owner-white.png',
+        ]);
+        $before = $variant->fresh()->getAttributes();
+
+        $this->assertSame(['products_created' => 17, 'variants_created' => 1048, 'samples_archived' => 0], app(CatalogBatch::class)->import());
+
+        $this->assertSame($before, $variant->fresh()->getAttributes());
+        $this->assertSame('Owner title', $product->fresh()->name);
+        $this->assertSame('Owner details', $product->fresh()->description);
+        $this->assertSame(1, $product->variants()->where('size', 'XS')->where('color', 'White')->count());
+        $this->assertSame(['products_created' => 0, 'variants_created' => 0, 'samples_archived' => 0], app(CatalogBatch::class)->import());
+        $this->assertSame($before, $variant->fresh()->getAttributes());
+    }
+
+    public function test_import_preserves_renamed_imported_variant_and_its_original_sku(): void
+    {
+        app(CatalogBatch::class)->import();
+        $product = Product::where('slug', 'thanos')->firstOrFail();
+        $variant = $product->variants()->where('size', 'XS')->where('color', 'White')->firstOrFail();
+        $originalSku = $variant->sku;
+        $variant->update(['size' => 'Owner XS', 'color' => 'Pearl', 'stock' => 21, 'retail_price' => 30000]);
+
+        $this->assertSame(['products_created' => 0, 'variants_created' => 0, 'samples_archived' => 0], app(CatalogBatch::class)->import());
+
+        $this->assertSame($originalSku, $variant->fresh()->sku);
+        $this->assertSame('Owner XS', $variant->fresh()->size);
+        $this->assertSame('Pearl', $variant->fresh()->color);
+        $this->assertSame(21, $variant->fresh()->stock);
+        $this->assertSame(30000, $variant->fresh()->retail_price);
+        $this->assertSame(0, $product->variants()->where('size', 'XS')->where('color', 'White')->count());
+    }
+
+    public function test_import_assigns_a_unique_sku_when_an_owner_variant_already_uses_the_generated_value(): void
+    {
+        $product = Product::create(['name' => 'Thanos', 'slug' => 'thanos', 'category' => '', 'description' => 'Existing product']);
+        $ownerProduct = Product::create(['name' => 'Owner Product', 'slug' => 'owner-product', 'category' => '', 'description' => 'Keep this']);
+        $occupiedSku = Sku::forVariant($product, 'XS', 'White');
+        $ownerVariant = $ownerProduct->variants()->create([
+            'sku' => $occupiedSku, 'size' => 'M', 'color' => 'Owner Blue', 'stock' => 17,
+            'retail_price' => 20000, 'wholesale_price' => 18000, 'reseller_price' => 16000,
+        ]);
+
+        $this->assertSame(['products_created' => 17, 'variants_created' => 1049, 'samples_archived' => 0], app(CatalogBatch::class)->import());
+
+        $newVariant = $product->variants()->where('size', 'XS')->where('color', 'White')->firstOrFail();
+        $this->assertSame($occupiedSku.'-2', $newVariant->sku);
+        $this->assertSame($occupiedSku, $ownerVariant->fresh()->sku);
+        $this->assertSame(17, $ownerVariant->fresh()->stock);
+        $this->assertSame(0, $newVariant->stock);
+        $this->assertSame(['products_created' => 0, 'variants_created' => 0, 'samples_archived' => 0], app(CatalogBatch::class)->import());
+        $this->assertSame($newVariant->id, $product->variants()->where('size', 'XS')->where('color', 'White')->firstOrFail()->id);
     }
 }
