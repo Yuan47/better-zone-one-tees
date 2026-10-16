@@ -6,6 +6,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\DeliveryRecoveryController;
+use App\Http\Controllers\EmailVerificationController;
 use App\Http\Controllers\FaqController;
 use App\Http\Controllers\GuestInvoiceController;
 use App\Http\Controllers\InvoicePaymentController;
@@ -40,6 +41,9 @@ Route::middleware(['signed', 'throttle:20,1,guest-invoices'])->prefix('guest/inv
     Route::post('/refunds', [GuestInvoiceController::class, 'refund'])->name('refunds');
 });
 Route::middleware('auth')->group(function () {
+    Route::get('/email/verify', [EmailVerificationController::class, 'show'])->name('verification.notice');
+    Route::post('/email/verification-code', [EmailVerificationController::class, 'send'])->middleware('throttle:5,1,email-code-send')->name('verification.send');
+    Route::post('/email/verify', [EmailVerificationController::class, 'verify'])->middleware('throttle:10,1,email-code-check')->name('verification.verify');
     Route::get('/account', [AccountController::class, 'show'])->name('account');
     Route::patch('/account', [AccountController::class, 'update'])->name('account.update');
     Route::patch('/account/password', [AccountController::class, 'password'])->middleware('throttle:5,1')->name('account.password');

@@ -17,6 +17,7 @@
 @if($user->avatar_path)<label class="checkbox-label"><span><input type="checkbox" name="remove_avatar" value="1"> Remove current photo</span></label>@endif
 <div class="two-col"><label>Username<input name="username" required minlength="3" maxlength="40" pattern="[a-z0-9_.\-]+" value="{{ old('username',$suggestedUsername) }}" autocomplete="username"><small class="muted">Lowercase letters, numbers, dots, underscores, or hyphens.</small></label><label>Full name<input name="name" required maxlength="100" value="{{ old('name',$user->name) }}" autocomplete="name"></label></div>
 <label>Email<input type="email" value="{{ $user->email }}" readonly aria-readonly="true" autocomplete="email"><small class="muted">Your sign-in email is fixed.</small></label>
+<div class="verification-account"><span class="badge">{{ $user->email_verified_at ? 'Email verified' : 'Email not verified' }}</span>@if(!$user->email_verified_at)<a class="text-link" href="{{ route('verification.notice') }}">Verify email →</a>@endif</div>
 @if($user->role==='customer')
 <h2>Delivery address</h2><p class="muted">Saved details will appear at checkout. Enter a complete address when adding or changing it.</p>
 <label>Mobile number<input type="tel" name="phone" pattern="\+?[0-9]{10,15}" maxlength="16" value="{{ old('phone',$user->phone) }}" autocomplete="tel" placeholder="09xxxxxxxxx"></label>

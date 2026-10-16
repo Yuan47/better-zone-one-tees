@@ -4,6 +4,11 @@ use App\Models\User;
 
 return [
 
+    'email_verification' => [
+        // Production fails closed unless explicitly configured otherwise.
+        'required' => (bool) env('EMAIL_VERIFICATION_REQUIRED', env('APP_ENV', 'production') === 'production'),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Authentication Defaults

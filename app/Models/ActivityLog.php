@@ -14,6 +14,7 @@ class ActivityLog extends Model
         'auth.login' => 'Signed in',
         'auth.logout' => 'Signed out',
         'auth.registered' => 'Created an account',
+        'auth.email_verified' => 'Verified account email',
         'account.updated' => 'Updated account',
         'account.password_changed' => 'Changed password',
         'cart.added' => 'Added to cart',

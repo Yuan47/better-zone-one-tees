@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Services\ActivityRecorder;
+use App\Services\EmailVerificationCodes;
 use App\Services\InstallmentCredit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -28,6 +29,9 @@ class AuthController extends Controller
         if (app(InstallmentCredit::class)->alertsFor($r->user())->isNotEmpty()) {
             $r->session()->flash('payment_alert', true);
         }
+        if (config('auth.email_verification.required') === true && $r->user()->email_verified_at === null) {
+            return redirect()->route('verification.notice');
+        }
 
         return redirect()->intended($r->user()->role === 'customer' ? route('store') : route('admin.dashboard'));
     }
@@ -39,6 +43,11 @@ class AuthController extends Controller
         Auth::login($user);
         $r->session()->regenerate();
         ActivityRecorder::mark($r, 'auth.registered', $user);
+
+        $codes = app(EmailVerificationCodes::class);
+        if ($codes->required()) {
+            return redirect()->route('verification.notice')->with('notice', EmailVerificationController::sendMessage($codes->send($user)));
+        }
 
         return redirect()->route('store');
     }

@@ -3,7 +3,7 @@
 <title>@yield('title','Zone One Tee’s') · 2.0</title>
 @if(request()->routeIs('checkout'))<link rel="stylesheet" href="{{ asset('vendor/leaflet/leaflet.css') }}"><script src="{{ asset('vendor/leaflet/leaflet.js') }}" defer></script>@endif
 <link rel="stylesheet" href="{{ asset('shop.css') }}?v={{ filemtime(public_path('shop.css')) }}"><script src="{{ asset('shop.js') }}?v={{ filemtime(public_path('shop.js')) }}" defer></script></head>
-<body class="{{ (request()->routeIs('admin.*') || ((request()->routeIs('account*') || request()->routeIs('orders.show')) && auth()->check() && auth()->user()->role!=='customer')) ? 'admin-body' : 'store-body' }}">
+<body class="{{ (request()->routeIs('admin.*') || ((request()->routeIs('account*') || request()->routeIs('orders.show')) && auth()->check() && auth()->user()->role!=='customer')) ? 'admin-body' : 'store-body' }}{{ request()->routeIs('verification.*') ? ' verification-page' : '' }}">
 <a class="skip-link" href="#main-content">Skip to content</a>
 @php($isAdmin=(request()->routeIs('admin.*') || ((request()->routeIs('account*') || request()->routeIs('orders.show')) && auth()->check() && auth()->user()->role!=='customer')))
 @if($isAdmin)
@@ -39,7 +39,11 @@
 <main id="main-content" tabindex="-1" class="{{ $isAdmin?'admin-content':'container' }}">
 @if(session('notice'))<div class="notice" role="status">{{ session('notice') }}</div>@endif
 @if($errors->any())<div class="error" role="alert">@foreach($errors->all() as $error)<div>{{ $error }}</div>@endforeach</div>@endif
+@if(!request()->routeIs('verification.*'))
+@if(auth()->check() && config('auth.email_verification.required') && !auth()->user()->email_verified_at)<div class="notice" role="status">Verify your email to place orders and use your account. <a class="text-link" href="{{ route('verification.notice') }}">Verify email →</a></div>@else
 @include('partials.payment-alert')
+@endif
+@endif
 @yield('content')</main>
 @if($isAdmin)</div>@else<footer class="footer"><a class="brand" href="{{ route('store') }}"><img class="brand-logo" src="{{ asset('brand/zone-one-tees-logo.png') }}" alt="Zone One Tee’s logo">Zone One Tee’s<span class="muted">2.0</span></a><span>Good clothes. Thoughtful service. Everyday value.</span><a href="{{ route('store') }}#quantity">Quantity pricing</a></footer>@endif
 <button id="chat-toggle" class="chat-launcher" aria-controls="chat-panel" aria-expanded="false">✧ <span>{{ $isAdmin?'Staff assistant':'Ask Zone One' }}</span></button>

@@ -56,6 +56,16 @@ Total pieces across the entire cart, regardless of role:
 
 Bulk discount rounds once to the nearest centavo on the whole clothing subtotal. Shipping is separate and never discounted. Money is stored in integer centavos. Browser-supplied prices are ignored. Bulk PayMongo checkout groups clothing into one line to preserve the exact order-level discount.
 
+## Email account verification
+
+Account verification is prepared through Brevo's transactional HTTP API. Set EMAIL_VERIFICATION_REQUIRED=true only after configuring BREVO_API_KEY, BREVO_FROM_EMAIL, and BREVO_FROM_NAME with a verified sender. The local example keeps verification off; production defaults to requiring it if the flag is absent. Payment reminders have their own independent switch.
+
+New registrations receive a six-digit code when enabled and configured. Existing unverified customers, staff, and admins sign in and request their own code. Codes expire after ten minutes, allow five incorrect attempts, and have a sixty-second resend wait and five-send hourly account limit. Only a keyed digest is stored in the database. Resending replaces the old code; successful verification is single use and records an activity entry. GET requests never send mail or verify accounts. Failed and uncertain sends are not retried automatically.
+
+When required, unverified accounts can browse public products and view their account/verification screen, but protected orders, checkout, account changes, and staff/owner workspaces are blocked on the server. Provider webhooks and signed guest walk-in invoices remain independent so existing payment reconciliation is not interrupted. Existing accounts are not automatically marked verified, and passwords, invoices, balances, and deadlines are preserved. This is inbox verification, not two-factor login or password recovery.
+
+The responsive verification screen includes one-time-code autofill, a resend countdown, safe errors, sign-out, and help for the fixed account email. My Account shows verified/unverified status; owner settings show setup readiness without displaying credentials. Provider acceptance does not prove inbox delivery. Follow [Email verification setup](docs/email-verification-setup.md) for temporary-domain HTTPS, sender authentication, safe activation, and real-inbox checks.
+
 ## Invoices, installments, and walk-in sales
 
 Customers may choose partial payment only when the discounted clothing subtotal is **more than ₱1,000.00**, excluding delivery. Exactly ₱1,000.00 does not qualify. Each payment must be at least ₱1.00 and cannot exceed the outstanding invoice balance; an initial partial payment must be less than the full invoice total. Deposits remain separate from confirmed clothing sales and do not make an order eligible for packing or delivery.
@@ -181,7 +191,11 @@ External providers have not been end-to-end verified with your credentials. Auto
 
 Google sign-in is not implemented in this Laravel project. Configuring a Google client alone will not add authentication routes, account linking, or callback protections. ngrok/public webhook reachability and provider credentials remain unconfigured and untested here.
 
-## Current revision verification · 16 October 2026
+## Email verification checks · 16 October 2026
+
+The complete SQLite suite passed **749 tests / 6,037 assertions**. The 114 new OTP service and account-flow cases also passed on isolated MariaDB with **765 assertions**. Independent two-process checks passed **27 assertions**: competing verification requests produced one success and one activity entry, and competing sends produced one claim and one mocked provider request. The disposable schema, accounts, and grants were removed after verification. Provider requests were mocked; no real email was sent. Evidence is retained locally under work/email-otp-final-junit.xml and work/email-verification-mysql-20261016.
+
+## Installment revision verification · 16 October 2026
 
 The final full SQLite suite passed **635 tests / 5,272 assertions**. Fifteen focused suites also passed **502 tests / 3,730 assertions** on MariaDB 10.4.32. A later MariaDB follow-up passed **67 tests / 696 assertions**, including the final checkout replay and reminder-visibility changes; these overlap the earlier run and are not additional unique tests. All runs had zero failures, errors, or skips. MariaDB verification used a guarded disposable schema and an account restricted to that exact schema, with InnoDB, strict SQL mode, and REPEATABLE READ. Coverage includes invoice payments, walk-ins, customer installments, credit limits, reminders, mixed-receipt refunds, existing commerce/payment/delivery recovery, reports, Operations, and real CSRF middleware. Provider HTTP was mocked; no payment charge or real email was sent.
 
@@ -198,7 +212,7 @@ Evidence is retained in the workspace: work/installments-final-junit.xml, work/i
 - For each further installation, apply migrations only after a verified backup and review of existing financial data; the ledger migration preserves receipts and refuses destructive rollback. The completed local upgrade does not migrate the old hosted store.
 - Configure provider credentials, public webhook HTTPS reachability, pickup details, and scheduler execution; verify payment success/expiry/recovery and delivery booking/recovery with the real sandbox accounts. Keep Brevo reminders off until sender/inbox behavior is verified.
 - Confirm product photos, remaining kids' measurements, stock counts, opening hours, support details, and the store's refund/physical-return procedures. PayMongo refunds are processed externally and cash returns are performed manually by the owner; disputes, return inspection, and clothing/delivery refund allocation still need a defined workflow.
-- Password recovery/email verification, notifications beyond the implemented three-day/one-day balance reminders, support escalation tickets, backup automation, and load testing remain. Guest phone identity is unverified; store credit/collection procedures still need acceptance.
+- Password recovery, notifications beyond the implemented verification codes and three-day/one-day balance reminders, support escalation tickets, backup automation, and load testing remain. Activate and verify real Brevo inbox delivery before requiring account verification on the deployed domain. Guest phone identity is unverified; store credit/collection procedures still need acceptance.
 - Test the deployed site on physical mobile devices and verify backups can be restored. Forecast accuracy needs historical-data backtesting.
 - Replacing the earlier website still requires a reviewed catalog/customer/order migration, controlled provider live testing, acceptance, rollback, domain configuration, and HTTPS. This source update does not perform hosting or database cutover.
 

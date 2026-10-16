@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Models\Variant;
 use App\Services\ActivityRecorder;
 use App\Services\DeliveryRecovery;
+use App\Services\EmailVerificationCodes;
 use App\Services\ImageUploads;
 use App\Services\InvoiceReminders;
 use App\Services\Lalamove;
@@ -310,6 +311,7 @@ class AdminController extends Controller
             ->when($status !== 'all', fn ($q) => $q->where('active', $status === 'active'))
             ->orderBy('sort_order')->orderBy('id')->paginate(12)->withQueryString();
         $reminders = app(InvoiceReminders::class);
+        $emailVerification = app(EmailVerificationCodes::class);
 
         return view('admin.settings', [
             'faqs' => $faqs, 'faqSearch' => $search, 'faqStatus' => $status,
@@ -318,6 +320,7 @@ class AdminController extends Controller
             'reminderEnabled' => config('services.brevo.payment_reminders_enabled') === true, 'reminderConfigured' => $reminders->configured(),
             'reminderReviewCount' => PaymentReminder::whereIn('status', ['claimed', 'failed', 'unknown'])->count(),
             'reminderHistory' => PaymentReminder::with('order:id,number')->latest('id')->limit(12)->get(),
+            'emailVerificationRequired' => $emailVerification->required(), 'emailVerificationConfigured' => $emailVerification->configured(),
         ]);
     }
 
