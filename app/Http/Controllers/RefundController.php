@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Models\PaymentAttempt;
 use App\Models\Refund;
 use App\Services\ActivityRecorder;
 use App\Services\RefundVerification;
@@ -16,7 +17,7 @@ class RefundController extends Controller
     public function index(Request $request)
     {
         $filters = $request->validate(['status' => ['nullable', Rule::in(Refund::STATUSES)], 'q' => 'nullable|string|max:100']);
-        $refunds = Refund::with('order.user')->when($filters['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
+        $refunds = Refund::with('order.user', 'paymentAttempt')->when($filters['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
             ->when($filters['q'] ?? null, fn ($query, $search) => $query->whereHas('order', fn ($query) => $query->where('number', 'like', '%'.$search.'%')))
             ->orderByRaw("CASE WHEN status = 'requested' THEN 0 WHEN status = 'approved' THEN 1 WHEN status IN ('pending', 'processing') THEN 2 ELSE 3 END")
             ->latest()->paginate(20)->withQueryString();
@@ -26,9 +27,11 @@ class RefundController extends Controller
 
     public function show(Refund $refund)
     {
-        $refund->load('order.user');
+        $refund->load('order.user', 'paymentAttempt', 'cashRecordedBy');
+        $paymentOptions = PaymentAttempt::where('order_id', $refund->order_id)->where('status', 'paid')->orderBy('received_at')->orderBy('id')->get()
+            ->map(fn ($payment) => ['payment' => $payment, 'remaining' => min(Refund::remainingForOrder($refund->order, $refund->id), Refund::remainingForPayment($refund->order, $payment, $refund->id))]);
 
-        return view('admin.refund', compact('refund'));
+        return view('admin.refund', compact('refund', 'paymentOptions'));
     }
 
     public function store(Request $request, Order $order)
@@ -37,16 +40,16 @@ class RefundController extends Controller
         $data = $request->validate(['reason' => 'required|string|min:10|max:2000']);
         $refund = DB::transaction(function () use ($request, $order, $data) {
             $locked = Order::whereKey($order->id)->lockForUpdate()->firstOrFail();
-            if ($locked->payment_status !== 'paid' || ! $locked->payment_id) {
+            if ($locked->payment_status !== 'paid' || (! $locked->payment_id && ! PaymentAttempt::where('order_id', $locked->id)->where('status', 'paid')->exists())) {
                 $this->fail('Refund requests are available only for verified paid orders.');
             }
-            if ($locked->status !== 'completed' || ! $locked->customer_confirmed_at) {
-                $this->fail('Refund requests are available only after you confirm Delivered and submit your review.');
+            if (! $locked->deliveryConfirmed()) {
+                $this->fail('Refund requests are available only after confirmed delivery or a completed walk-in handover.');
             }
             if ($locked->refunds()->whereIn('status', ['requested', 'approved', 'pending', 'processing'])->exists()) {
                 $this->fail('This order already has a refund request under review or processing.');
             }
-            $remaining = $locked->total - (int) $locked->refunds()->where('status', 'succeeded')->sum('amount');
+            $remaining = Refund::remainingForOrder($locked);
             if ($remaining < 100) {
                 $this->fail('This payment has already been refunded.');
             }
@@ -62,37 +65,57 @@ class RefundController extends Controller
     {
         abort_unless($request->user()->role === 'admin', 403);
         $data = $request->validate(['decision' => 'required|in:approved,rejected', 'decision_note' => 'required|string|min:5|max:2000',
-            'approved_amount' => 'required_if:decision,approved|nullable|regex:/^\d+(\.\d{1,2})?$/|numeric|min:1|max:100000000']);
+            'approved_amount' => 'required_if:decision,approved|nullable|regex:/^\d+(\.\d{1,2})?$/|numeric|min:1|max:100000000',
+            'payment_attempt_id' => 'nullable|integer|min:1']);
         DB::transaction(function () use ($request, $refund, $data) {
             $order = Order::whereKey($refund->order_id)->lockForUpdate()->firstOrFail();
             $locked = Refund::whereKey($refund->id)->lockForUpdate()->firstOrFail();
-            if ($order->payment_status !== 'paid' || ! $order->payment_id) {
+            if ($order->payment_status !== 'paid' || (! $order->payment_id && ! PaymentAttempt::where('order_id', $order->id)->where('status', 'paid')->exists())) {
                 $this->fail('Only a verified paid order can be reviewed for a refund.');
             }
-            if ($order->status !== 'completed' || ! $order->customer_confirmed_at) {
-                $this->fail('Refunds can be reviewed only after the customer confirms delivery and reviews the order.');
+            if (! $order->deliveryConfirmed()) {
+                $this->fail('Refunds can be reviewed only after confirmed delivery or a completed walk-in handover.');
             }
             if ($locked->status !== 'requested') {
                 $this->fail('This request has already been reviewed.');
             }
             $amount = $data['decision'] === 'approved' ? (int) round((float) $data['approved_amount'] * 100) : null;
-            $remaining = $order->total - (int) $order->refunds()->where('status', 'succeeded')->sum('amount');
+            $remaining = Refund::remainingForOrder($order, $locked->id);
             if ($amount !== null && ($amount > $remaining || $amount > $locked->requested_amount)) {
                 $this->fail('The approved refund cannot exceed the request or remaining paid amount.');
             }
-            $locked->update(['status' => $data['decision'], 'approved_amount' => $amount, 'decision_note' => $data['decision_note'], 'reviewed_by' => $request->user()->id, 'reviewed_at' => now()]);
+            $updates = ['status' => $data['decision'], 'approved_amount' => $amount, 'decision_note' => $data['decision_note'], 'reviewed_by' => $request->user()->id, 'reviewed_at' => now()];
+            if ($amount !== null) {
+                $sourceId = $data['payment_attempt_id'] ?? $locked->payment_attempt_id;
+                if ($sourceId !== null) {
+                    $source = PaymentAttempt::where('order_id', $order->id)->whereKey($sourceId)->where('status', 'paid')->whereIn('method', ['cash', 'paymongo'])->lockForUpdate()->first();
+                    if (! $source || $amount > Refund::remainingForPayment($order, $source, $locked->id)) {
+                        $this->fail('Choose a paid receipt from this invoice whose remaining amount covers the approved refund.');
+                    }
+                    $updates['payment_attempt_id'] = $source->id;
+                } elseif (PaymentAttempt::where('order_id', $order->id)->where('status', 'paid')->exists()) {
+                    $this->fail('Choose the payment receipt for this refund.');
+                }
+            }
+            $locked->update($updates);
         }, 3);
         ActivityRecorder::mark($request, 'refund.reviewed', $refund);
 
-        return back()->with('notice', $data['decision'] === 'approved' ? 'Request approved for processing. Complete the refund in PayMongo, then verify its reference here.' : 'Refund request declined. The customer can view the reason on the order.');
+        if ($data['decision'] === 'approved') {
+            return back()->with('notice', $refund->fresh('paymentAttempt')->isCash()
+                ? 'Cash return approved. Record it after the money has been returned.'
+                : 'Refund approved. Complete it in PayMongo, then verify its reference against the selected receipt.');
+        }
+
+        return back()->with('notice', 'Refund request declined. The customer can view the reason on the order.');
     }
 
     public function recover(Request $request, Refund $refund, RefundVerification $verification)
     {
         abort_unless($request->user()->role === 'admin', 403);
-        $data = $request->validate(['provider_refund_id' => ['required', 'string', 'regex:/^ref_[A-Za-z0-9_]{1,120}$/D']]);
+        $data = $request->validate(['provider_refund_id' => ['required', 'string', 'regex:/^ref_[A-Za-z0-9_]{1,120}$/D'], 'payment_attempt_id' => 'nullable|integer|min:1']);
 
-        return $this->verify($request, $refund, $verification, $data['provider_refund_id']);
+        return $this->verify($request, $refund, $verification, $data['provider_refund_id'], isset($data['payment_attempt_id']) ? (int) $data['payment_attempt_id'] : null);
     }
 
     public function check(Request $request, Refund $refund, RefundVerification $verification)
@@ -100,10 +123,48 @@ class RefundController extends Controller
         return $this->verify($request, $refund, $verification);
     }
 
-    private function verify(Request $request, Refund $refund, RefundVerification $verification, ?string $id = null)
+    public function cash(Request $request, Refund $refund, ActivityRecorder $recorder)
+    {
+        abort_unless($request->user()->role === 'admin', 403);
+        $data = $request->validate(['payment_attempt_id' => 'required|integer|min:1', 'cash_reason' => 'required|string|min:10|max:2000']);
+        try {
+            DB::transaction(function () use ($request, $refund, $data, $recorder) {
+                $order = Order::whereKey($refund->order_id)->lockForUpdate()->firstOrFail();
+                $locked = Refund::whereKey($refund->id)->lockForUpdate()->firstOrFail();
+                if ($order->payment_status !== 'paid' || ! $order->deliveryConfirmed()) {
+                    $this->fail('Cash refunds require a fully paid invoice and confirmed delivery or a completed walk-in handover.');
+                }
+                if ($locked->status !== 'approved' || $locked->provider_refund_id !== null) {
+                    $this->fail('Only an approved refund without a provider reference can be recorded as returned cash.');
+                }
+                if ($locked->payment_attempt_id !== null && (int) $locked->payment_attempt_id !== (int) $data['payment_attempt_id']) {
+                    $this->fail('The selected receipt differs from the approved refund source.');
+                }
+                $source = PaymentAttempt::whereKey($data['payment_attempt_id'])->where('order_id', $order->id)->where('status', 'paid')->where('method', 'cash')->lockForUpdate()->first();
+                $amount = (int) $locked->approved_amount;
+                if (! $source || ! $source->received_at || $amount < 100 || $amount > $locked->requested_amount
+                    || $amount > Refund::remainingForPayment($order, $source, $locked->id) || $amount > Refund::remainingForOrder($order, $locked->id)) {
+                    $this->fail('The cash return exceeds the approved request or remaining amount on its paid cash receipt and invoice.');
+                }
+                $locked->update(['payment_attempt_id' => $source->id, 'amount' => $amount, 'status' => 'succeeded', 'confirmed_at' => now(),
+                    'cash_recorded_by' => $request->user()->id, 'cash_reason' => $data['cash_reason']]);
+                if (! $recorder->record($request->user(), 'refund.cash_recorded', $locked, ['reason' => $data['cash_reason'], 'amount' => $amount, 'method' => 'cash'])) {
+                    throw new \RuntimeException('Cash refund audit could not be recorded.');
+                }
+            }, 3);
+        } catch (ValidationException $exception) {
+            throw $exception;
+        } catch (\Throwable $exception) {
+            return back()->withErrors(['refund' => 'The cash return record could not be saved. No confirmation was added. Try saving the same return record again.']);
+        }
+
+        return back()->with('notice', 'The completed cash return was recorded against its payment receipt.');
+    }
+
+    private function verify(Request $request, Refund $refund, RefundVerification $verification, ?string $id = null, ?int $paymentAttemptId = null)
     {
         try {
-            $result = $verification->check($refund, $id);
+            $result = $verification->check($refund, $id, $paymentAttemptId);
         } catch (ValidationException $e) {
             throw $e;
         } catch (\Throwable $e) {

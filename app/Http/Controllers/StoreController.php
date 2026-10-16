@@ -6,6 +6,9 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\Variant;
 use App\Services\ActivityRecorder;
+use App\Services\InstallmentCredit;
+use App\Services\InvoicePayments;
+use App\Services\InvoiceTerms;
 use App\Services\Lalamove;
 use App\Services\OrderFlow;
 use App\Services\PayMongo;
@@ -14,6 +17,7 @@ use App\Services\StructuredAddress;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class StoreController extends Controller
@@ -53,8 +57,9 @@ class StoreController extends Controller
         $sizes = $filterVariants->pluck('size')->unique()->sortBy(fn ($v) => array_search($v, ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL']) === false ? (int) $v : 100 + array_search($v, ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL']))->values();
         $colors = $filterVariants->pluck('color')->unique()->sort()->values();
         $wishIds = $r->user() ? DB::table('wishlists')->where('user_id', $r->user()->id)->pluck('product_id')->all() : [];
+        $paymentAlerts = app(InstallmentCredit::class)->alertsFor($r->user());
 
-        return view('store', compact('products', 'sizes', 'colors', 'wishIds'));
+        return view('store', compact('products', 'sizes', 'colors', 'wishIds', 'paymentAlerts'));
     }
 
     public function product(Product $product)
@@ -77,6 +82,7 @@ class StoreController extends Controller
         }
         $cart[$v->id] = $quantity;
         $r->session()->put('cart', $cart);
+        $r->session()->forget(['checkout_key', 'checkout_cart_consumed']);
         ActivityRecorder::mark($r, 'cart.added', $v, ['quantity' => $quantity, 'previous_quantity' => $quantity - $data['quantity'], 'cart_quantity' => array_sum($cart)]);
 
         return redirect()->route('cart')->with('notice', 'Added to your cart. Your quantity price is applied automatically.');
@@ -108,6 +114,7 @@ class StoreController extends Controller
         }
         $r->session()->put('cart', $cart);
         if ($data['quantity'] !== $previousQuantity) {
+            $r->session()->forget(['checkout_key', 'checkout_cart_consumed']);
             ActivityRecorder::mark($r, $data['quantity'] === 0 ? 'cart.removed' : 'cart.updated', $variant,
                 ['quantity' => $data['quantity'], 'previous_quantity' => $previousQuantity, 'cart_quantity' => array_sum($cart)]);
         }
@@ -137,7 +144,7 @@ class StoreController extends Controller
             return redirect()->route('cart');
         }
 
-        return view('checkout', ['summary' => $summary, 'payReady' => $pay->ready(), 'deliveryReady' => $delivery->ready()]);
+        return view('checkout', ['summary' => $summary, 'payReady' => $pay->ready(), 'deliveryReady' => $delivery->ready(), 'checkoutKey' => $this->checkoutKey($r)]);
     }
 
     public function quote(Request $r, Lalamove $delivery, StructuredAddress $addresses)
@@ -168,9 +175,25 @@ class StoreController extends Controller
     public function place(Request $r, PayMongo $pay, OrderFlow $flow, StructuredAddress $addresses)
     {
         $this->requireCustomerCheckout($r);
+        $checkoutKey = $r->validate(['checkout_key' => 'nullable|uuid'])['checkout_key'] ?? null;
+        if ($checkoutKey === null) {
+            $checkoutKey = $this->checkoutKey($r);
+        }
+        $checkoutKey = strtolower($checkoutKey);
+        if ($existing = Order::where('creation_key', $checkoutKey)->first()) {
+            if ($existing->user_id !== $r->user()->id || $existing->sales_channel !== 'online') {
+                throw ValidationException::withMessages(['checkout_key' => 'Refresh checkout before submitting this purchase.']);
+            }
+
+            return redirect()->route('orders.show', $existing);
+        }
+        if (! in_array($checkoutKey, $r->session()->get('checkout_keys', []), true)) {
+            throw ValidationException::withMessages(['checkout_key' => 'Refresh checkout before submitting this purchase.']);
+        }
         $data = $r->validate(['recipient' => 'required|string|max:100', 'phone' => ['required', 'regex:/^\+?[0-9]{10,15}$/'],
             'delivery_method' => 'required|in:pickup,lalamove',
-            'lat' => 'nullable|numeric|between:-90,90', 'lng' => 'nullable|numeric|between:-180,180']);
+            'lat' => 'nullable|numeric|between:-90,90', 'lng' => 'nullable|numeric|between:-180,180',
+            'payment_option' => 'nullable|in:full,partial', 'payment_amount' => 'required_if:payment_option,partial', 'payment_days' => 'nullable|integer|between:7,30']);
         $address = $addresses->validatedInput($r, $data['delivery_method'] === 'lalamove');
         $data = array_merge($data, $address);
         $data['address'] = filled($data['street_address']) ? $addresses->format($data) : 'Store pickup';
@@ -189,24 +212,53 @@ class StoreController extends Controller
             $data['shipping'] = (int) round((float) $saved['quote']['priceBreakdown']['total'] * 100);
             $data['delivery_quote'] = $saved['quote'];
         }
-        // One checkout per session; a repeated submission returns the existing order.
-        $pendingId = $r->session()->get('pending_order');
-        if ($pendingId && ($pending = Order::where('user_id', $r->user()->id)->find($pendingId)) && $pending->status === 'awaiting_payment' && ! $pending->inventory_released) {
-            return redirect()->route('orders.show', $pending);
+        $partial = ($data['payment_option'] ?? 'full') === 'partial';
+        $amount = $partial ? InvoiceTerms::amount($data['payment_amount']) : null;
+        $data['payment_plan'] = $partial ? 'partial' : 'full';
+        $data['creation_key'] = $checkoutKey;
+        if ($partial) {
+            $data['due_at'] = now()->addDays((int) ($data['payment_days'] ?? app(InvoiceTerms::class)->days()));
         }
-        $order = $flow->reserve($r->session()->get('cart', []), $data, $r->user()->id);
-        $r->session()->put('pending_order', $order->id);
+        $order = DB::transaction(function () use ($flow, $r, $data, $partial, $amount) {
+            $invoice = $flow->reserve($r->session()->get('cart', []), $data, $r->user()->id);
+            if ($partial) {
+                app(InvoiceTerms::class)->validatePartial($invoice);
+                if ($amount >= $invoice->total) {
+                    throw ValidationException::withMessages(['payment_amount' => 'A partial payment must be less than the original invoice total. Choose full payment to settle it now.']);
+                }
+            }
+
+            return $invoice;
+        }, 3);
+        $r->session()->put(['pending_order' => $order->id, 'checkout_key' => $checkoutKey, 'checkout_cart_consumed' => false]);
         ActivityRecorder::mark($r, 'order.created', $order, ['quantity' => $order->quantity, 'delivery_method' => $order->delivery_method, 'status' => $order->fresh()->status]);
         try {
-            $session = $pay->create($order->load('items', 'user'));
-            $order->update($session);
+            $attempt = app(InvoicePayments::class)->start($order, $amount ?? $order->total, $r->user(), (string) Str::uuid());
             $r->session()->forget(['cart', 'delivery_quote']);
+            $r->session()->put('checkout_cart_consumed', true);
 
-            return redirect()->away($session['checkout_url']);
+            return redirect()->away($attempt->checkout_url);
         } catch (\Throwable $e) {
             // Provider outcome may be uncertain after a timeout. Retain reservation and do not create another session blindly.
             return redirect()->route('orders.show', $order)->withErrors(['payment' => 'Checkout could not be confirmed. Your order is saved for staff reconciliation; no payment has been confirmed.']);
         }
+    }
+
+    private function checkoutKey(Request $request): string
+    {
+        $current = $request->session()->get('checkout_key');
+        $closed = $current && Order::where('user_id', $request->user()->id)->where('creation_key', $current)
+            ->where(fn ($query) => $query->where('status', 'cancelled')->orWhere('inventory_released', true))->exists();
+        // Revisiting unchanged checkout after an uncertain outcome must keep the original request.
+        if ($current && ! $closed && ! ($request->session()->get('checkout_cart_consumed') && $request->session()->get('cart', []))) {
+            return $current;
+        }
+        $key = (string) Str::uuid();
+        $keys = $request->session()->get('checkout_keys', []);
+        $keys[] = $key;
+        $request->session()->put(['checkout_key' => $key, 'checkout_keys' => array_slice($keys, -20), 'checkout_cart_consumed' => false]);
+
+        return $key;
     }
 
     private function requireCustomerCheckout(Request $request): void
@@ -241,7 +293,7 @@ class StoreController extends Controller
     public function order(Request $r, Order $order)
     {
         abort_unless($r->user()->id === $order->user_id || in_array($r->user()->role, ['admin', 'staff']), 403);
-        $order->load('items', 'user', 'refunds', 'review');
+        $order->load('items', 'user', 'refunds.paymentAttempt', 'review', 'payments.recorder');
 
         return view('order', compact('order'));
     }

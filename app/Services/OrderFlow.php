@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Order;
+use App\Models\PaymentAttempt;
 use App\Models\Variant;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
@@ -11,9 +12,13 @@ use Illuminate\Validation\ValidationException;
 
 class OrderFlow
 {
-    public function reserve(array $cart, array $details, int $userId): Order
+    public function reserve(array $cart, array $details, ?int $userId): Order
     {
         return DB::transaction(function () use ($cart, $details, $userId) {
+            if (($details['payment_plan'] ?? 'full') === 'partial') {
+                app(InstallmentCredit::class)->assertAvailable($userId, $details['phone'] ?? null);
+                $details['credit_phone_hash'] = InstallmentCredit::phoneHash($details['phone'] ?? null);
+            }
             // Stable locking order prevents overselling and limits deadlocks.
             $variants = Variant::whereIn('id', array_keys($cart))->orderBy('id')->lockForUpdate()->get();
             $price = app(Pricing::class)->cart($cart);
@@ -25,8 +30,13 @@ class OrderFlow
                     throw ValidationException::withMessages(['cart' => $variant->product->name.' has insufficient available stock.']);
                 }
             }
-            $order = Order::create($details + ['number' => 'ZOT-'.now()->format('ymd').'-'.strtoupper(Str::random(8)), 'user_id' => $userId,
-                'tier' => $price['tier'], 'quantity' => $price['quantity'], 'subtotal' => $price['subtotal'], 'merchandise_base' => $price['base'], 'discount' => $price['discount'], 'total' => $price['subtotal'] + $details['shipping']]);
+            $details = array_intersect_key($details, array_flip(['recipient', 'phone', 'address', 'delivery_method', 'lat', 'lng', 'delivery_quote', 'street_address', 'city', 'province', 'postal_code', 'country', 'shipping', 'sales_channel', 'payment_plan', 'due_at', 'creation_key', 'created_by', 'contact_email', 'credit_phone_hash']));
+            if (($details['payment_plan'] ?? 'full') === 'partial' && empty($details['due_at'])) {
+                $details['due_at'] = now()->addDays(app(InvoiceTerms::class)->days());
+            }
+            $details['original_due_at'] = $details['due_at'] ?? null;
+            $order = Order::create(array_merge($details, ['number' => 'ZOT-'.now()->format('ymd').'-'.strtoupper(Str::random(8)), 'user_id' => $userId,
+                'tier' => $price['tier'], 'quantity' => $price['quantity'], 'subtotal' => $price['subtotal'], 'merchandise_base' => $price['base'], 'discount' => $price['discount'], 'total' => $price['subtotal'] + $details['shipping']]));
             foreach ($price['lines'] as $line) {
                 $v = $line['variant'];
                 $qty = $line['quantity'];
@@ -43,7 +53,7 @@ class OrderFlow
     {
         DB::transaction(function () use ($order) {
             $order = Order::whereKey($order->id)->lockForUpdate()->firstOrFail();
-            if ($order->payment_status !== 'pending' || $order->checkout_session_id) {
+            if ($order->payment_status !== 'pending' || $order->amount_paid > 0 || $order->checkout_session_id || $order->payments()->whereIn('status', PaymentAttempt::ACTIVE)->exists()) {
                 throw ValidationException::withMessages(['order' => 'This payment session needs reconciliation before its inventory can be released.']);
             }
             if (! $order->inventory_released) {
@@ -71,6 +81,6 @@ class OrderFlow
             }
             $v->update(['stock' => $v->stock - $item->quantity, 'reserved' => $v->reserved - $item->quantity]);
         }
-        $order->update(['payment_status' => 'paid', 'payment_id' => $paymentId, 'paid_at' => $paidAt ?? now(), 'status' => 'packing', 'inventory_committed' => true]);
+        $order->update(['payment_status' => 'paid', 'amount_paid' => $order->total, 'payment_id' => $paymentId, 'paid_at' => $paidAt ?? now(), 'status' => 'packing', 'inventory_committed' => true]);
     }
 }

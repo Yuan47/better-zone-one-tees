@@ -10,6 +10,7 @@ use App\Services\OrderFlow;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -69,7 +70,7 @@ class RequestForgeryTest extends TestCase
     private function snapshot(): array
     {
         $snapshot = [];
-        foreach (['orders', 'order_items', 'variants', 'order_reviews', 'refunds', 'activity_logs', 'webhook_events'] as $table) {
+        foreach (['orders', 'order_items', 'variants', 'order_reviews', 'refunds', 'activity_logs', 'webhook_events', 'payment_attempts'] as $table) {
             $snapshot[$table] = DB::table($table)->orderBy('id')->get()->map(fn ($row) => (array) $row)->all();
         }
 
@@ -79,7 +80,7 @@ class RequestForgeryTest extends TestCase
     public static function protectedRequests(): array
     {
         $cases = [];
-        foreach (['receipt', 'staff_status', 'payment_close', 'refund', 'checkout', 'delivery_quote'] as $operation) {
+        foreach (['receipt', 'staff_status', 'payment_close', 'refund', 'checkout', 'delivery_quote', 'invoice_online', 'invoice_cash', 'walk_in', 'invoice_due', 'invoice_terms'] as $operation) {
             foreach (['missing', 'wrong'] as $token) {
                 $cases[$operation.'_'.$token] = [$operation, $token];
             }
@@ -126,6 +127,30 @@ class RequestForgeryTest extends TestCase
                 $url = '/checkout/quote';
                 $payload = ['street_address' => '12 Example Street', 'city' => 'Quezon City', 'province' => 'Metro Manila',
                     'postal_code' => '1100', 'country' => 'Philippines', 'lat' => '14.676', 'lng' => '121.0437'];
+                break;
+            case 'invoice_online':
+                $url = '/orders/'.$order->id.'/payments';
+                $payload = ['amount' => '200', 'request_key' => (string) Str::uuid()];
+                break;
+            case 'invoice_cash':
+                $actor = User::factory()->create(['role' => 'staff']);
+                $url = '/admin/orders/'.$order->id.'/payments/cash';
+                $payload = ['amount' => '200', 'request_key' => (string) Str::uuid(), 'reason' => 'Cash counted and received at counter.', 'payment_received' => '1'];
+                break;
+            case 'walk_in':
+                $actor = User::factory()->create(['role' => 'staff']);
+                $url = '/admin/walk-in';
+                $payload = ['customer_type' => 'guest', 'recipient' => 'Test guest', 'payment_option' => 'full_cash', 'request_key' => (string) Str::uuid(), 'payment_received' => '1', 'reason' => 'Cash counted and received at counter.', 'lines' => [['variant_id' => $variant->id, 'quantity' => 1]]];
+                break;
+            case 'invoice_due':
+                $actor = User::factory()->create(['role' => 'admin']);
+                $url = '/admin/orders/'.$order->id.'/due';
+                $payload = ['due_at' => now()->addDays(14)->toDateString(), 'reason' => 'Customer and owner agreed a later deadline.'];
+                break;
+            case 'invoice_terms':
+                $actor = User::factory()->create(['role' => 'admin']);
+                $url = '/admin/settings/payment-terms';
+                $payload = ['days' => 14, 'reason' => 'Owner updated terms for future invoices.'];
                 break;
         }
         if ($token === 'wrong') {

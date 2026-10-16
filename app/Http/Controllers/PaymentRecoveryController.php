@@ -41,6 +41,7 @@ class PaymentRecoveryController extends Controller
 
             return back()->with('notice', match ($result) {
                 'paid' => 'PayMongo verified this payment. Your order is confirmed.',
+                'partially_paid' => 'The partial payment is saved on this invoice. Its remaining balance and original deadline are unchanged.',
                 'cancelled' => 'PayMongo verified that this checkout is closed and unpaid. The stock reservation has been released.',
                 default => 'PayMongo has not confirmed a payment yet. Your order and stock reservation are saved.',
             });

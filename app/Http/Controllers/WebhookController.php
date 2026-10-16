@@ -3,11 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Models\PaymentAttempt;
+use App\Services\InvoicePayments;
 use App\Services\OrderFlow;
 use App\Services\PayMongo;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class WebhookController extends Controller
 {
@@ -34,6 +37,28 @@ class WebhookController extends Controller
         }
         abort_unless(is_array($session) && is_string($session['id'] ?? null), 422);
         $outcome = DB::transaction(function () use ($eventId, $type, $session, $flow) {
+            $attempt = PaymentAttempt::where('checkout_session_id', $session['id'])->first();
+            if ($attempt) {
+                $invoice = Order::whereKey($attempt->order_id)->lockForUpdate()->firstOrFail();
+                if (DB::table('webhook_events')->where('event_id', $eventId)->exists()) {
+                    return 'duplicate';
+                }
+                if (data_get($session, 'attributes.reference_number') !== $invoice->number) {
+                    return 'mismatch';
+                }
+                $payments = collect(data_get($session, 'attributes.payments', []))->filter(fn ($p) => data_get($p, 'attributes.status') === 'paid');
+                if ($payments->count() !== 1) {
+                    return 'mismatch';
+                }
+                try {
+                    $result = app(InvoicePayments::class)->receiveProvider($attempt, $payments->first(), true);
+                } catch (ValidationException $e) {
+                    return 'mismatch';
+                }
+                DB::table('webhook_events')->insert(['event_id' => $eventId, 'type' => $type, 'outcome' => $result, 'created_at' => now(), 'updated_at' => now()]);
+
+                return $result;
+            }
             $order = Order::where('checkout_session_id', $session['id'])->lockForUpdate()->first();
             if (! $order) {
                 return 'unknown_order';
@@ -59,6 +84,6 @@ class WebhookController extends Controller
         }, 3);
 
         // Retry unknown sessions: the webhook can race the checkout-session save.
-        return response()->json(['received' => in_array($outcome, ['paid', 'duplicate']), 'outcome' => $outcome], in_array($outcome, ['paid', 'duplicate']) ? 200 : 409);
+        return response()->json(['received' => in_array($outcome, ['paid', 'partially_paid', 'duplicate']), 'outcome' => $outcome], in_array($outcome, ['paid', 'partially_paid', 'duplicate']) ? 200 : 409);
     }
 }

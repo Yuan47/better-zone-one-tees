@@ -1,4 +1,4 @@
-@if($order->payment_status==='paid' && $order->status!=='cancelled')
+@if($order->payment_status==='paid' && $order->status!=='cancelled' && $order->sales_channel!=='walk_in')
 <section class="panel receipt-panel"><h2>Confirm your delivery</h2>
 @if($order->customer_confirmed_at && $order->review)
 <p>Delivered confirmed by the customer on {{ $order->customer_confirmed_at->format('M d, Y · g:i A') }}.</p>

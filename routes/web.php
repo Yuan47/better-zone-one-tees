@@ -7,12 +7,15 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\DeliveryRecoveryController;
 use App\Http\Controllers\FaqController;
+use App\Http\Controllers\GuestInvoiceController;
+use App\Http\Controllers\InvoicePaymentController;
 use App\Http\Controllers\OperationsController;
 use App\Http\Controllers\OrderReceiptController;
 use App\Http\Controllers\PaymentRecoveryController;
 use App\Http\Controllers\RefundController;
 use App\Http\Controllers\ReportsController;
 use App\Http\Controllers\StoreController;
+use App\Http\Controllers\WalkInController;
 use App\Http\Controllers\WebhookController;
 use Illuminate\Support\Facades\Route;
 
@@ -30,6 +33,12 @@ Route::middleware('guest')->group(function () {
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
 Route::post('/chat', [ChatController::class, '__invoke'])->middleware('throttle:12,1')->name('chat');
 Route::post('/webhooks/paymongo', WebhookController::class)->name('webhooks.paymongo');
+Route::middleware(['signed', 'throttle:20,1,guest-invoices'])->prefix('guest/invoices/{order}')->name('guest.orders.')->group(function () {
+    Route::get('/', [GuestInvoiceController::class, 'show'])->name('show');
+    Route::post('/pay', [GuestInvoiceController::class, 'pay'])->block(40, 40)->name('pay');
+    Route::post('/check', [GuestInvoiceController::class, 'check'])->name('check');
+    Route::post('/refunds', [GuestInvoiceController::class, 'refund'])->name('refunds');
+});
 Route::middleware('auth')->group(function () {
     Route::get('/account', [AccountController::class, 'show'])->name('account');
     Route::patch('/account', [AccountController::class, 'update'])->name('account.update');
@@ -41,11 +50,15 @@ Route::middleware('auth')->group(function () {
     Route::get('/orders', [StoreController::class, 'orders'])->name('orders');
     Route::get('/orders/{order}', [StoreController::class, 'order'])->name('orders.show');
     Route::post('/orders/{order}/receipt', [OrderReceiptController::class, 'store'])->middleware('throttle:3,1')->name('orders.receipt');
+    Route::post('/orders/{order}/payments', [InvoicePaymentController::class, 'online'])->middleware('throttle:6,1,invoice-online')->block(40, 40)->name('orders.payments.store');
     Route::post('/orders/{order}/payment/check', [PaymentRecoveryController::class, 'check'])->middleware('throttle:6,1')->name('orders.payment.check');
     Route::post('/orders/{order}/payment/close', [PaymentRecoveryController::class, 'close'])->middleware('throttle:3,1')->name('orders.payment.close');
     Route::post('/orders/{order}/refunds', [RefundController::class, 'store'])->middleware('throttle:3,1')->name('orders.refunds.store');
 });
 Route::middleware(['auth', 'staff'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/walk-in', [WalkInController::class, 'create'])->name('walk-in.create');
+    Route::post('/walk-in', [WalkInController::class, 'store'])->middleware('throttle:10,1,walk-in-checkout')->block(40, 40)->name('walk-in.store');
+    Route::post('/orders/{order}/payments/cash', [InvoicePaymentController::class, 'cash'])->middleware('throttle:6,1,invoice-cash')->block(40, 40)->name('orders.payments.cash');
     Route::get('/', [ReportsController::class, 'dashboard'])->name('dashboard');
     Route::get('/forecast', [ReportsController::class, 'forecast'])->name('forecast');
     Route::get('/inventory-attention', [ReportsController::class, 'inventoryAttention'])->name('inventory-attention');
@@ -60,6 +73,9 @@ Route::middleware(['auth', 'staff'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/orders/{order}/delivery/refresh', [DeliveryRecoveryController::class, 'refresh'])->middleware('throttle:6,1')->name('orders.delivery.refresh');
     Route::post('/orders/{order}/delivery/recover', [DeliveryRecoveryController::class, 'recover'])->middleware('throttle:3,1')->name('orders.delivery.recover');
     Route::middleware('staff:admin')->group(function () {
+        Route::post('/orders/{order}/due', [InvoicePaymentController::class, 'due'])->name('orders.due');
+        Route::post('/settings/payment-terms', [InvoicePaymentController::class, 'terms'])->name('payment-terms.save');
+        Route::post('/refunds/{refund}/cash', [RefundController::class, 'cash'])->name('refunds.cash');
         Route::patch('/refunds/{refund}', [RefundController::class, 'review'])->name('refunds.review');
         Route::post('/refunds/{refund}/recover', [RefundController::class, 'recover'])->middleware('throttle:3,1')->name('refunds.recover');
         Route::post('/orders/{order}/payment/recover', [PaymentRecoveryController::class, 'recover'])->middleware('throttle:3,1')->name('orders.payment.recover');

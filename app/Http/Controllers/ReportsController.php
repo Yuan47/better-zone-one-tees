@@ -9,8 +9,9 @@ use App\Models\User;
 use App\Models\Variant;
 use App\Services\Forecast;
 use App\Services\SalesReport;
-use Illuminate\Http\Request;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 class ReportsController extends Controller
@@ -28,7 +29,7 @@ class ReportsController extends Controller
         $ordersCount = (clone $paidOrders)->count();
         $salesScope = $salesChart['custom_range'] ? $salesChart['history'] : 'All time';
         $customers = User::where('role', 'customer')->count();
-        $toPack = Order::where('status', 'to_pack')->count();
+        $toPack = Order::whereDeliveryStage('packing')->count();
         $attention = $this->inventoryQuery();
         $lowStockCount = (clone $attention)->count();
         $lowStock = $this->urgentFirst($attention)->limit(6)->get();
@@ -41,7 +42,45 @@ class ReportsController extends Controller
             ->orderByDesc('units')->orderBy('name')->orderBy('product_id')->limit(5)->get();
         $recent = Order::with('user')->latest()->limit(5)->get();
 
-        return view('admin.dashboard', compact('revenue', 'ordersCount', 'customers', 'toPack', 'lowStock', 'lowStockCount', 'chart', 'best', 'recent', 'period', 'salesChart', 'salesScope'));
+        // Unpaid invoices have no paid_at. These two count charts use the
+        // placed-order cohort, while the sales cards above retain paid_at.
+        $invoiceFilters = $startDate ? ['start_date' => $startDate, 'end_date' => $endDate] : [];
+        $invoiceScope = $startDate ? $salesChart['history'] : 'All time';
+        $invoiceCounts = Order::where('status', '!=', 'cancelled')->where('inventory_released', false)
+            ->where('created_at', '<=', CarbonImmutable::now('Asia/Manila')->toDateTimeString())
+            ->when($startDate, fn ($query) => $query->where('created_at', '>=', $startDate.' 00:00:00')
+                ->where('created_at', '<', CarbonImmutable::parse($endDate, 'Asia/Manila')->addDay()->toDateTimeString()))
+            ->selectRaw('payment_status, delivery_method, COUNT(*) AS invoice_count')
+            ->groupBy('payment_status', 'delivery_method')->get();
+        $paymentTotal = 0;
+        $paymentRows = [];
+        foreach (['paid' => ['Fully paid', '#621708'], 'partially_paid' => ['Partially paid', '#BC3908'], 'pending' => ['Unpaid', '#F6AA1C']] as $status => [$label, $color]) {
+            $count = (int) $invoiceCounts->where('payment_status', $status)->sum('invoice_count');
+            $paymentTotal += $count;
+            $paymentRows[] = ['status' => $status, 'label' => $label, 'count' => $count, 'color' => $color,
+                'url' => route('admin.orders', $invoiceFilters + ['exclude_cancelled' => 1, 'payment_status' => $status])];
+        }
+        foreach ($paymentRows as &$row) {
+            $row['percentage'] = $paymentTotal ? $row['count'] / $paymentTotal * 100 : 0;
+        }
+        unset($row);
+        $otherPaymentCount = (int) $invoiceCounts->whereNotIn('payment_status', ['paid', 'partially_paid', 'pending'])->sum('invoice_count');
+        $methodRows = [];
+        $methodTotal = 0;
+        foreach (['pickup' => ['Store pickup', '#941B0C'], 'lalamove' => ['Lalamove', '#F6AA1C']] as $method => [$label, $color]) {
+            $count = (int) $invoiceCounts->where('payment_status', 'paid')->where('delivery_method', $method)->sum('invoice_count');
+            $methodTotal += $count;
+            $methodRows[] = ['method' => $method, 'label' => $label, 'count' => $count, 'color' => $color,
+                'url' => route('admin.orders', $invoiceFilters + ['exclude_cancelled' => 1, 'payment_status' => 'paid', 'delivery_method' => $method])];
+        }
+        foreach ($methodRows as &$row) {
+            $row['percentage'] = $methodTotal ? $row['count'] / $methodTotal * 100 : 0;
+        }
+        unset($row);
+        $otherMethodCount = (int) $invoiceCounts->where('payment_status', 'paid')->whereNotIn('delivery_method', ['pickup', 'lalamove'])->sum('invoice_count');
+
+        return view('admin.dashboard', compact('revenue', 'ordersCount', 'customers', 'toPack', 'lowStock', 'lowStockCount', 'chart', 'best', 'recent', 'period', 'salesChart', 'salesScope',
+            'invoiceFilters', 'invoiceScope', 'paymentRows', 'paymentTotal', 'otherPaymentCount', 'methodRows', 'methodTotal', 'otherMethodCount'));
     }
 
     public function forecast(Forecast $forecast)

@@ -28,9 +28,13 @@ class ActivityLog extends Model
         'order.delivery_reconciliation_required' => 'Delivery booking needs reconciliation',
         'order.delivery_reconciled' => 'Verified delivery recovery',
         'order.payment_reconciled' => 'Verified payment status',
+        'invoice.payment_received' => 'Recorded payment received',
+        'invoice.due_changed' => 'Logged agreed invoice deadline',
+        'invoice.terms_changed' => 'Changed installment terms',
         'refund.requested' => 'Requested a refund',
         'refund.reviewed' => 'Reviewed a refund request',
         'refund.verified' => 'Verified refund with PayMongo',
+        'refund.cash_recorded' => 'Recorded cash refund received',
         'product.created' => 'Created a product',
         'product.updated' => 'Updated a product',
         'variant.created' => 'Created a variant',
@@ -89,6 +93,15 @@ class ActivityLog extends Model
         }
         if (isset($data['reason'])) {
             $details[] = 'Reason: '.$data['reason'];
+        }
+        if (isset($data['amount'])) {
+            $details[] = 'Amount: ₱'.number_format($data['amount'] / 100, 2);
+        }
+        if (isset($data['method'])) {
+            $details[] = 'Method: '.($data['method'] === 'cash' ? 'Cash received' : 'PayMongo');
+        }
+        if (isset($data['due_at'])) {
+            $details[] = 'Agreed deadline: '.$data['due_at'];
         }
         if (isset($data['delivery_method'])) {
             $details[] = 'Delivery: '.($data['delivery_method'] === 'lalamove' ? 'Lalamove' : 'Store pickup');

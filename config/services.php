@@ -22,6 +22,13 @@ return [
         'key' => env('RESEND_API_KEY'),
     ],
 
+    'brevo' => [
+        'payment_reminders_enabled' => (bool) env('BREVO_PAYMENT_REMINDERS_ENABLED', false),
+        'api_key' => env('BREVO_API_KEY'),
+        'from_email' => env('BREVO_FROM_EMAIL'),
+        'from_name' => env('BREVO_FROM_NAME', 'Zone One Tees'),
+    ],
+
     'ses' => [
         'key' => env('AWS_ACCESS_KEY_ID'),
         'secret' => env('AWS_SECRET_ACCESS_KEY'),

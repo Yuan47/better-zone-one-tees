@@ -28,7 +28,7 @@ class ChatController extends Controller
             if (! $staff) {
                 $query->where('user_id', $r->user()->id);
             }
-            $orders = $query->get(['number', 'status', 'payment_status', 'delivery_method', 'customer_confirmed_at']);
+            $orders = $query->get(['number', 'status', 'payment_status', 'delivery_method', 'customer_confirmed_at', 'sales_channel', 'walk_in_received_at']);
             $orders->each(function ($order) {
                 if ($order->payment_status === 'paid' && $order->status !== 'cancelled') {
                     $order->status = $order->customerDeliveryLabel();

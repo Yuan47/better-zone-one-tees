@@ -11,6 +11,7 @@
     <article class="panel stat"><span>Customers <i>♧</i></span><h2>{{ number_format($customers) }}</h2><small>All time · registered customer accounts</small></article>
     <article class="panel stat"><span>Average order value <i>◇</i></span><h2>₱{{ number_format($ordersCount ? $revenue / $ordersCount / 100 : 0, 2) }}</h2><small>{{ $salesScope }} · confirmed clothing sale ÷ paid orders</small></article>
 </div>
+<p class="muted">Confirmed clothing sales include fully paid online and walk-in invoices. Deposits are excluded. <a class="text-link" href="{{ route('admin.operations') }}">View outstanding invoices and deposits in Operations →</a></p>
 <div class="dashboard-grid" id="reports">
     <section class="panel">
         <div class="section-heading"><h3>Sales over time</h3><span class="badge">{{ $salesChart['history'] }}</span></div>
@@ -55,11 +56,47 @@
         @empty<div class="small-empty"><span>◇</span><h3>{{ $salesChart['custom_range'] ? 'No sales in selected dates' : 'Ready for your first sale' }}</h3><p>Best sellers appear after verified payments{{ $salesChart['custom_range'] ? ' within the selected dates' : '' }}.</p></div>@endforelse
     </section>
 </div>
+<section class="report-count-section" aria-labelledby="invoice-status-heading" id="invoice-status">
+    <div class="section-heading"><div><h2 id="invoice-status-heading">Invoice payments &amp; delivery methods</h2><p class="muted">{{ $invoiceScope }} · current payment status of orders placed in these dates · Asia/Manila. Uses the date selection above; leave dates blank for all time.</p></div></div>
+    <p class="muted">These order counts exclude cancelled and released invoices. Sales cards above use the date payment was completed; this comparison uses the date the order was placed.</p>
+    <div class="report-count-grid">
+        <section class="panel report-count-panel" aria-labelledby="invoice-payment-heading">
+            <div class="section-heading"><div><h3 id="invoice-payment-heading">Fully paid vs outstanding invoices</h3><p class="muted">{{ number_format($paymentTotal) }} invoices · outstanding means partially paid or unpaid</p></div></div>
+            <ul class="report-count-chart" aria-label="Invoice payment status counts and order links">
+                @foreach($paymentRows as $row)
+                    <li class="report-count-row">
+                        <div class="report-count-label"><a class="text-link" href="{{ $row['url'] }}"><i class="report-count-key" style="background:{{ $row['color'] }}" aria-hidden="true"></i>{{ $row['label'] }} →</a><strong>{{ number_format($row['count']) }} <small>{{ $row['count'] === 1 ? 'invoice' : 'invoices' }}</small></strong></div>
+                        <div class="report-count-track" aria-hidden="true"><span style="width:{{ $row['percentage'] }}%;background:{{ $row['color'] }}"></span></div>
+                        <p class="report-count-share">{{ number_format($row['percentage'], 1) }}% of invoices shown</p>
+                    </li>
+                @endforeach
+            </ul>
+            @if(!$paymentTotal)<p class="empty-note">No paid, partially paid or unpaid invoices in these placed dates.</p>@endif
+            @if($otherPaymentCount)<p class="muted">{{ number_format($otherPaymentCount) }} invoices with other unconfirmed payment statuses are excluded from this comparison.</p>@endif
+            <p class="muted">Deposits remain outstanding until full settlement. They are excluded from confirmed clothing sales and delivery counts.</p>
+        </section>
+        <section class="panel report-count-panel" aria-labelledby="invoice-method-heading">
+            <div class="section-heading"><div><h3 id="invoice-method-heading">Confirmed paid orders by delivery method</h3><p class="muted">{{ number_format($methodTotal) }} fully paid pickup / Lalamove orders</p></div></div>
+            <ul class="report-count-chart" aria-label="Fully paid order delivery method counts and order links">
+                @foreach($methodRows as $row)
+                    <li class="report-count-row">
+                        <div class="report-count-label"><a class="text-link" href="{{ $row['url'] }}"><i class="report-count-key" style="background:{{ $row['color'] }}" aria-hidden="true"></i>{{ $row['label'] }} →</a><strong>{{ number_format($row['count']) }} <small>{{ $row['count'] === 1 ? 'order' : 'orders' }}</small></strong></div>
+                        <div class="report-count-track" aria-hidden="true"><span style="width:{{ $row['percentage'] }}%;background:{{ $row['color'] }}"></span></div>
+                        <p class="report-count-share">{{ number_format($row['percentage'], 1) }}% of paid pickup / Lalamove orders</p>
+                    </li>
+                @endforeach
+            </ul>
+            @if(!$methodTotal)<p class="empty-note">No fully paid pickup or Lalamove orders in these placed dates.</p>@endif
+            @if($otherMethodCount)<p class="muted">{{ number_format($otherMethodCount) }} fully paid orders use another delivery method and are excluded from this comparison.</p>@endif
+            <p class="muted">Includes paid online and walk-in orders at every fulfillment stage. Pending and partial payments are excluded.</p>
+        </section>
+    </div>
+</section>
 <div class="dashboard-grid">
     <section class="panel">
         <div class="section-heading"><h3>Recent orders</h3><a class="text-link" href="{{ route('admin.orders') }}">View all →</a></div>
         <div class="table-scroll"><table><thead><tr><th>Order</th><th>Customer</th><th>Total</th><th>Status</th></tr></thead><tbody>
-            @forelse($recent as $order)<tr><td><a class="text-link" href="{{ route('orders.show', $order) }}">{{ $order->number }}</a></td><td>{{ $order->user->name }}</td><td>₱{{ number_format($order->total / 100, 2) }}</td><td><span class="badge">{{ $order->payment_status==='paid' && $order->status!=='cancelled' ? $order->customerDeliveryLabel() : ucfirst(str_replace('_',' ',$order->status)) }}</span></td></tr>
+            @forelse($recent as $order)<tr><td><a class="text-link" href="{{ route('orders.show', $order) }}">{{ $order->number }}</a><small>{{ $order->sales_channel === 'walk_in' ? 'Walk-in' : 'Online' }}</small></td><td>{{ $order->user?->name ?? $order->recipient }}@if(!$order->user)<small>Guest invoice</small>@endif</td><td>₱{{ number_format($order->total / 100, 2) }}</td><td><span class="badge">{{ $order->status === 'cancelled' ? 'Cancelled' : ($order->payment_status === 'paid' ? $order->customerDeliveryLabel() : ucfirst(str_replace('_',' ',$order->payment_status))) }}</span></td></tr>
             @empty<tr><td colspan="4" class="empty-note">Orders will appear here as customers check out.</td></tr>@endforelse
         </tbody></table></div>
     </section>

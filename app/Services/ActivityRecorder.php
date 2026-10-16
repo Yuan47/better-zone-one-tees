@@ -89,6 +89,9 @@ class ActivityRecorder
             'cart.added', 'cart.updated', 'cart.removed' => ['quantity', 'previous_quantity', 'cart_quantity'],
             'order.created' => ['quantity', 'delivery_method', 'status'],
             'order.status_changed', 'order.received' => ['previous_status', 'status', 'reason'],
+            'invoice.payment_received', 'refund.cash_recorded' => ['amount', 'method', 'reason'],
+            'invoice.due_changed' => ['reason', 'previous_due_at', 'due_at'],
+            'invoice.terms_changed' => ['reason', 'days'],
             'order.delivery_reconciled', 'order.payment_reconciled' => ['previous_status', 'status'], 'order.delivery_booked', 'order.delivery_reconciliation_required' => ['status'],
             'catalog.color_added' => ['variant_count'], 'faq.imported' => ['imported_count'], 'reports.exported' => ['format'],
             default => [],
@@ -110,6 +113,14 @@ class ActivityRecorder
                 $safe[$key] = $value;
             } elseif ($key === 'reason' && is_string($value)) {
                 $safe[$key] = mb_substr(trim($value), 0, 1000);
+            } elseif ($key === 'amount' && is_int($value) && $value > 0 && $value <= 4294967295) {
+                $safe[$key] = $value;
+            } elseif ($key === 'method' && in_array($value, ['cash', 'paymongo'], true)) {
+                $safe[$key] = $value;
+            } elseif (in_array($key, ['due_at', 'previous_due_at'], true) && is_string($value)) {
+                $safe[$key] = mb_substr($value, 0, 40);
+            } elseif ($key === 'days' && is_int($value) && $value >= 7 && $value <= 30) {
+                $safe[$key] = $value;
             } elseif ($key === 'format' && $value === 'csv') {
                 $safe[$key] = $value;
             }

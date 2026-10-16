@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Services\ActivityRecorder;
+use App\Services\InstallmentCredit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rules\Password;
@@ -24,6 +25,9 @@ class AuthController extends Controller
         $r->session()->regenerate();
 
         ActivityRecorder::mark($r, 'auth.login', $r->user());
+        if (app(InstallmentCredit::class)->alertsFor($r->user())->isNotEmpty()) {
+            $r->session()->flash('payment_alert', true);
+        }
 
         return redirect()->intended($r->user()->role === 'customer' ? route('store') : route('admin.dashboard'));
     }

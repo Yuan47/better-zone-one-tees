@@ -20,7 +20,7 @@ class StoreKnowledge
 
     public const QUANTITY_PRICING = 'Total pieces across the cart: 1–5 Retail/SRP, 6–50 Wholesale, 51–100 Re-seller, 101+ Bulk with 5% off the Re-seller clothing subtotal. Delivery is separate.';
 
-    public const PAYMENT_HELP = 'PayMongo hosted checkout is used when payments are enabled. An order is confirmed as paid only after a verified PayMongo payment notification. Returning from checkout or sending a payment screenshot does not confirm payment.';
+    public const PAYMENT_HELP = 'Online payments use PayMongo hosted checkout and require a verified PayMongo payment notification or provider reconciliation. Returning from checkout or a payment screenshot does not confirm payment. Partial payments are available only above ₱1,000 in discounted clothing, with a 7–30 day original deadline. Every payment reduces the same invoice balance without moving its deadline; packing waits for full payment. Walk-in cash is recorded as received by staff. Fully paid walk-in sales are Delivered automatically; online orders still require the customer receipt and review.';
 
     public const SIZE_HELP = 'Open a product to see its Size / Width (in.) / Length (in.) table. Sample reference charts are labeled; blank measurements need store confirmation. Reference-only sizes are not necessarily available to order.';
 

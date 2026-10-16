@@ -72,7 +72,7 @@ class OperationsTest extends TestCase
         foreach (['staff', 'admin'] as $role) {
             $this->login($role);
             $this->get(route('admin.operations'))->assertOk()->assertSee('Operations overview')
-                ->assertSee('No provider-confirmed refunds in this range')->assertSee('No confirmed paid orders were placed in these dates')
+                ->assertSee('No verified or recorded refunds in this range')->assertSee('No confirmed paid orders were placed in these dates')
                 ->assertViewHas('startDate', '2026-09-13')->assertViewHas('endDate', '2026-10-12')->assertViewHas('period', 'daily');
         }
         $this->assertDatabaseCount('orders', 0);

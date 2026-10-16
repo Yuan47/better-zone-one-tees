@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Order;
+use App\Models\PaymentAttempt;
 use App\Services\DeliveryRecovery;
 use App\Services\Lalamove;
 use App\Services\OrderFlow;
@@ -32,11 +33,14 @@ Artisan::command('shop:sync-payments', function () {
 
         return;
     }
-    Order::where('payment_status', 'pending')->where('inventory_released', false)->whereNotNull('checkout_session_id')
+    Order::whereIn('payment_status', ['pending', 'partially_paid'])->where('inventory_released', false)
+        ->where(fn ($query) => $query->whereNotNull('checkout_session_id')->orWhereHas('payments', fn ($query) => $query->where('status', 'failed')->whereNull('checkout_session_id')))
         ->orderBy('id')->chunkById(50, function ($orders) {
             foreach ($orders as $order) {
                 try {
-                    app(PaymentRecovery::class)->check($order, $order->created_at->lte(now()->subMinutes(config('shop.unpaid_minutes'))));
+                    $active = $order->payments()->whereIn('status', PaymentAttempt::ACTIVE)->latest('id')->first();
+                    $started = $active?->created_at ?? $order->created_at;
+                    app(PaymentRecovery::class)->check($order, $started->lte(now()->subMinutes(config('shop.unpaid_minutes'))));
                 } catch (Throwable $e) {
                     $this->warn($order->number.': payment verification unavailable; reservation retained.');
                 }
@@ -44,6 +48,7 @@ Artisan::command('shop:sync-payments', function () {
         });
 });
 Schedule::command('shop:sync-payments')->everyFiveMinutes()->withoutOverlapping();
+Schedule::command('invoices:send-reminders')->hourly()->timezone('Asia/Manila')->withoutOverlapping();
 
 Artisan::command('shop:release-reservation {number} {--confirmed-no-payment}', function () {
     if (! $this->option('confirmed-no-payment')) {

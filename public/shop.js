@@ -112,3 +112,27 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('checkout-form').addEventListener('submit',function(e){if(method.value==='lalamove'&&!quoteFresh){e.preventDefault();result.textContent='Request a fresh delivery quote before payment.';return;}var button=document.getElementById('pay-button');button.disabled=true;button.textContent='Preparing checkout…';});
   }
 });
+(() => {
+  const choice = document.getElementById('payment-option');
+  const fields = document.getElementById('partial-payment-fields');
+  if (!choice || !fields) return;
+  const amount = document.getElementById('payment-amount');
+  const summary = document.getElementById('partial-payment-summary');
+  const total = document.getElementById('checkout-total');
+  const money = n => new Intl.NumberFormat('en-PH', {style:'currency',currency:'PHP'}).format(n);
+  const update = () => {
+    const partial = choice.value === 'partial';
+    fields.hidden = !partial;
+    amount.required = partial;
+    amount.disabled = !partial;
+    if (summary && total) {
+      const invoice = Number(total.textContent.replace(/[^0-9.]/g,''));
+      const now = Number(amount.value);
+      summary.textContent = partial && now > 0 && now < invoice ? 'Pay '+money(now)+' now. Remaining balance: '+money(invoice-now)+'.' : (partial ? 'Enter a first payment below the full invoice total.' : '');
+    }
+  };
+  choice.addEventListener('change', update);
+  amount.addEventListener('input', update);
+  if (total) new MutationObserver(update).observe(total,{childList:true,characterData:true,subtree:true});
+  update();
+})();

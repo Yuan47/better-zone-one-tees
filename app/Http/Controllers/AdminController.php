@@ -5,12 +5,14 @@ namespace App\Http\Controllers;
 use App\Exceptions\DeliveryBookingNotStarted;
 use App\Models\ChatbotFaq;
 use App\Models\Order;
+use App\Models\PaymentReminder;
 use App\Models\Product;
 use App\Models\User;
 use App\Models\Variant;
 use App\Services\ActivityRecorder;
 use App\Services\DeliveryRecovery;
 use App\Services\ImageUploads;
+use App\Services\InvoiceReminders;
 use App\Services\Lalamove;
 use App\Services\PayMongo;
 use App\Services\SalesReport;
@@ -182,19 +184,27 @@ class AdminController extends Controller
         $now = CarbonImmutable::now('Asia/Manila');
         $today = $now->toDateString();
         $filters = $r->validate(['status' => 'nullable|in:awaiting_payment,to_pack,packing,ready,delivery_booking,out_for_delivery,completed,delivery_attention,cancelled,other',
-            'payment_status' => 'nullable|in:paid,pending', 'delivery_method' => 'nullable|in:pickup,lalamove', 'fulfillment' => 'nullable|in:packing,ready,courier,delivered', 'q' => 'nullable|string|max:100',
+            'payment_status' => 'nullable|in:paid,pending,partially_paid', 'delivery_method' => 'nullable|in:pickup,lalamove',
+            'sales_channel' => 'nullable|in:online,walk_in', 'overdue' => 'nullable|boolean', 'outstanding' => 'nullable|boolean', 'exclude_cancelled' => 'nullable|boolean',
+            'fulfillment' => 'nullable|in:packing,ready,courier,delivered', 'q' => 'nullable|string|max:100',
             'start_date' => 'nullable|required_with:end_date|date_format:Y-m-d|before_or_equal:'.$today,
             'end_date' => 'nullable|required_with:start_date|date_format:Y-m-d|after_or_equal:start_date|before_or_equal:'.$today]);
-        if (! empty($filters['start_date']) && CarbonImmutable::parse($filters['start_date'])->diffInDays(CarbonImmutable::parse($filters['end_date'])) > 365) {
-            throw ValidationException::withMessages(['end_date' => 'Choose a range of up to 366 days.']);
+        if (! empty($filters['start_date']) && CarbonImmutable::parse($filters['start_date'])->lt(CarbonImmutable::parse($filters['end_date'])->subYears(10))) {
+            throw ValidationException::withMessages(['end_date' => 'Choose a range of up to 10 years.']);
         }
         $orders = Order::with('user')->where('created_at', '<=', $now->toDateTimeString())
+            ->when($filters['exclude_cancelled'] ?? false, fn ($q) => $q->where('status', '!=', 'cancelled')->where('inventory_released', false))
             ->when($filters['fulfillment'] ?? null, fn ($q, $v) => $q->whereDeliveryStage($v))
             ->when($filters['status'] ?? null, fn ($q, $v) => $v === 'other'
                 ? $q->whereNotIn('status', ['to_pack', 'packing', 'ready', 'delivery_booking', 'delivery_attention', 'out_for_delivery', 'completed']) : $q->where('status', $v))
             ->when($filters['payment_status'] ?? null, fn ($q, $v) => $q->where('payment_status', $v))
             ->when($filters['delivery_method'] ?? null, fn ($q, $v) => $q->where('delivery_method', $v))
-            ->when($filters['q'] ?? null, fn ($q, $v) => $q->where('number', 'like', '%'.$v.'%'))
+            ->when($filters['sales_channel'] ?? null, fn ($q, $v) => $q->where('sales_channel', $v))
+            ->when(($filters['outstanding'] ?? false) || ($filters['overdue'] ?? false), fn ($q) => $q
+                ->whereIn('payment_status', ['pending', 'partially_paid'])->where('status', '!=', 'cancelled')->whereColumn('total', '>', 'amount_paid'))
+            ->when($filters['overdue'] ?? false, fn ($q) => $q->where('due_at', '<', $now->toDateTimeString()))
+            ->when($filters['q'] ?? null, fn ($q, $v) => $q->where(fn ($query) => $query->where('number', 'like', '%'.$v.'%')
+                ->orWhere('recipient', 'like', '%'.$v.'%')->orWhereHas('user', fn ($user) => $user->where('name', 'like', '%'.$v.'%'))))
             ->when($filters['start_date'] ?? null, fn ($q, $v) => $q->where('created_at', '>=', $v.' 00:00:00'))
             ->when($filters['end_date'] ?? null, fn ($q, $v) => $q->where('created_at', '<', CarbonImmutable::parse($v)->addDay()->toDateTimeString()))
             ->latest()->paginate(20)->withQueryString();
@@ -273,12 +283,17 @@ class AdminController extends Controller
 
         return response()->streamDownload(function () use ($report, $filters) {
             $out = fopen('php://output', 'w');
-            fputcsv($out, ['Order', 'Paid at', 'Pieces', 'Pricing tier', 'Clothing base PHP', 'Bulk discount PHP', 'Net clothing PHP', 'Delivery PHP', 'Total PHP'], ',', '"', '');
+            fputcsv($out, ['Order', 'Paid at', 'Pieces', 'Pricing tier', 'Clothing base PHP', 'Bulk discount PHP', 'Net clothing PHP', 'Delivery PHP', 'Total PHP', 'Recipient', 'Sales channel'], ',', '"', '');
             $report->paidOrders($filters['start_date'], $filters['end_date'])->orderBy('id')->chunk(100, function ($orders) use ($out) {
                 foreach ($orders as $o) {
+                    $recipient = (string) $o->recipient;
+                    if (preg_match('/^\s*[=+@-]/u', $recipient)) {
+                        $recipient = "'".$recipient;
+                    }
                     fputcsv($out, [$o->number, $o->paid_at?->toIso8601String(), $o->quantity, $o->tier,
                         number_format($o->merchandise_base / 100, 2, '.', ''), number_format($o->discount / 100, 2, '.', ''), number_format($o->subtotal / 100, 2, '.', ''),
-                        number_format($o->shipping / 100, 2, '.', ''), number_format($o->total / 100, 2, '.', '')], ',', '"', '');
+                        number_format($o->shipping / 100, 2, '.', ''), number_format($o->total / 100, 2, '.', ''), $recipient,
+                        $o->sales_channel === 'walk_in' ? 'Walk-in' : 'Online'], ',', '"', '');
                 }
             });
             fclose($out);
@@ -287,17 +302,22 @@ class AdminController extends Controller
 
     public function settings(Request $r, PayMongo $pay, Lalamove $delivery)
     {
+        abort_unless($r->user()?->role === 'admin', 403);
         $search = is_string($r->query('faq_search')) ? mb_substr(trim($r->query('faq_search')), 0, 100) : '';
         $status = in_array($r->query('faq_status'), ['active', 'inactive'], true) ? $r->query('faq_status') : 'all';
         $faqs = ChatbotFaq::query()
             ->when($search !== '', fn ($q) => $q->where(fn ($q) => $q->where('question', 'like', '%'.$search.'%')->orWhere('keywords', 'like', '%'.$search.'%')))
             ->when($status !== 'all', fn ($q) => $q->where('active', $status === 'active'))
             ->orderBy('sort_order')->orderBy('id')->paginate(12)->withQueryString();
+        $reminders = app(InvoiceReminders::class);
 
         return view('admin.settings', [
             'faqs' => $faqs, 'faqSearch' => $search, 'faqStatus' => $status,
             'storeInfo' => app(StoreKnowledge::class)->info(),
             'payReady' => $pay->ready(), 'deliveryReady' => $delivery->ready(), 'grokReady' => filled(config('shop.grok.key')),
+            'reminderEnabled' => config('services.brevo.payment_reminders_enabled') === true, 'reminderConfigured' => $reminders->configured(),
+            'reminderReviewCount' => PaymentReminder::whereIn('status', ['claimed', 'failed', 'unknown'])->count(),
+            'reminderHistory' => PaymentReminder::with('order:id,number')->latest('id')->limit(12)->get(),
         ]);
     }
 

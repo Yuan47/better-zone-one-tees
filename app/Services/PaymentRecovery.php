@@ -14,6 +14,9 @@ class PaymentRecovery
 
     public function check(Order $order, bool $close = false): string
     {
+        if ($order->payments()->exists()) {
+            return app(InvoicePayments::class)->check($order, $close);
+        }
         $order = $order->fresh();
         if ($order->payment_status === 'paid') {
             return 'paid';
@@ -40,6 +43,9 @@ class PaymentRecovery
 
     public function recover(Order $order, string $id): string
     {
+        if ($order->payments()->exists()) {
+            return app(InvoicePayments::class)->recover($order, $id);
+        }
         $session = $this->pay->retrieve($id);
         $this->validateSession($order, $session, $id);
         DB::transaction(function () use ($order, $id, $session) {

@@ -3,7 +3,9 @@
 namespace App\Services;
 
 use App\Models\Order;
+use App\Models\PaymentAttempt;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\ValidationException;
 
 class PayMongo
@@ -18,7 +20,7 @@ class PayMongo
             && ($mode === 'test' || (! config('shop.demo') && str_starts_with(config('app.url'), 'https://')));
     }
 
-    public function create(Order $order): array
+    public function create(Order $order, ?PaymentAttempt $attempt = null): array
     {
         if (! $this->ready()) {
             throw ValidationException::withMessages(['payment' => 'PayMongo test checkout is not configured yet. Your cart has been saved.']);
@@ -30,13 +32,18 @@ class PayMongo
         if ($order->shipping) {
             $lines[] = ['name' => 'Lalamove delivery', 'amount' => $order->shipping, 'quantity' => 1, 'currency' => 'PHP'];
         }
+        if ($attempt && ($attempt->amount !== $order->total || $order->amount_paid > 0)) {
+            $lines = [['name' => 'Invoice '.$order->number.' · partial/balance payment', 'amount' => $attempt->amount, 'quantity' => 1, 'currency' => 'PHP']];
+        }
+        $billing = array_filter(['name' => $order->recipient, 'email' => $order->user?->email, 'phone' => $order->phone], fn ($value) => filled($value));
+        $returnUrl = $order->user_id ? route('orders.show', $order) : URL::temporarySignedRoute('guest.orders.show', now()->addDays(30), ['order' => $order->id]);
         $response = Http::withBasicAuth(config('shop.paymongo.secret'), '')->connectTimeout(5)->timeout(25)
             ->post('https://api.paymongo.com/v2/checkout_sessions', ['data' => ['attributes' => [
                 'line_items' => $lines, 'payment_method_types' => array_values(config('shop.paymongo.methods')),
                 'reference_number' => $order->number, 'description' => 'Zone One Tee’s '.$order->number,
-                'billing' => ['name' => $order->recipient, 'email' => $order->user->email, 'phone' => $order->phone],
-                'success_url' => route('orders.show', $order), 'cancel_url' => route('orders.show', $order),
-                'send_email_receipt' => true, 'pass_on_fees' => false, 'metadata' => ['order_number' => $order->number],
+                'billing' => $billing,
+                'success_url' => $returnUrl, 'cancel_url' => $returnUrl,
+                'send_email_receipt' => filled($order->user?->email), 'pass_on_fees' => false, 'metadata' => array_filter(['order_number' => $order->number, 'invoice_payment_reference' => $attempt?->reference]),
             ]]])->throw()->json('data');
         $url = data_get($response, 'attributes.checkout_url');
         if (! is_string($url) || ! str_starts_with($url, 'https://checkout.paymongo.com/') || empty($response['id'])) {

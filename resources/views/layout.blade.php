@@ -13,6 +13,7 @@
 <span class="nav-caption">YOUR STORE</span>
 <a class="{{ request()->routeIs('admin.dashboard')?'active':'' }}" href="{{ route('admin.dashboard') }}"><span>◫</span> Overview</a>
 <a class="{{ request()->routeIs('admin.orders')?'active':'' }}" href="{{ route('admin.orders') }}"><span>▤</span> Orders</a>
+<a class="{{ request()->routeIs('admin.walk-in.*')?'active':'' }}" href="{{ route('admin.walk-in.create') }}"><span>＋</span> Walk-in checkout</a>
 <a class="{{ request()->routeIs('admin.operations')?'active':'' }}" href="{{ route('admin.operations') }}"><span>◴</span> Orders & delivery</a>
 <a class="{{ request()->routeIs('admin.refunds.*')?'active':'' }}" href="{{ route('admin.refunds.index') }}"><span>↶</span> Refund requests</a>
 @if(auth()->user()->role==='admin')
@@ -38,6 +39,7 @@
 <main id="main-content" tabindex="-1" class="{{ $isAdmin?'admin-content':'container' }}">
 @if(session('notice'))<div class="notice" role="status">{{ session('notice') }}</div>@endif
 @if($errors->any())<div class="error" role="alert">@foreach($errors->all() as $error)<div>{{ $error }}</div>@endforeach</div>@endif
+@include('partials.payment-alert')
 @yield('content')</main>
 @if($isAdmin)</div>@else<footer class="footer"><a class="brand" href="{{ route('store') }}"><img class="brand-logo" src="{{ asset('brand/zone-one-tees-logo.png') }}" alt="Zone One Tee’s logo">Zone One Tee’s<span class="muted">2.0</span></a><span>Good clothes. Thoughtful service. Everyday value.</span><a href="{{ route('store') }}#quantity">Quantity pricing</a></footer>@endif
 <button id="chat-toggle" class="chat-launcher" aria-controls="chat-panel" aria-expanded="false">✧ <span>{{ $isAdmin?'Staff assistant':'Ask Zone One' }}</span></button>
