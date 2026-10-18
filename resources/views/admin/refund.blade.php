@@ -9,11 +9,12 @@
 <div class="page-heading"><span class="eyebrow">REFUND REQUEST #{{ $refund->id }}</span><h1>{{ $refund->order->number }}</h1><span class="badge">{{ $refund->label() }}</span></div>
 <div class="checkout-grid"><section class="panel"><h2>Request details</h2><p>{{ $refund->order->user?->name ?? $refund->order->recipient ?? 'Walk-in customer' }} · requested {{ $refund->created_at->format('M d, Y · g:i A') }}</p><h3>Customer’s reason</h3><p class="preserve-lines">{{ $refund->reason }}</p><p>Requested: <b>₱{{ number_format($refund->requested_amount/100,2) }}</b></p>
 @if($refund->decision_note)<h3>Store decision</h3><p class="preserve-lines">{{ $refund->decision_note }}</p><p>Approved amount: {{ $refund->approved_amount===null?'—':'₱'.number_format($refund->approved_amount/100,2) }}</p>@endif
-@if($source)<h3>Payment receipt</h3><p>{{ $source->method==='cash'?'Cash':'PayMongo' }} receipt #{{ $source->id }} · received ₱{{ number_format($source->amount/100,2) }}</p>@endif
+@if($source)<h3>Payment receipt</h3><p>{{ $source->method==='cash'?'Cash':'PayMongo' }} receipt #{{ $source->id }} · received ₱{{ number_format($source->amount/100,2) }}</p><p>Receipt reference: <strong class="preserve-lines">{{ $source->reference }}</strong></p><p>Received: {{ $source->received_at?->format('M d, Y · g:i A') ?? 'Not verified' }}</p>@if($source->method==='paymongo')<p>PayMongo transaction: <strong class="preserve-lines">{{ $source->payment_id }}</strong></p>@endif @endif
 @if($refund->confirmed_at)<p>{{ $cashRefund?'Cash return recorded':'PayMongo confirmation' }}: {{ $refund->confirmed_at->format('M d, Y · g:i A') }}</p>@endif
 @if($refund->amount!==null)<p>{{ $cashRefund?'Recorded cash amount':'Verified provider amount' }}: <b>₱{{ number_format($refund->amount/100,2) }}</b></p>@endif
 @if($refund->cash_reason)<h3>Cash return record</h3><p class="preserve-lines">{{ $refund->cash_reason }}</p><p>Recorded by {{ $refund->cashRecordedBy?->name ?? 'the store owner' }}.</p>@endif
 <p class="muted">A refund does not automatically return clothing to inventory or cancel a courier. Check the returned items and delivery before changing physical stock.</p>
+@include('partials.refund-summary',['order'=>$refund->order])
 <a class="button" href="{{ route('orders.show',$refund->order) }}">Open order</a><a class="text-link" href="{{ route('admin.refunds.index') }}">← All refund requests</a></section>
 <aside class="panel stack"><h2>Store actions</h2>@if(!$refund->order->deliveryConfirmed())<p>Online refund requests can be processed after the customer confirms Delivered and submits their review. Fully paid walk-in orders use the store’s recorded receipt.</p>@endif
 @if($refund->status==='requested' && auth()->user()->role==='admin' && $refund->order->deliveryConfirmed())
