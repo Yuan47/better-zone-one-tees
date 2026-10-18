@@ -18,6 +18,9 @@ class RefundVerification
         if ($reference !== null && ! $refund->order->deliveryConfirmed()) {
             $this->fail('Refund processing is available only after customer-confirmed delivery.');
         }
+        if (! $refund->provider_refund_id) {
+            app(ReturnInspections::class)->allocation($refund, (int) $refund->approved_amount);
+        }
         $this->source($refund->order, $refund, $paymentAttemptId);
         $id = $reference ?? $refund->provider_refund_id;
         if (! app(PayMongo::class)->ready() || ! is_string($id) || ! preg_match('/^ref_[A-Za-z0-9_]{1,120}$/D', $id)) {
@@ -32,6 +35,9 @@ class RefundVerification
             $locked = Refund::whereKey($refund->id)->lockForUpdate()->firstOrFail();
             if (! $locked->provider_refund_id && ! $order->deliveryConfirmed()) {
                 $this->fail('Refund processing is available only after customer-confirmed delivery.');
+            }
+            if (! $locked->provider_refund_id) {
+                app(ReturnInspections::class)->allocation($locked, (int) $locked->approved_amount);
             }
             $source = $this->source($order, $locked, $paymentAttemptId, true);
             $expectedPayment = $source?->payment_id ?? $order->payment_id;
@@ -83,6 +89,11 @@ class RefundVerification
             $updates = ['provider_refund_id' => $id, 'amount' => $amount, 'status' => $status,
                 'provider_updated_at' => $timestamp,
                 'confirmed_at' => $status === 'succeeded' ? ($locked->confirmed_at ?? Carbon::createFromTimestamp($timestamp, 'Asia/Manila')) : null];
+            if (! $locked->provider_refund_id) {
+                // Reconcile money actually returned even when it is below the approval.
+                // Allocate that verified amount; keep the original approval as evidence.
+                $updates += app(ReturnInspections::class)->allocation($locked, $amount);
+            }
             if ($source && ($paymentAttemptId !== null || $locked->payment_attempt_id !== null)) {
                 $updates['payment_attempt_id'] = $source->id;
             }

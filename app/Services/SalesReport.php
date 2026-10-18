@@ -53,6 +53,55 @@ class SalesReport
         return $query;
     }
 
+    public function withInvoiceRefunds(Builder $query, CarbonImmutable $asOf): Builder
+    {
+        return $query->withCount(['payments as report_receipt_count' => fn ($payments) => $payments->where('status', 'paid')])
+            ->withSum(['payments as report_received' => fn ($payments) => $payments->where('status', 'paid')], 'amount')
+            ->withSum(['refunds as report_refunds' => function ($refunds) use ($asOf) {
+                $refunds->where('status', 'succeeded')->where('amount', '>', 0)
+                    ->where('confirmed_at', '<=', $asOf->format('Y-m-d H:i:s'))
+                    ->where(function ($query) {
+                        $query->where(fn ($provider) => $provider->whereNotNull('provider_refund_id')->where('provider_refund_id', '<>', ''))
+                            ->orWhere(fn ($cash) => $cash->whereNull('provider_refund_id')->whereNotNull('cash_recorded_by')
+                                ->whereNotNull('cash_reason')->where('cash_reason', '<>', '')
+                                ->whereHas('paymentAttempt', fn ($payment) => $payment->where('method', 'cash')->where('status', 'paid')
+                                    ->whereNotNull('received_at')->whereColumn('payment_attempts.order_id', 'refunds.order_id')
+                                    ->whereColumn('payment_attempts.amount', '>=', 'refunds.amount'))
+                                ->whereExists(fn ($audit) => $audit->selectRaw('1')->from('activity_logs')->where('target_type', 'refund')
+                                    ->whereColumn('target_id', 'refunds.id')->where('action', 'refund.cash_recorded')
+                                    ->where('actor_role', 'admin')->whereColumn('actor_id', 'refunds.cash_recorded_by')));
+                    });
+            }], 'amount');
+    }
+
+    public function invoiceAmounts(Order $order): array
+    {
+        $original = max(0, (int) $order->total);
+        // Pre-ledger paid invoices retain the same compatibility fallback as
+        // Refund::receivedForOrder. Existing receipts always take precedence.
+        $received = (int) $order->report_receipt_count > 0 ? (int) $order->report_received
+            : ((int) $order->amount_paid > 0 ? (int) $order->amount_paid : ($order->payment_status === 'paid' ? $original : 0));
+        $refunds = max(0, min($original, $received, (int) $order->report_refunds));
+
+        return ['original_invoice' => $original, 'confirmed_refunds' => $refunds, 'net_invoice' => $original - $refunds];
+    }
+
+    public function invoiceSummary(?string $startDate = null, ?string $endDate = null): array
+    {
+        $asOf = CarbonImmutable::now('Asia/Manila');
+        $totals = ['original_invoice' => 0, 'confirmed_refunds' => 0, 'net_invoice' => 0, 'as_of' => $asOf->toIso8601String()];
+        $this->withInvoiceRefunds($this->paidOrders($startDate, $endDate), $asOf)
+            ->chunkById(500, function ($orders) use (&$totals) {
+                foreach ($orders as $order) {
+                    foreach ($this->invoiceAmounts($order) as $key => $amount) {
+                        $totals[$key] += $amount;
+                    }
+                }
+            });
+
+        return $totals;
+    }
+
     public function chart(string $period = 'daily', ?string $startDate = null, ?string $endDate = null): array
     {
         if (! in_array($period, self::PERIODS, true)) {
@@ -98,6 +147,8 @@ class SalesReport
 
         // The app writes paid_at in its Asia/Manila timezone. Group verified
         // clothing subtotals, already net of discounts, without shipping.
+        // This deliberately preserves sales before refunds; invoiceSummary()
+        // reports confirmed refunds separately, including unallocated history.
         $this->paidOrders($rangeStart->format('Y-m-d'), $rangeEnd->format('Y-m-d'))
             ->select(['id', 'paid_at', 'subtotal'])
             ->chunkById(500, function ($orders) use (&$rows, $lookup, $period) {

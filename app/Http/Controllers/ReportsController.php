@@ -27,6 +27,7 @@ class ReportsController extends Controller
         $paidOrders = $report->paidOrders($startDate, $endDate);
         $revenue = (int) (clone $paidOrders)->sum('subtotal');
         $ordersCount = (clone $paidOrders)->count();
+        $invoiceSummary = $report->invoiceSummary($startDate, $endDate);
         $salesScope = $salesChart['custom_range'] ? $salesChart['history'] : 'All time';
         $customers = User::where('role', 'customer')->count();
         $toPack = Order::whereDeliveryStage('packing')->count();
@@ -79,7 +80,7 @@ class ReportsController extends Controller
         unset($row);
         $otherMethodCount = (int) $invoiceCounts->where('payment_status', 'paid')->whereNotIn('delivery_method', ['pickup', 'lalamove'])->sum('invoice_count');
 
-        return view('admin.dashboard', compact('revenue', 'ordersCount', 'customers', 'toPack', 'lowStock', 'lowStockCount', 'chart', 'best', 'recent', 'period', 'salesChart', 'salesScope',
+        return view('admin.dashboard', compact('revenue', 'ordersCount', 'invoiceSummary', 'customers', 'toPack', 'lowStock', 'lowStockCount', 'chart', 'best', 'recent', 'period', 'salesChart', 'salesScope',
             'invoiceFilters', 'invoiceScope', 'paymentRows', 'paymentTotal', 'otherPaymentCount', 'methodRows', 'methodTotal', 'otherMethodCount'));
     }
 

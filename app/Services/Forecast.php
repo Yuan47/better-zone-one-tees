@@ -13,7 +13,7 @@ class Forecast
     {
         $n = count($values);
         if ($n < 3) {
-            return ['a' => null, 'b' => null, 'prediction' => null, 'raw' => null];
+            return ['a' => null, 'b' => null, 'prediction' => null, 'raw' => null, 'status' => 'insufficient_history'];
         }
         $xs = range(1, $n);
         $meanX = array_sum($xs) / $n;
@@ -28,23 +28,58 @@ class Forecast
         $a = $meanY - $b * $meanX;
         $raw = $a + $b * ($n + 1);
 
-        return ['a' => $a, 'b' => $b, 'prediction' => max(0, $raw), 'raw' => $raw];
+        return ['a' => $a, 'b' => $b, 'prediction' => max(0, $raw), 'raw' => $raw, 'status' => 'available'];
     }
 
     public function growth(array $values): array
     {
         $n = count($values);
         if ($n < 2) {
-            return ['rate' => null, 'prediction' => null, 'previous' => null, 'earlier' => null];
+            return ['rate' => null, 'prediction' => null, 'previous' => null, 'earlier' => null, 'status' => 'insufficient_history'];
         }
         $previous = $values[$n - 1];
         $earlier = $values[$n - 2];
         if ($earlier <= 0) {
-            return ['rate' => null, 'prediction' => null, 'previous' => $previous, 'earlier' => $earlier];
+            return ['rate' => null, 'prediction' => null, 'previous' => $previous, 'earlier' => $earlier, 'status' => 'zero_baseline'];
         }
         $rate = ($previous - $earlier) / $earlier;
 
-        return ['rate' => $rate, 'prediction' => $previous * (1 + $rate), 'previous' => $previous, 'earlier' => $earlier];
+        return ['rate' => $rate, 'prediction' => $previous * (1 + $rate), 'previous' => $previous, 'earlier' => $earlier, 'status' => 'available'];
+    }
+
+    public function backtest(array $values, array $months = [], bool $roundUnits = false, ?string $firstObservedMonth = null): array
+    {
+        $results = [];
+        foreach (['growth' => 2, 'regression' => 3] as $method => $minimum) {
+            $points = [];
+            for ($index = $minimum; $index < count($values); $index++) {
+                // A product with no earlier paid sale would have shown Needs
+                // history at the time, rather than issuing a zero prediction.
+                if ($firstObservedMonth !== null && $months[$index] <= $firstObservedMonth) {
+                    continue;
+                }
+                // The held-out month and all later values must stay out of the fitted model.
+                $history = array_slice($values, 0, $index);
+                $prediction = ($method === 'growth' ? $this->growth($history) : $this->linear($history))['prediction'];
+                if ($prediction === null) {
+                    continue;
+                }
+                $prediction = $roundUnits ? ceil($prediction) : $prediction;
+                $points[] = ['month' => $months[$index] ?? null, 'training_months' => $index,
+                    'actual' => $values[$index], 'prediction' => $prediction,
+                    'absolute_error' => abs($values[$index] - $prediction)];
+            }
+            $measurable = count($points) >= 2;
+            $error = array_sum(array_column($points, 'absolute_error'));
+            $actual = array_sum(array_map(fn ($point) => abs($point['actual']), $points));
+            $results[$method] = ['status' => $measurable ? 'available' : 'insufficient_history',
+                'minimum_training_months' => $minimum, 'minimum_test_months' => 2,
+                'tested_months' => count($points), 'points' => $points,
+                'mae' => $measurable ? $error / count($points) : null,
+                'wape' => $measurable && $actual > 0 ? $error / $actual * 100 : null];
+        }
+
+        return $results;
     }
 
     private function periods(): array
@@ -54,6 +89,7 @@ class Forecast
         if (! $first) {
             return [];
         }
+
         return $this->completedPeriods(CarbonImmutable::parse($first, 'Asia/Manila')->startOfMonth(), $end);
     }
 
@@ -70,9 +106,17 @@ class Forecast
         return $months;
     }
 
-    private function summarize(array $values, array $months): array
+    private function summarize(array $values, array $months, bool $roundUnits = false, bool $observed = true, ?string $firstObservedMonth = null): array
     {
-        return ['months' => $months, 'values' => $values, 'regression' => $this->linear($values), 'growth' => $this->growth($values), 'target' => CarbonImmutable::now('Asia/Manila')->format('F Y')];
+        $regression = $this->linear($observed ? $values : []);
+        $growth = $this->growth($observed ? $values : []);
+        if (! $observed) {
+            $regression['status'] = $growth['status'] = 'no_observed_sales';
+        }
+
+        return ['months' => $months, 'values' => $values, 'regression' => $regression, 'growth' => $growth,
+            'backtest' => $this->backtest($observed ? $values : [], $months, $roundUnits, $firstObservedMonth),
+            'target' => CarbonImmutable::now('Asia/Manila')->format('F Y')];
     }
 
     public function revenue(): array
@@ -121,12 +165,8 @@ class Forecast
                 $totals[$month] = $monthlyUnits[$product->id][$month] ?? 0;
             }
             $values = array_values($totals);
-            $summary = $this->summarize($values, $months);
             // Time in the catalog alone cannot establish observed product demand.
-            if (! $firstSale) {
-                $summary['regression'] = $this->linear([]);
-                $summary['growth'] = $this->growth([]);
-            }
+            $summary = $this->summarize($values, $months, true, $firstSale !== null, $firstSale?->format('Y-m'));
             $prediction = $summary['regression']['prediction'];
             $available = $product->variants->sum(fn ($v) => $v->available());
 

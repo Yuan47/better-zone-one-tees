@@ -7,9 +7,11 @@ use App\Models\Order;
 use App\Models\PaymentAttempt;
 use App\Models\Product;
 use App\Models\Refund;
+use App\Models\ReturnInspection;
 use App\Models\User;
 use App\Models\Variant;
 use App\Services\ActivityRecorder;
+use App\Services\ReturnInspections;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
@@ -61,12 +63,24 @@ class InstallmentRefundTest extends TestCase
         return $receipt->fresh();
     }
 
-    private function refund(Order $order, ?PaymentAttempt $source, int $amount, array $attributes = []): Refund
+    private function refund(Order $order, ?PaymentAttempt $source, int $amount, array $attributes = [], bool $inspect = true): Refund
     {
-        return $order->refunds()->create($attributes + ['requested_by' => $order->user_id, 'requested_amount' => $order->total,
+        $refund = $order->refunds()->create($attributes + ['requested_by' => $order->user_id, 'requested_amount' => $order->total,
             'reason' => 'The clothing has been returned for the approved refund.', 'status' => 'approved', 'approved_amount' => $amount,
             'payment_attempt_id' => $source?->id, 'reviewed_by' => $this->user('admin')->id, 'reviewed_at' => now()->subMinutes(5),
             'decision_note' => 'Approved against the selected invoice receipt.'])->fresh();
+        if ($inspect && ! $refund->provider_refund_id && in_array($refund->status, ['requested', 'approved'], true)
+            && $order->deliveryConfirmed() && $order->payment_status === 'paid') {
+            $existing = ReturnInspection::where('order_id', $order->id)->first();
+            $data = $existing ? ['existing_inspection_id' => $existing->id] : [
+                'items' => $order->items->map(fn ($item) => ['order_item_id' => $item->id, 'quantity' => $item->quantity, 'condition' => 'good'])->all(),
+                'include_delivery' => true, 'inspection_note' => 'Owner physically received and checked the returned clothing.',
+                'photo_exception_reason' => 'The returned clothing was inspected at the counter without a camera.',
+            ];
+            app(ReturnInspections::class)->record($refund, $this->user('admin'), $data);
+        }
+
+        return $refund->fresh();
     }
 
     private function fakeProvider(string $reference, PaymentAttempt $source, int $amount, array $attributes = []): void
@@ -298,7 +312,7 @@ class InstallmentRefundTest extends TestCase
             $this->actingAs($this->user($role))->post($url, $data)->assertForbidden();
         }
         $this->assertSame('approved', $refund->fresh()->status);
-        $this->assertDatabaseCount('activity_logs', 0);
+        $this->assertSame(0, ActivityLog::where('action', 'refund.cash_recorded')->count());
         Http::assertNothingSent();
     }
 
@@ -322,7 +336,7 @@ class InstallmentRefundTest extends TestCase
         $this->cash($refund, $source)->assertSessionHasErrors('refund');
         $this->assertSame('approved', $refund->fresh()->status);
         $this->assertNull($refund->fresh()->cash_recorded_by);
-        $this->assertDatabaseCount('activity_logs', 0);
+        $this->assertSame(0, ActivityLog::where('action', 'refund.cash_recorded')->count());
         Http::assertNothingSent();
     }
 
@@ -336,7 +350,7 @@ class InstallmentRefundTest extends TestCase
     {
         $order = $this->invoice($case !== 'online_not_confirmed');
         $cash = $this->receipt($order, 250000, 'cash');
-        $refund = $this->refund($order, $cash, 40000);
+        $refund = $this->refund($order, $cash, 40000, inspect: false);
         match ($case) {
             'requested' => $refund->update(['status' => 'requested']),
             'provider_reference' => $refund->update(['provider_refund_id' => 'ref_existing']),
@@ -348,7 +362,7 @@ class InstallmentRefundTest extends TestCase
         $before = $refund->fresh()->getRawOriginal();
         $this->cash($refund, $cash)->assertSessionHasErrors('refund');
         $this->assertSame($before, $refund->fresh()->getRawOriginal());
-        $this->assertDatabaseCount('activity_logs', 0);
+        $this->assertSame(0, ActivityLog::where('action', 'refund.cash_recorded')->count());
         Http::assertNothingSent();
     }
 
@@ -384,7 +398,7 @@ class InstallmentRefundTest extends TestCase
         $this->cash($otherRefund, $otherCash)->assertSessionHasErrors('refund');
         $this->assertSame(50000, Refund::remainingForOrder($other->fresh()));
         $this->assertNull($otherRefund->fresh()->amount);
-        $this->assertDatabaseCount('activity_logs', 0);
+        $this->assertSame(0, ActivityLog::where('action', 'refund.cash_recorded')->count());
         Http::assertNothingSent();
     }
 
@@ -425,7 +439,7 @@ class InstallmentRefundTest extends TestCase
         });
         $this->cash($refund, $cash)->assertSessionHasErrors('refund');
         $this->assertSame($before, $refund->fresh()->getRawOriginal());
-        $this->assertDatabaseCount('activity_logs', 0);
+        $this->assertSame(0, ActivityLog::where('action', 'refund.cash_recorded')->count());
         Http::assertNothingSent();
     }
 

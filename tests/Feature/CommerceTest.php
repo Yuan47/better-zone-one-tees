@@ -311,7 +311,7 @@ class CommerceTest extends TestCase
         $this->assertSame('customer', User::where('email', 'buyer@example.test')->firstOrFail()->role);
         $this->actingAs($this->user('admin'));
         $response = $this->get('/admin/reports/export')->assertOk();
-        $this->assertStringContainsString('Net clothing PHP', $response->streamedContent());
+        $this->assertStringContainsString('Clothing after discounts before refunds PHP', $response->streamedContent());
     }
 
     public function test_forecast_uses_complete_months_only(): void

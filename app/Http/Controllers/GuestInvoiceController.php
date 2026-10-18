@@ -8,8 +8,10 @@ use App\Models\Refund;
 use App\Services\InvoicePayments;
 use App\Services\InvoiceTerms;
 use App\Services\PaymentRecovery;
+use App\Services\ReturnInspections;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 class GuestInvoiceController extends Controller
@@ -59,16 +61,25 @@ class GuestInvoiceController extends Controller
     public function refund(Request $request, Order $order)
     {
         $this->guard($order);
-        $data = $request->validate(['reason' => 'required|string|min:10|max:2000']);
-        DB::transaction(function () use ($order, $data) {
-            $locked = Order::whereKey($order->id)->lockForUpdate()->firstOrFail();
-            if ($locked->payment_status !== 'paid' || ! $locked->deliveryConfirmed() || $locked->refunds()->whereIn('status', ['requested', 'approved', 'pending', 'processing'])->exists()
-                || ($remaining = Refund::remainingForOrder($locked)) < 100) {
-                throw ValidationException::withMessages(['refund' => 'A request is available only after full payment and walk-in delivery, with no other refund processing.']);
+        $data = $request->validate(['reason' => 'required|string|min:10|max:2000', 'customer_photo' => ReturnInspections::photoRules()]);
+        $photo = app(ReturnInspections::class)->storePhoto($request->file('customer_photo'));
+        try {
+            DB::transaction(function () use ($order, $data, $photo) {
+                $locked = Order::whereKey($order->id)->lockForUpdate()->firstOrFail();
+                if ($locked->payment_status !== 'paid' || ! $locked->deliveryConfirmed() || $locked->refunds()->whereIn('status', ['requested', 'approved', 'pending', 'processing'])->exists()
+                    || ($remaining = Refund::remainingForOrder($locked)) < 100) {
+                    throw ValidationException::withMessages(['refund' => 'A request is available only after full payment and walk-in delivery, with no other refund processing.']);
+                }
+                $refund = $locked->refunds()->create(['requested_by' => null, 'reason' => $data['reason'], 'requested_amount' => $remaining,
+                    'customer_photo_path' => $photo] + app(ReturnInspections::class)->snapshot($locked));
+                ActivityLog::create(['actor_id' => null, 'actor_name' => 'Guest invoice holder', 'actor_role' => 'customer', 'action' => 'refund.requested', 'target_type' => 'refund', 'target_id' => $refund->id, 'metadata' => [], 'occurred_at' => now()]);
+            }, 3);
+        } catch (\Throwable $exception) {
+            if ($photo) {
+                Storage::disk('local')->delete($photo);
             }
-            $refund = $locked->refunds()->create(['requested_by' => null, 'reason' => $data['reason'], 'requested_amount' => $remaining]);
-            ActivityLog::create(['actor_id' => null, 'actor_name' => 'Guest invoice holder', 'actor_role' => 'customer', 'action' => 'refund.requested', 'target_type' => 'refund', 'target_id' => $refund->id, 'metadata' => [], 'occurred_at' => now()]);
-        }, 3);
+            throw $exception;
+        }
 
         return back()->with('notice', 'Your refund request was sent for store review. No refund has been confirmed yet.');
     }

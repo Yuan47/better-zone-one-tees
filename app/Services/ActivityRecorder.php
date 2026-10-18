@@ -79,7 +79,7 @@ class ActivityRecorder
         }
 
         return match ($action) {
-            'settings.updated' => 'store', 'faq.imported' => 'faq_collection', 'reports.exported' => 'report', default => null,
+            'settings.updated', 'refund.policy_updated' => 'store', 'faq.imported' => 'faq_collection', 'reports.exported' => 'report', default => null,
         };
     }
 
@@ -91,6 +91,7 @@ class ActivityRecorder
             'order.created' => ['quantity', 'delivery_method', 'status'],
             'order.status_changed', 'order.received' => ['previous_status', 'status', 'reason'],
             'invoice.payment_received', 'refund.cash_recorded' => ['amount', 'method', 'reason'],
+            'refund.inspected', 'refund.policy_updated' => ['reason'],
             'invoice.due_changed' => ['reason', 'previous_due_at', 'due_at'],
             'invoice.terms_changed' => ['reason', 'days'],
             'order.delivery_reconciled', 'order.payment_reconciled' => ['previous_status', 'status'], 'order.delivery_booked', 'order.delivery_reconciliation_required' => ['status'],

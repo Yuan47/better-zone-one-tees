@@ -19,6 +19,10 @@
         <env name="EMAIL_VERIFICATION_REQUIRED" value="false"/>
         <env name="STAFF_ACCOUNT_SETUP_ENABLED" value="false"/>
         <env name="PASSWORD_RECOVERY_ENABLED" value="false"/>
+        <env name="GOOGLE_SIGN_IN_ENABLED" value="false" force="true"/>
+        <env name="GOOGLE_CLIENT_ID" value="" force="true"/>
+        <env name="GOOGLE_CLIENT_SECRET" value="" force="true"/>
+        <env name="GOOGLE_REDIRECT_URI" value="" force="true"/>
         <env name="APP_URL" value="http://localhost"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>

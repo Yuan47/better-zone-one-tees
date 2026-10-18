@@ -280,13 +280,15 @@ class AdminController extends Controller
     {
         $report = app(SalesReport::class);
         $filters = $report->filters($r->all());
+        $asOf = CarbonImmutable::now('Asia/Manila');
         ActivityRecorder::mark($r, 'reports.exported', null, ['format' => 'csv']);
 
-        return response()->streamDownload(function () use ($report, $filters) {
+        return response()->streamDownload(function () use ($report, $filters, $asOf) {
             $out = fopen('php://output', 'w');
-            fputcsv($out, ['Order', 'Paid at', 'Pieces', 'Pricing tier', 'Clothing base PHP', 'Bulk discount PHP', 'Net clothing PHP', 'Delivery PHP', 'Total PHP', 'Recipient', 'Sales channel'], ',', '"', '');
-            $report->paidOrders($filters['start_date'], $filters['end_date'])->orderBy('id')->chunk(100, function ($orders) use ($out) {
+            fputcsv($out, ['Order', 'Paid at', 'Pieces before returns', 'Pricing tier', 'Clothing base PHP', 'Bulk discount PHP', 'Clothing after discounts before refunds PHP', 'Delivery PHP', 'Original invoice total PHP', 'Recipient', 'Sales channel', 'Confirmed refunds including delivery PHP', 'Net invoice including delivery PHP', 'Refunds known as of Asia/Manila'], ',', '"', '');
+            $report->withInvoiceRefunds($report->paidOrders($filters['start_date'], $filters['end_date']), $asOf)->orderBy('id')->chunk(100, function ($orders) use ($out, $report, $asOf) {
                 foreach ($orders as $o) {
+                    $amounts = $report->invoiceAmounts($o);
                     $recipient = (string) $o->recipient;
                     if (preg_match('/^\s*[=+@-]/u', $recipient)) {
                         $recipient = "'".$recipient;
@@ -294,7 +296,8 @@ class AdminController extends Controller
                     fputcsv($out, [$o->number, $o->paid_at?->toIso8601String(), $o->quantity, $o->tier,
                         number_format($o->merchandise_base / 100, 2, '.', ''), number_format($o->discount / 100, 2, '.', ''), number_format($o->subtotal / 100, 2, '.', ''),
                         number_format($o->shipping / 100, 2, '.', ''), number_format($o->total / 100, 2, '.', ''), $recipient,
-                        $o->sales_channel === 'walk_in' ? 'Walk-in' : 'Online'], ',', '"', '');
+                        $o->sales_channel === 'walk_in' ? 'Walk-in' : 'Online', number_format($amounts['confirmed_refunds'] / 100, 2, '.', ''),
+                        number_format($amounts['net_invoice'] / 100, 2, '.', ''), $asOf->toIso8601String()], ',', '"', '');
                 }
             });
             fclose($out);

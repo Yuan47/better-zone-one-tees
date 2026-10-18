@@ -36,11 +36,13 @@ class WebhookController extends Controller
             return response()->json(['received' => true]);
         }
         abort_unless(is_array($session) && is_string($session['id'] ?? null), 422);
-        $outcome = DB::transaction(function () use ($eventId, $type, $session, $flow) {
-            $attempt = PaymentAttempt::where('checkout_session_id', $session['id'])->first();
+        // Resolve the invoice before the transaction. A plain read inside it
+        // would establish an old MySQL snapshot while waiting for its lock.
+        $attempt = PaymentAttempt::where('checkout_session_id', $session['id'])->first();
+        $outcome = DB::transaction(function () use ($eventId, $type, $session, $flow, $attempt) {
             if ($attempt) {
                 $invoice = Order::whereKey($attempt->order_id)->lockForUpdate()->firstOrFail();
-                if (DB::table('webhook_events')->where('event_id', $eventId)->exists()) {
+                if (DB::table('webhook_events')->where('event_id', $eventId)->lockForUpdate()->first()) {
                     return 'duplicate';
                 }
                 if (data_get($session, 'attributes.reference_number') !== $invoice->number) {
@@ -63,7 +65,7 @@ class WebhookController extends Controller
             if (! $order) {
                 return 'unknown_order';
             }
-            if (DB::table('webhook_events')->where('event_id', $eventId)->exists()) {
+            if (DB::table('webhook_events')->where('event_id', $eventId)->lockForUpdate()->first()) {
                 return 'duplicate';
             }
             $payments = collect(data_get($session, 'attributes.payments', []))->filter(fn ($p) => data_get($p, 'attributes.status') === 'paid');

@@ -10,6 +10,7 @@ use App\Http\Controllers\CustomerSessionController;
 use App\Http\Controllers\DeliveryRecoveryController;
 use App\Http\Controllers\EmailVerificationController;
 use App\Http\Controllers\FaqController;
+use App\Http\Controllers\GoogleSignInController;
 use App\Http\Controllers\GuestInvoiceController;
 use App\Http\Controllers\InvoicePaymentController;
 use App\Http\Controllers\OperationsController;
@@ -22,6 +23,7 @@ use App\Http\Controllers\StaffAccountController;
 use App\Http\Controllers\StoreController;
 use App\Http\Controllers\WalkInController;
 use App\Http\Controllers\WebhookController;
+use App\Http\Middleware\GoogleCallbackPrivacy;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [StoreController::class, 'index'])->name('store');
@@ -34,7 +36,9 @@ Route::middleware('guest')->group(function () {
     Route::get('/register', fn () => app(AuthController::class)->form('register'))->name('register');
     Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
     Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:5,1');
+    Route::post('/auth/google', [GoogleSignInController::class, 'start'])->middleware('throttle:5,1,google-start')->block(30, 30)->name('google.start');
 });
+Route::get('/auth/google/callback', [GoogleSignInController::class, 'callback'])->middleware([GoogleCallbackPrivacy::class, 'throttle:10,1,google-callback'])->block(30, 30)->name('google.callback');
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
 Route::get('/forgot-password', [PasswordRecoveryController::class, 'requestForm'])->name('password.request');
 Route::post('/forgot-password', [PasswordRecoveryController::class, 'send'])->middleware('throttle:5,1,password-recovery-email')->name('password.email');
@@ -56,6 +60,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/email/verification-code', [EmailVerificationController::class, 'send'])->middleware('throttle:5,1,email-code-send')->name('verification.send');
     Route::post('/email/verify', [EmailVerificationController::class, 'verify'])->middleware('throttle:10,1,email-code-check')->name('verification.verify');
     Route::get('/account', [AccountController::class, 'show'])->name('account');
+    Route::post('/account/google', [GoogleSignInController::class, 'link'])->middleware('throttle:5,1,google-link')->block(30, 30)->name('google.link');
     Route::patch('/account', [AccountController::class, 'update'])->name('account.update');
     Route::patch('/account/password', [AccountController::class, 'password'])->middleware('throttle:5,1')->name('account.password');
     Route::post('/wishlist/{product}', [StoreController::class, 'wishlist'])->name('wishlist.toggle');
@@ -80,6 +85,7 @@ Route::middleware(['auth', 'staff'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/operations', [OperationsController::class, 'index'])->name('operations');
     Route::get('/refunds', [RefundController::class, 'index'])->name('refunds.index');
     Route::get('/refunds/{refund}', [RefundController::class, 'show'])->name('refunds.show');
+    Route::get('/refunds/{refund}/evidence/{kind}', [RefundController::class, 'evidence'])->whereIn('kind', ['customer', 'inspection'])->name('refunds.evidence');
     Route::post('/refunds/{refund}/check', [RefundController::class, 'check'])->middleware('throttle:6,1')->name('refunds.check');
     Route::get('/orders', [AdminController::class, 'orders'])->name('orders');
     Route::get('/reports/export', [AdminController::class, 'export'])->name('reports.export');
@@ -97,6 +103,8 @@ Route::middleware(['auth', 'staff'])->prefix('admin')->name('admin.')->group(fun
         Route::post('/orders/{order}/due', [InvoicePaymentController::class, 'due'])->name('orders.due');
         Route::post('/settings/payment-terms', [InvoicePaymentController::class, 'terms'])->name('payment-terms.save');
         Route::post('/refunds/{refund}/cash', [RefundController::class, 'cash'])->name('refunds.cash');
+        Route::post('/refunds/{refund}/inspection', [RefundController::class, 'inspect'])->middleware('throttle:6,1')->name('refunds.inspect');
+        Route::post('/refund-policy', [RefundController::class, 'policy'])->name('refunds.policy');
         Route::patch('/refunds/{refund}', [RefundController::class, 'review'])->name('refunds.review');
         Route::post('/refunds/{refund}/recover', [RefundController::class, 'recover'])->middleware('throttle:3,1')->name('refunds.recover');
         Route::post('/orders/{order}/payment/recover', [PaymentRecoveryController::class, 'recover'])->middleware('throttle:3,1')->name('orders.payment.recover');

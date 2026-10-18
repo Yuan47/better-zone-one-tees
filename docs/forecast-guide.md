@@ -2,7 +2,7 @@
 
 The system estimates the current calendar month using up to six completed months. For example, on 17 October, it uses completed months through September to estimate October. It does not compare an unfinished October with a complete September.
 
-Sales means clothing subtotals from fully paid orders, after quantity discounts. Delivery fees and pending/partial payments are excluded. Refunds are recorded separately and are not automatically subtracted from these clothing totals because clothing/delivery refund allocation has not been recorded.
+Sales means **confirmed clothing sales before refunds**: clothing subtotals from fully paid orders, after quantity discounts. Delivery fees and pending/partial payments are excluded. Demand means **originally ordered paid pieces before returns**. New return inspections record returned quantities and clothing/delivery refund allocations; historical refunds may lack those details. The forecasts deliberately retain original paid sales and pieces before refunds or returns, rather than combining inconsistent historical return records. Refunds are reported separately. A refund amount alone is never converted into returned product quantities. The refund-adjusted invoice report includes delivery and is a different measure from this clothing forecast.
 
 ## Historical growth
 
@@ -58,4 +58,20 @@ Product history begins in the month the product entered the catalog, or an earli
 
 For a forecast of 100 pieces with 70 available, suggested reorder is **30 pieces**. This compares the full target month's estimate with current availability. It does not subtract this month's sales or include incoming purchases, supplier lead times, safety stock, seasonality, or a size/color purchasing mix. It is a planning suggestion and does not place a purchase order.
 
-The calculation inputs are visible under Sales & Growth Forecast → View historical periods and calculation inputs, and under each product's history details. Estimates need historical backtesting and do not guarantee future sales.
+## Measuring forecast error
+
+The forecast page now compares past estimates with actual completed months. This is a chronological backtest: to predict September, it uses only the eligible months before September. September and later sales never enter that test's training data. The next month is then tested using its own earlier history. This avoids measuring a model against the same values used to fit it.
+
+Historical growth needs two earlier months and a positive earlier baseline for each test. Regression needs three earlier months. The page requires **at least two usable held-out test months for a method** before showing its error measures. With a continuous series, this is at least four completed months for growth and five for regression; zero baselines can leave growth with fewer usable tests. An estimate can be available before its historical error can be measured.
+
+**Average miss (MAE) = Σ|forecast − actual| ÷ number of test months**
+
+**Relative error (WAPE) = Σ|forecast − actual| ÷ Σ|actual| × 100**
+
+MAE is expressed in pesos for clothing sales and pieces for product demand. WAPE is a percentage **error**, not a guaranteed accuracy score. It can exceed 100%. If actual test sales total zero, WAPE is unavailable rather than reported as 0% or 100% accuracy. Demand tests use predictions rounded up to whole pieces, matching the displayed demand estimates. Negative regression predictions are clamped to zero before testing, matching the actual forecast behavior.
+
+The page shows how many months were tested. With the six-month history window, the evidence is necessarily small: at most four growth tests and three regression tests. It cannot establish seasonality, future accuracy, or a defensible fixed accuracy percentage. The figures describe measured historical error; evaluate future forecasts against actual outcomes as new months finish. No sales history produces **Needs history**, not a fabricated zero-demand forecast or perfect accuracy result.
+
+Product tests also require a paid sale known before the test month. Months before a product's first paid sale do not contribute invented zero forecasts or dilute the measured error. A verified sale before the six-month window still establishes prior observed history, even if recent eligible months have zero sales.
+
+The calculation inputs are visible under Sales & Growth Forecast → View historical periods and calculation inputs, and under each product's history details. Revenue backtest estimates and actuals are available under View forecast error formulas and past estimates. Estimates do not guarantee future sales.

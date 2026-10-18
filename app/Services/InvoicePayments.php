@@ -99,7 +99,7 @@ class InvoicePayments
         if (! Str::isUuid($key)) {
             $this->fail('Refresh this invoice before submitting the payment again.');
         }
-        $old = PaymentAttempt::where('reference', $key)->first();
+        $old = PaymentAttempt::where('reference', $key)->lockForUpdate()->first();
         if ($old && ($old->order_id !== $order->id || $old->method !== $method || $old->amount !== $amount)) {
             $this->fail('This payment reference has already been used for a different request.');
         }
@@ -115,8 +115,10 @@ class InvoicePayments
         if ($amount < 100 || $amount > $order->outstandingBalance()) {
             $this->fail('Payment must be at least ₱1.00 and cannot exceed the remaining balance.');
         }
-        if ($order->payments()->whereIn('status', PaymentAttempt::ACTIVE)->exists()
-            || (! $order->payments()->exists() && $order->checkout_session_id)) {
+        // Credit checks may have opened a repeatable-read snapshot before this
+        // invoice lock. Current reads must see a checkout another request saved.
+        if ($order->payments()->whereIn('status', PaymentAttempt::ACTIVE)->lockForUpdate()->first()
+            || (! $order->payments()->lockForUpdate()->first() && $order->checkout_session_id)) {
             $this->fail('Check or close the existing online checkout before recording another payment. An uncertain checkout cannot be replaced.');
         }
         if ($amount < $order->outstandingBalance()) {

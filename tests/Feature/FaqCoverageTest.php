@@ -51,7 +51,7 @@ class FaqCoverageTest extends TestCase
         config(['shop.grok.key' => 'test-grok']);
         Http::fake();
         $faqs = ChatbotFaq::where('sort_order', '>=', 100)->orderBy('sort_order')->get();
-        $this->assertCount(15, $faqs);
+        $this->assertCount(18, $faqs);
         foreach ($faqs->take(12) as $faq) {
             $this->chat($faq->question)->assertOk()->assertJsonPath('mode', 'store')->assertJsonPath('reply', $faq->answer);
         }

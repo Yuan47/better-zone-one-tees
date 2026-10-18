@@ -27,11 +27,13 @@
 <details><summary>Delivery coordinates (optional)</summary><p class="muted">Lalamove needs exact coordinates for quotations. You can also provide these at checkout.</p><div class="two-col"><label>Latitude<input type="number" name="lat" min="-90" max="90" step="any" value="{{ old('lat',$user->lat) }}"></label><label>Longitude<input type="number" name="lng" min="-180" max="180" step="any" value="{{ old('lng',$user->lng) }}"></label></div></details>
 @endif
 <button class="button dark">Save account</button></form>
-<form class="panel stack" method="post" action="{{ route('account.password') }}">@csrf @method('patch')
+<div class="stack"><form class="panel stack" method="post" action="{{ route('account.password') }}">@csrf @method('patch')
 <h2>Change Password</h2><p class="muted">Use at least 10 characters. Changing your password signs out your other browser sessions.</p>
 <label>Current password<input type="password" name="current_password" required autocomplete="current-password"></label>
 <label>New password<input type="password" name="password" required minlength="10" autocomplete="new-password"></label>
 <label>Confirm new password<input type="password" name="password_confirmation" required minlength="10" autocomplete="new-password"></label>
 <button class="button dark">Change password</button>
-</form></div>
+</form>
+@include('partials.google-account')
+</div></div>
 @endsection

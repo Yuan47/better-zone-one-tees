@@ -7,9 +7,11 @@ use App\Models\Order;
 use App\Models\PaymentAttempt;
 use App\Models\Product;
 use App\Models\Refund;
+use App\Models\ReturnInspection;
 use App\Models\User;
 use App\Models\Variant;
 use App\Services\OrderFlow;
+use App\Services\ReturnInspections;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\URL;
@@ -106,6 +108,13 @@ class PartialPaymentRefundFlowTest extends TestCase
 
     private function approve(Refund $refund, PaymentAttempt $source, User $owner): void
     {
+        $existing = ReturnInspection::where('order_id', $refund->order_id)->first();
+        $data = $existing ? ['existing_inspection_id' => $existing->id] : [
+            'items' => $refund->order->items->map(fn ($item) => ['order_item_id' => $item->id, 'quantity' => $item->quantity, 'condition' => 'good'])->all(),
+            'include_delivery' => true, 'inspection_note' => 'Owner physically received and checked the returned clothing.',
+            'photo_exception_reason' => 'The returned clothing was inspected at the counter without a camera.',
+        ];
+        app(ReturnInspections::class)->record($refund, $owner, $data);
         $this->actingAs($owner)->patch('/admin/refunds/'.$refund->id, ['decision' => 'approved', 'approved_amount' => number_format($source->amount / 100, 2, '.', ''),
             'payment_attempt_id' => $source->id, 'decision_note' => 'Returned clothing checked; refund approved against this receipt.'])
             ->assertRedirect()->assertSessionHasNoErrors();

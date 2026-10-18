@@ -5,10 +5,12 @@ namespace Tests\Feature;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Refund;
+use App\Models\ReturnInspection;
 use App\Models\User;
 use App\Models\Variant;
 use App\Services\DeliveryRecovery;
 use App\Services\OrderFlow;
+use App\Services\ReturnInspections;
 use App\Services\SalesReport;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -70,8 +72,24 @@ class RefundTest extends TestCase
 
     private function approved(Order $order, int $amount = 10000, array $attributes = []): Refund
     {
-        return $this->refund($order, $attributes + ['status' => 'approved', 'approved_amount' => $amount,
+        $refund = $this->refund($order, $attributes + ['status' => 'approved', 'approved_amount' => $amount,
             'reviewed_by' => $this->user('admin')->id, 'reviewed_at' => now()->subMinutes(2), 'decision_note' => 'Approved for partial refund.']);
+        if (! $refund->provider_refund_id && $order->deliveryConfirmed() && $order->payment_status === 'paid') {
+            $this->inspect($refund);
+        }
+
+        return $refund->fresh();
+    }
+
+    private function inspect(Refund $refund): void
+    {
+        $existing = ReturnInspection::where('order_id', $refund->order_id)->first();
+        $data = $existing ? ['existing_inspection_id' => $existing->id] : [
+            'items' => $refund->order->items->map(fn ($item) => ['order_item_id' => $item->id, 'quantity' => $item->quantity, 'condition' => 'good'])->all(),
+            'include_delivery' => true, 'inspection_note' => 'Owner physically received and checked the returned clothing.',
+            'photo_exception_reason' => 'The returned clothing was inspected at the counter without a camera.',
+        ];
+        app(ReturnInspections::class)->record($refund, $this->user('admin'), $data);
     }
 
     private function provider(Refund $refund, array $attributes = [], string $id = 'ref_test'): array
@@ -183,6 +201,7 @@ class RefundTest extends TestCase
         $order = $this->order();
         $refund = $this->refund($order);
         $owner = $this->user('admin');
+        $this->inspect($refund);
         $this->actingAs($owner)->patch('/admin/refunds/'.$refund->id, ['decision' => 'approved', 'approved_amount' => '12.34', 'decision_note' => 'Approved for the size adjustment.'])->assertSessionHasNoErrors();
         $refund->refresh();
         $this->assertSame('approved', $refund->status);
@@ -203,6 +222,7 @@ class RefundTest extends TestCase
         $owner = $this->user('admin');
         $order = $this->order();
         $refund = $this->refund($order, ['requested_amount' => 3000]);
+        $this->inspect($refund);
         $this->actingAs($owner)->patch('/admin/refunds/'.$refund->id, ['decision' => 'approved', 'approved_amount' => '30.01', 'decision_note' => 'Reviewing partial refund.'])->assertSessionHasErrors('refund');
         $this->patch('/admin/refunds/'.$refund->id, ['decision' => 'approved', 'approved_amount' => '12.345', 'decision_note' => 'Reviewing partial refund.'])->assertSessionHasErrors('approved_amount');
         $this->refund($order, ['status' => 'succeeded', 'amount' => 23000]);
@@ -565,17 +585,21 @@ class RefundTest extends TestCase
     public function test_unapproved_request_and_invalid_reference_cannot_be_confirmed(): void
     {
         $refund = $this->refund($this->order());
+        $this->inspect($refund);
+        $before = $refund->fresh()->getRawOriginal();
         $this->fakeRefund($this->provider($refund));
         $this->actingAs($this->user('admin'))->post('/admin/refunds/'.$refund->id.'/recover', ['provider_refund_id' => 'ref_test'])->assertSessionHasErrors('refund');
         $this->assertSame('requested', $refund->fresh()->status);
         $this->post('/admin/refunds/'.$refund->id.'/recover', ['provider_refund_id' => 'https://attacker.example/refund'])->assertSessionHasErrors('provider_refund_id');
-        Http::assertSentCount(1);
+        $this->assertSame($before, $refund->fresh()->getRawOriginal());
+        Http::assertNothingSent();
     }
 
     public function test_review_requires_order_to_remain_a_verified_paid_payment(): void
     {
         $order = $this->order();
         $refund = $this->refund($order);
+        $this->inspect($refund);
         $order->update(['payment_status' => 'pending']);
         $this->actingAs($this->user('admin'))->patch('/admin/refunds/'.$refund->id, ['decision' => 'approved', 'approved_amount' => '100', 'decision_note' => 'Order payment must remain verified.'])->assertSessionHasErrors('refund');
         $this->assertSame('requested', $refund->fresh()->status);

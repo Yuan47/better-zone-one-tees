@@ -11,7 +11,17 @@
     <article class="panel stat"><span>Customers <i>♧</i></span><h2>{{ number_format($customers) }}</h2><small>All time · registered customer accounts</small></article>
     <article class="panel stat"><span>Average order value <i>◇</i></span><h2>₱{{ number_format($ordersCount ? $revenue / $ordersCount / 100 : 0, 2) }}</h2><small>{{ $salesScope }} · confirmed clothing sale ÷ paid orders</small></article>
 </div>
-<p class="muted">Confirmed clothing sales include fully paid online and walk-in invoices. Deposits are excluded. <a class="text-link" href="{{ route('admin.operations') }}">View outstanding invoices and deposits in Operations →</a></p>
+<p class="muted">Confirmed clothing sales include fully paid online and walk-in invoices, after discounts and before refunds. Deposits are excluded. Average order value uses this same clothing amount before refunds. <a class="text-link" href="{{ route('admin.operations') }}">View outstanding invoices and deposits in Operations →</a></p>
+<section class="panel report-count-section" aria-labelledby="invoice-refund-heading">
+    <div class="section-heading"><div><h2 id="invoice-refund-heading">Paid invoices after refunds</h2><p class="muted">{{ $salesScope }} · invoices selected by payment completion date · includes delivery</p></div></div>
+    <div class="invoice-totals">
+        <div><span>Original invoice value</span><strong>₱{{ number_format($invoiceSummary['original_invoice'] / 100, 2) }}</strong><small>Clothing after discounts + delivery</small></div>
+        <div><span>Confirmed refunds</span><strong>₱{{ number_format($invoiceSummary['confirmed_refunds'] / 100, 2) }}</strong><small>Verified online refunds + recorded cash returns</small></div>
+        <div><span>Net invoice value</span><strong>₱{{ number_format($invoiceSummary['net_invoice'] / 100, 2) }}</strong><small>Original invoice value − confirmed refunds</small></div>
+    </div>
+    <p class="muted">Refunds known as of {{ \Carbon\CarbonImmutable::parse($invoiceSummary['as_of'])->format('M j, Y, g:i A') }} (Asia/Manila). A later refund updates the original paid invoice’s net value, including when viewing an earlier payment period. Requested, approved and processing refunds are excluded.</p>
+    <p class="muted">New return inspections record returned quantities and clothing/delivery allocations. Historical refunds may have no clothing/delivery allocation. The clothing chart, average order value and original units sold deliberately show paid sales before refunds or returns; net invoice value above shows confirmed refunds separately and is not profit. <a class="text-link" href="{{ route('admin.operations') }}">Operations shows refunds by confirmation date →</a></p>
+</section>
 <div class="dashboard-grid" id="reports">
     <section class="panel">
         <div class="section-heading"><h3>Sales over time</h3><span class="badge">{{ $salesChart['history'] }}</span></div>
@@ -26,7 +36,7 @@
             <button class="button small" type="submit">View sales</button>
             <a class="text-link" href="{{ route('admin.dashboard', ['period' => $period]) }}#reports">Clear dates</a>
         </form>
-        <p class="muted">{{ $salesChart['custom_range'] ? 'Selected dates: '.$salesChart['history'].' (inclusive).' : 'Showing '.$salesChart['history'].'. Cards and best sellers use all-time paid sales until dates are selected.' }} Paid clothing sales after discounts, excluding delivery · Asia/Manila. {{ $period === 'weekly' ? 'Weeks start Monday. ' : '' }}@if(collect($chart)->contains('current', true))The current {{ ['daily' => 'day', 'weekly' => 'week', 'monthly' => 'month', 'yearly' => 'year'][$period] }} is still in progress.@endif</p>
+        <p class="muted">{{ $salesChart['custom_range'] ? 'Selected dates: '.$salesChart['history'].' (inclusive).' : 'Showing '.$salesChart['history'].'. Cards and best sellers use all-time paid sales until dates are selected.' }} Paid clothing sales after discounts, before refunds, excluding delivery · Asia/Manila. {{ $period === 'weekly' ? 'Weeks start Monday. ' : '' }}@if(collect($chart)->contains('current', true))The current {{ ['daily' => 'day', 'weekly' => 'week', 'monthly' => 'month', 'yearly' => 'year'][$period] }} is still in progress.@endif</p>
         <p class="muted sales-range-hint">Enter both dates or leave both blank. Daily: up to 120 days; weekly: up to 366 days; monthly/yearly: up to 10 years and 120 periods.</p>
         <div class="sales-chart-scroll revenue-chart">
             @php($plot = $salesChart['plot'])
@@ -52,6 +62,7 @@
     </section>
     <section class="panel">
         <div class="section-heading"><h3>Best sellers</h3><span class="muted">{{ $salesChart['custom_range'] ? 'Selected dates · units sold' : 'All-time units sold' }}</span></div>
+        <p class="muted">Original paid quantities before returns. Refunded money is not converted into returned pieces.</p>
         @forelse($best as $seller)<div class="rank-row"><span class="rank">{{ $loop->iteration }}</span><b>{{ $seller->name }}</b><span>{{ $seller->units }} pcs</span></div>
         @empty<div class="small-empty"><span>◇</span><h3>{{ $salesChart['custom_range'] ? 'No sales in selected dates' : 'Ready for your first sale' }}</h3><p>Best sellers appear after verified payments{{ $salesChart['custom_range'] ? ' within the selected dates' : '' }}.</p></div>@endforelse
     </section>

@@ -99,7 +99,7 @@ class PartialReportingTest extends TestCase
         $export = $this->get(route('admin.reports.export', $filters))->assertOk()->streamedContent();
         $rows = array_map(fn ($line) => str_getcsv($line, ',', '"', ''), preg_split('/\r?\n/', trim($export)));
         $this->assertCount(3, $rows);
-        $this->assertSame(['Recipient', 'Sales channel'], array_slice($rows[0], -2));
+        $this->assertSame(['Recipient', 'Sales channel'], array_slice($rows[0], 9, 2));
         $this->assertSame($cash->number, $rows[1][0]);
         $this->assertSame("'=1+1", $rows[1][9]);
         $this->assertSame('Walk-in', $rows[1][10]);

@@ -14,7 +14,10 @@ class Refund extends Model
     protected function casts(): array
     {
         return ['requested_amount' => 'integer', 'approved_amount' => 'integer', 'amount' => 'integer', 'payment_attempt_id' => 'integer', 'cash_recorded_by' => 'integer',
-            'provider_updated_at' => 'integer', 'reviewed_at' => 'datetime', 'confirmed_at' => 'datetime'];
+            'provider_updated_at' => 'integer', 'reviewed_at' => 'datetime', 'confirmed_at' => 'datetime',
+            'policy_days' => 'integer', 'policy_delivery_eligible' => 'boolean', 'policy_late' => 'boolean',
+            'policy_delivered_at' => 'datetime', 'policy_deadline_at' => 'datetime',
+            'clothing_amount' => 'integer', 'delivery_amount' => 'integer'];
     }
 
     public function order()
@@ -25,6 +28,11 @@ class Refund extends Model
     public function paymentAttempt()
     {
         return $this->belongsTo(PaymentAttempt::class);
+    }
+
+    public function returnInspection()
+    {
+        return $this->belongsTo(ReturnInspection::class);
     }
 
     public function cashRecordedBy()

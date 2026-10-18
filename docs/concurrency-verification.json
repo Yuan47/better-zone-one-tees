@@ -1,0 +1,1219 @@
+{
+  "verification_date": "2026-10-19",
+  "timezone": "Asia/Manila",
+  "scope": "Software concurrency verification using isolated synthetic fixtures; not live provider acceptance, performance benchmarking, or a usability study.",
+  "engine": "10.4.32-MariaDB",
+  "isolation": "REPEATABLE-READ",
+  "preview_port": 3307,
+  "real_store_access": "Read-only logical backup and checksums; workers were denied store-schema access.",
+  "store_tables_verified": 26,
+  "store_tables_unchanged": true,
+  "provider_requests": "All provider requests were faked and unexpected requests blocked; no real money, emails, or couriers.",
+  "baseline": {
+    "cases": 18,
+    "failures": 6,
+    "source_sha256": {
+      "app/Services/OrderFlow.php": "65f1bd61e20b3e939b97702ee272adbf39baf6478d7a2bf7049932b3e27e9332",
+      "app/Services/InvoicePayments.php": "807da90edcd1e7c927b8460222097b2db4cb0c7e50bd2952c4b12b2f35fec818",
+      "app/Http/Controllers/WebhookController.php": "e0c1c9ab37268b414187b695a1e9304073220f8538f535c05af0a6980adcfa90",
+      "app/Services/RefundVerification.php": "59b2a965f3c2e26e0b00083f8bc2279b94ae4c958dda431dc2f35a985f694a77",
+      "app/Models/Refund.php": "bcf5822e0fc9119d49da788af2648116ca152ee6f082991fb4b22b85093f72b3",
+      "app/Models/Order.php": "b08c4f65c7d0c462260bcb7c0d9346e5d620a80ede82b3b0418446874837ede8"
+    },
+    "private_original_artifact_sha256": "143af27c4fd54b146ccc16078c6edf10a98e2398fcf702b6f878a7720a9831da",
+    "results": [
+      {
+        "scenario": "last-unit",
+        "round": 1,
+        "passed": true,
+        "forced_competing_lock_queries": true,
+        "first_queued_worker": null,
+        "source_unchanged": true,
+        "worker_sources_match_run": true,
+        "invariants": {
+          "one_reservation_only": true,
+          "stock_not_decremented": true,
+          "last_unit_reserved_once": true,
+          "one_rejected": true
+        },
+        "workers": {
+          "a": {
+            "operation": "reserve",
+            "result": "validation_rejected",
+            "faked_http_calls": 0
+          },
+          "b": {
+            "operation": "reserve",
+            "result": "accepted",
+            "faked_http_calls": 0
+          }
+        }
+      },
+      {
+        "scenario": "duplicate-webhook",
+        "round": 1,
+        "passed": false,
+        "forced_competing_lock_queries": true,
+        "first_queued_worker": null,
+        "source_unchanged": true,
+        "worker_sources_match_run": true,
+        "invariants": {
+          "both_requests_safe": false,
+          "invoice_paid_exactly_once": true,
+          "one_paid_receipt": true,
+          "stock_committed_once": true,
+          "one_webhook_event": true
+        },
+        "workers": {
+          "a": {
+            "operation": "signed_webhook",
+            "result": "http_rejected",
+            "http_status": 500,
+            "outcome": null,
+            "exception": "Illuminate\\Database\\UniqueConstraintViolationException",
+            "faked_http_calls": 0
+          },
+          "b": {
+            "operation": "signed_webhook",
+            "result": "accepted",
+            "http_status": 200,
+            "outcome": "paid",
+            "faked_http_calls": 0
+          }
+        }
+      },
+      {
+        "scenario": "duplicate-receipt",
+        "round": 1,
+        "passed": true,
+        "forced_competing_lock_queries": true,
+        "first_queued_worker": null,
+        "source_unchanged": true,
+        "worker_sources_match_run": true,
+        "invariants": {
+          "both_requests_safe": true,
+          "invoice_paid_exactly_once": true,
+          "one_paid_receipt": true,
+          "stock_committed_once": true
+        },
+        "workers": {
+          "a": {
+            "operation": "provider_receive",
+            "result": "accepted",
+            "status": "paid",
+            "faked_http_calls": 0
+          },
+          "b": {
+            "operation": "provider_receive",
+            "result": "accepted",
+            "status": "paid",
+            "faked_http_calls": 0
+          }
+        }
+      },
+      {
+        "scenario": "cash-provider",
+        "round": 1,
+        "passed": true,
+        "forced_competing_lock_queries": true,
+        "first_queued_worker": null,
+        "source_unchanged": true,
+        "worker_sources_match_run": true,
+        "invariants": {
+          "one_balance_method_accepted": true,
+          "no_online_checkout_left_on_paid_invoice": true,
+          "paid_receipts_do_not_exceed_invoice": true,
+          "original_due_date_unchanged": true,
+          "balanced_paid_invoice": true,
+          "stock_committed_once": true
+        },
+        "workers": {
+          "a": {
+            "operation": "cash",
+            "result": "validation_rejected",
+            "faked_http_calls": 0
+          },
+          "b": {
+            "operation": "provider_receive",
+            "result": "accepted",
+            "status": "paid",
+            "faked_http_calls": 0
+          }
+        }
+      },
+      {
+        "scenario": "cash-online-start",
+        "round": 1,
+        "passed": false,
+        "forced_competing_lock_queries": true,
+        "first_queued_worker": null,
+        "source_unchanged": true,
+        "worker_sources_match_run": true,
+        "invariants": {
+          "one_balance_method_accepted": false,
+          "no_online_checkout_left_on_paid_invoice": false,
+          "paid_receipts_do_not_exceed_invoice": true,
+          "original_due_date_unchanged": true,
+          "balanced_paid_invoice": true,
+          "stock_committed_once": true
+        },
+        "workers": {
+          "a": {
+            "operation": "cash",
+            "result": "accepted",
+            "status": "paid",
+            "faked_http_calls": 0
+          },
+          "b": {
+            "operation": "online_start",
+            "result": "accepted",
+            "status": "pending",
+            "faked_http_calls": 1
+          }
+        }
+      },
+      {
+        "scenario": "refund-cap",
+        "round": 1,
+        "passed": true,
+        "forced_competing_lock_queries": true,
+        "first_queued_worker": null,
+        "source_unchanged": true,
+        "worker_sources_match_run": true,
+        "invariants": {
+          "one_refund_accepted": true,
+          "one_refund_rejected": true,
+          "combined_cap_enforced": true,
+          "remaining_balance_correct": true,
+          "invoice_receipt_stock_unchanged": true
+        },
+        "workers": {
+          "a": {
+            "operation": "refund_verify",
+            "result": "accepted",
+            "status": "succeeded",
+            "amount": 40000,
+            "faked_http_calls": 1
+          },
+          "b": {
+            "operation": "refund_verify",
+            "result": "validation_rejected",
+            "faked_http_calls": 1
+          }
+        }
+      },
+      {
+        "scenario": "last-unit",
+        "round": 2,
+        "passed": true,
+        "forced_competing_lock_queries": true,
+        "first_queued_worker": null,
+        "source_unchanged": true,
+        "worker_sources_match_run": true,
+        "invariants": {
+          "one_reservation_only": true,
+          "stock_not_decremented": true,
+          "last_unit_reserved_once": true,
+          "one_rejected": true
+        },
+        "workers": {
+          "a": {
+            "operation": "reserve",
+            "result": "accepted",
+            "faked_http_calls": 0
+          },
+          "b": {
+            "operation": "reserve",
+            "result": "validation_rejected",
+            "faked_http_calls": 0
+          }
+        }
+      },
+      {
+        "scenario": "duplicate-webhook",
+        "round": 2,
+        "passed": false,
+        "forced_competing_lock_queries": true,
+        "first_queued_worker": null,
+        "source_unchanged": true,
+        "worker_sources_match_run": true,
+        "invariants": {
+          "both_requests_safe": false,
+          "invoice_paid_exactly_once": true,
+          "one_paid_receipt": true,
+          "stock_committed_once": true,
+          "one_webhook_event": true
+        },
+        "workers": {
+          "a": {
+            "operation": "signed_webhook",
+            "result": "accepted",
+            "http_status": 200,
+            "outcome": "paid",
+            "faked_http_calls": 0
+          },
+          "b": {
+            "operation": "signed_webhook",
+            "result": "http_rejected",
+            "http_status": 500,
+            "outcome": null,
+            "exception": "Illuminate\\Database\\UniqueConstraintViolationException",
+            "faked_http_calls": 0
+          }
+        }
+      },
+      {
+        "scenario": "duplicate-receipt",
+        "round": 2,
+        "passed": true,
+        "forced_competing_lock_queries": true,
+        "first_queued_worker": null,
+        "source_unchanged": true,
+        "worker_sources_match_run": true,
+        "invariants": {
+          "both_requests_safe": true,
+          "invoice_paid_exactly_once": true,
+          "one_paid_receipt": true,
+          "stock_committed_once": true
+        },
+        "workers": {
+          "a": {
+            "operation": "provider_receive",
+            "result": "accepted",
+            "status": "paid",
+            "faked_http_calls": 0
+          },
+          "b": {
+            "operation": "provider_receive",
+            "result": "accepted",
+            "status": "paid",
+            "faked_http_calls": 0
+          }
+        }
+      },
+      {
+        "scenario": "cash-provider",
+        "round": 2,
+        "passed": true,
+        "forced_competing_lock_queries": true,
+        "first_queued_worker": null,
+        "source_unchanged": true,
+        "worker_sources_match_run": true,
+        "invariants": {
+          "one_balance_method_accepted": true,
+          "no_online_checkout_left_on_paid_invoice": true,
+          "paid_receipts_do_not_exceed_invoice": true,
+          "original_due_date_unchanged": true,
+          "balanced_paid_invoice": true,
+          "stock_committed_once": true
+        },
+        "workers": {
+          "a": {
+            "operation": "cash",
+            "result": "validation_rejected",
+            "faked_http_calls": 0
+          },
+          "b": {
+            "operation": "provider_receive",
+            "result": "accepted",
+            "status": "paid",
+            "faked_http_calls": 0
+          }
+        }
+      },
+      {
+        "scenario": "cash-online-start",
+        "round": 2,
+        "passed": false,
+        "forced_competing_lock_queries": true,
+        "first_queued_worker": null,
+        "source_unchanged": true,
+        "worker_sources_match_run": true,
+        "invariants": {
+          "one_balance_method_accepted": false,
+          "no_online_checkout_left_on_paid_invoice": false,
+          "paid_receipts_do_not_exceed_invoice": true,
+          "original_due_date_unchanged": true,
+          "balanced_paid_invoice": true,
+          "stock_committed_once": true
+        },
+        "workers": {
+          "a": {
+            "operation": "cash",
+            "result": "accepted",
+            "status": "paid",
+            "faked_http_calls": 0
+          },
+          "b": {
+            "operation": "online_start",
+            "result": "accepted",
+            "status": "pending",
+            "faked_http_calls": 1
+          }
+        }
+      },
+      {
+        "scenario": "refund-cap",
+        "round": 2,
+        "passed": true,
+        "forced_competing_lock_queries": true,
+        "first_queued_worker": null,
+        "source_unchanged": true,
+        "worker_sources_match_run": true,
+        "invariants": {
+          "one_refund_accepted": true,
+          "one_refund_rejected": true,
+          "combined_cap_enforced": true,
+          "remaining_balance_correct": true,
+          "invoice_receipt_stock_unchanged": true
+        },
+        "workers": {
+          "a": {
+            "operation": "refund_verify",
+            "result": "validation_rejected",
+            "faked_http_calls": 1
+          },
+          "b": {
+            "operation": "refund_verify",
+            "result": "accepted",
+            "status": "succeeded",
+            "amount": 40000,
+            "faked_http_calls": 1
+          }
+        }
+      },
+      {
+        "scenario": "last-unit",
+        "round": 3,
+        "passed": true,
+        "forced_competing_lock_queries": true,
+        "first_queued_worker": null,
+        "source_unchanged": true,
+        "worker_sources_match_run": true,
+        "invariants": {
+          "one_reservation_only": true,
+          "stock_not_decremented": true,
+          "last_unit_reserved_once": true,
+          "one_rejected": true
+        },
+        "workers": {
+          "a": {
+            "operation": "reserve",
+            "result": "accepted",
+            "faked_http_calls": 0
+          },
+          "b": {
+            "operation": "reserve",
+            "result": "validation_rejected",
+            "faked_http_calls": 0
+          }
+        }
+      },
+      {
+        "scenario": "duplicate-webhook",
+        "round": 3,
+        "passed": false,
+        "forced_competing_lock_queries": true,
+        "first_queued_worker": null,
+        "source_unchanged": true,
+        "worker_sources_match_run": true,
+        "invariants": {
+          "both_requests_safe": false,
+          "invoice_paid_exactly_once": true,
+          "one_paid_receipt": true,
+          "stock_committed_once": true,
+          "one_webhook_event": true
+        },
+        "workers": {
+          "a": {
+            "operation": "signed_webhook",
+            "result": "http_rejected",
+            "http_status": 500,
+            "outcome": null,
+            "exception": "Illuminate\\Database\\UniqueConstraintViolationException",
+            "faked_http_calls": 0
+          },
+          "b": {
+            "operation": "signed_webhook",
+            "result": "accepted",
+            "http_status": 200,
+            "outcome": "paid",
+            "faked_http_calls": 0
+          }
+        }
+      },
+      {
+        "scenario": "duplicate-receipt",
+        "round": 3,
+        "passed": true,
+        "forced_competing_lock_queries": true,
+        "first_queued_worker": null,
+        "source_unchanged": true,
+        "worker_sources_match_run": true,
+        "invariants": {
+          "both_requests_safe": true,
+          "invoice_paid_exactly_once": true,
+          "one_paid_receipt": true,
+          "stock_committed_once": true
+        },
+        "workers": {
+          "a": {
+            "operation": "provider_receive",
+            "result": "accepted",
+            "status": "paid",
+            "faked_http_calls": 0
+          },
+          "b": {
+            "operation": "provider_receive",
+            "result": "accepted",
+            "status": "paid",
+            "faked_http_calls": 0
+          }
+        }
+      },
+      {
+        "scenario": "cash-provider",
+        "round": 3,
+        "passed": true,
+        "forced_competing_lock_queries": true,
+        "first_queued_worker": null,
+        "source_unchanged": true,
+        "worker_sources_match_run": true,
+        "invariants": {
+          "one_balance_method_accepted": true,
+          "no_online_checkout_left_on_paid_invoice": true,
+          "paid_receipts_do_not_exceed_invoice": true,
+          "original_due_date_unchanged": true,
+          "balanced_paid_invoice": true,
+          "stock_committed_once": true
+        },
+        "workers": {
+          "a": {
+            "operation": "cash",
+            "result": "validation_rejected",
+            "faked_http_calls": 0
+          },
+          "b": {
+            "operation": "provider_receive",
+            "result": "accepted",
+            "status": "paid",
+            "faked_http_calls": 0
+          }
+        }
+      },
+      {
+        "scenario": "cash-online-start",
+        "round": 3,
+        "passed": false,
+        "forced_competing_lock_queries": true,
+        "first_queued_worker": null,
+        "source_unchanged": true,
+        "worker_sources_match_run": true,
+        "invariants": {
+          "one_balance_method_accepted": false,
+          "no_online_checkout_left_on_paid_invoice": false,
+          "paid_receipts_do_not_exceed_invoice": true,
+          "original_due_date_unchanged": true,
+          "balanced_paid_invoice": true,
+          "stock_committed_once": true
+        },
+        "workers": {
+          "a": {
+            "operation": "cash",
+            "result": "accepted",
+            "status": "paid",
+            "faked_http_calls": 0
+          },
+          "b": {
+            "operation": "online_start",
+            "result": "accepted",
+            "status": "pending",
+            "faked_http_calls": 1
+          }
+        }
+      },
+      {
+        "scenario": "refund-cap",
+        "round": 3,
+        "passed": true,
+        "forced_competing_lock_queries": true,
+        "first_queued_worker": null,
+        "source_unchanged": true,
+        "worker_sources_match_run": true,
+        "invariants": {
+          "one_refund_accepted": true,
+          "one_refund_rejected": true,
+          "combined_cap_enforced": true,
+          "remaining_balance_correct": true,
+          "invoice_receipt_stock_unchanged": true
+        },
+        "workers": {
+          "a": {
+            "operation": "refund_verify",
+            "result": "accepted",
+            "status": "succeeded",
+            "amount": 40000,
+            "faked_http_calls": 1
+          },
+          "b": {
+            "operation": "refund_verify",
+            "result": "validation_rejected",
+            "faked_http_calls": 1
+          }
+        }
+      }
+    ]
+  },
+  "final": {
+    "cases": 21,
+    "failures": 0,
+    "source_sha256": {
+      "app/Services/OrderFlow.php": "65f1bd61e20b3e939b97702ee272adbf39baf6478d7a2bf7049932b3e27e9332",
+      "app/Services/InvoicePayments.php": "17644109a5cd6d5684dc80d742afe04e8b8009ca1d93e53bef6cd315d093f64e",
+      "app/Http/Controllers/WebhookController.php": "87a1576605b6267f37536e6da18ddf9dd7972aa5ff8637a0084a89a797188165",
+      "app/Services/RefundVerification.php": "ccbe8de247e8dbe28491407721bad66b73f65efad8f19c0949a9f3b04f0d0074",
+      "app/Models/Refund.php": "bcf5822e0fc9119d49da788af2648116ca152ee6f082991fb4b22b85093f72b3",
+      "app/Models/Order.php": "b08c4f65c7d0c462260bcb7c0d9346e5d620a80ede82b3b0418446874837ede8",
+      "app/Services/ReturnInspections.php": "bd09c73c64cab6d6ac07047d51fdf1e7f413bed5245bf454a8745ae208e21c4c",
+      "app/Models/ReturnInspection.php": "fcc69db6574278d6c27fb97b1606ff2be38972273f33c910a066600e076e79b6",
+      "database/migrations/2026_10_18_000013_add_return_inspections.php": "08275cf8a52a83a0c1f62a722826d135775615fbeeb2c01779814f62e3cfa923"
+    },
+    "private_original_artifact_sha256": "98c762b4755149ed097c70b4cb8c985db59631255a3d6caa913e9049ff1fecbb",
+    "results": [
+      {
+        "scenario": "last-unit",
+        "round": 1,
+        "passed": true,
+        "forced_competing_lock_queries": true,
+        "first_queued_worker": null,
+        "source_unchanged": true,
+        "worker_sources_match_run": true,
+        "invariants": {
+          "one_reservation_only": true,
+          "stock_not_decremented": true,
+          "last_unit_reserved_once": true,
+          "one_rejected": true
+        },
+        "workers": {
+          "a": {
+            "operation": "reserve",
+            "result": "validation_rejected",
+            "faked_http_calls": 0
+          },
+          "b": {
+            "operation": "reserve",
+            "result": "accepted",
+            "faked_http_calls": 0
+          }
+        }
+      },
+      {
+        "scenario": "duplicate-webhook",
+        "round": 1,
+        "passed": true,
+        "forced_competing_lock_queries": true,
+        "first_queued_worker": null,
+        "source_unchanged": true,
+        "worker_sources_match_run": true,
+        "invariants": {
+          "both_requests_safe": true,
+          "invoice_paid_exactly_once": true,
+          "one_paid_receipt": true,
+          "stock_committed_once": true,
+          "one_webhook_event": true
+        },
+        "workers": {
+          "a": {
+            "operation": "signed_webhook",
+            "result": "accepted",
+            "http_status": 200,
+            "outcome": "paid",
+            "faked_http_calls": 0
+          },
+          "b": {
+            "operation": "signed_webhook",
+            "result": "accepted",
+            "http_status": 200,
+            "outcome": "duplicate",
+            "faked_http_calls": 0
+          }
+        }
+      },
+      {
+        "scenario": "duplicate-receipt",
+        "round": 1,
+        "passed": true,
+        "forced_competing_lock_queries": true,
+        "first_queued_worker": null,
+        "source_unchanged": true,
+        "worker_sources_match_run": true,
+        "invariants": {
+          "both_requests_safe": true,
+          "invoice_paid_exactly_once": true,
+          "one_paid_receipt": true,
+          "stock_committed_once": true
+        },
+        "workers": {
+          "a": {
+            "operation": "provider_receive",
+            "result": "accepted",
+            "status": "paid",
+            "faked_http_calls": 0
+          },
+          "b": {
+            "operation": "provider_receive",
+            "result": "accepted",
+            "status": "paid",
+            "faked_http_calls": 0
+          }
+        }
+      },
+      {
+        "scenario": "cash-provider",
+        "round": 1,
+        "passed": true,
+        "forced_competing_lock_queries": true,
+        "first_queued_worker": null,
+        "source_unchanged": true,
+        "worker_sources_match_run": true,
+        "invariants": {
+          "one_balance_method_accepted": true,
+          "no_online_checkout_left_on_paid_invoice": true,
+          "paid_receipts_do_not_exceed_invoice": true,
+          "original_due_date_unchanged": true,
+          "balanced_paid_invoice": true,
+          "stock_committed_once": true
+        },
+        "workers": {
+          "a": {
+            "operation": "cash",
+            "result": "validation_rejected",
+            "faked_http_calls": 0
+          },
+          "b": {
+            "operation": "provider_receive",
+            "result": "accepted",
+            "status": "paid",
+            "faked_http_calls": 0
+          }
+        }
+      },
+      {
+        "scenario": "cash-online-start",
+        "round": 1,
+        "passed": true,
+        "forced_competing_lock_queries": true,
+        "first_queued_worker": "b",
+        "source_unchanged": true,
+        "worker_sources_match_run": true,
+        "invariants": {
+          "one_balance_method_accepted": true,
+          "no_online_checkout_left_on_paid_invoice": true,
+          "paid_receipts_do_not_exceed_invoice": true,
+          "original_due_date_unchanged": true,
+          "balanced_paid_invoice": true,
+          "stock_committed_once": true
+        },
+        "workers": {
+          "a": {
+            "operation": "cash",
+            "result": "validation_rejected",
+            "faked_http_calls": 0
+          },
+          "b": {
+            "operation": "online_start",
+            "result": "accepted",
+            "status": "pending",
+            "faked_http_calls": 1
+          }
+        }
+      },
+      {
+        "scenario": "cash-replay",
+        "round": 1,
+        "passed": true,
+        "forced_competing_lock_queries": true,
+        "first_queued_worker": null,
+        "source_unchanged": true,
+        "worker_sources_match_run": true,
+        "invariants": {
+          "both_replays_accepted": true,
+          "same_receipt_returned": true,
+          "two_receipts_deposit_and_balance": true,
+          "invoice_paid_exactly_once": true,
+          "stock_committed_once": true,
+          "original_due_date_unchanged": true
+        },
+        "workers": {
+          "a": {
+            "operation": "cash",
+            "result": "accepted",
+            "status": "paid",
+            "faked_http_calls": 0
+          },
+          "b": {
+            "operation": "cash",
+            "result": "accepted",
+            "status": "paid",
+            "faked_http_calls": 0
+          }
+        }
+      },
+      {
+        "scenario": "refund-cap",
+        "round": 1,
+        "passed": true,
+        "forced_competing_lock_queries": true,
+        "first_queued_worker": null,
+        "source_unchanged": true,
+        "worker_sources_match_run": true,
+        "invariants": {
+          "one_refund_accepted": true,
+          "one_refund_rejected": true,
+          "combined_cap_enforced": true,
+          "remaining_balance_correct": true,
+          "invoice_receipt_stock_unchanged": true
+        },
+        "workers": {
+          "a": {
+            "operation": "refund_verify",
+            "result": "accepted",
+            "status": "succeeded",
+            "amount": 40000,
+            "faked_http_calls": 1
+          },
+          "b": {
+            "operation": "refund_verify",
+            "result": "validation_rejected",
+            "faked_http_calls": 1
+          }
+        }
+      },
+      {
+        "scenario": "last-unit",
+        "round": 2,
+        "passed": true,
+        "forced_competing_lock_queries": true,
+        "first_queued_worker": null,
+        "source_unchanged": true,
+        "worker_sources_match_run": true,
+        "invariants": {
+          "one_reservation_only": true,
+          "stock_not_decremented": true,
+          "last_unit_reserved_once": true,
+          "one_rejected": true
+        },
+        "workers": {
+          "a": {
+            "operation": "reserve",
+            "result": "accepted",
+            "faked_http_calls": 0
+          },
+          "b": {
+            "operation": "reserve",
+            "result": "validation_rejected",
+            "faked_http_calls": 0
+          }
+        }
+      },
+      {
+        "scenario": "duplicate-webhook",
+        "round": 2,
+        "passed": true,
+        "forced_competing_lock_queries": true,
+        "first_queued_worker": null,
+        "source_unchanged": true,
+        "worker_sources_match_run": true,
+        "invariants": {
+          "both_requests_safe": true,
+          "invoice_paid_exactly_once": true,
+          "one_paid_receipt": true,
+          "stock_committed_once": true,
+          "one_webhook_event": true
+        },
+        "workers": {
+          "a": {
+            "operation": "signed_webhook",
+            "result": "accepted",
+            "http_status": 200,
+            "outcome": "paid",
+            "faked_http_calls": 0
+          },
+          "b": {
+            "operation": "signed_webhook",
+            "result": "accepted",
+            "http_status": 200,
+            "outcome": "duplicate",
+            "faked_http_calls": 0
+          }
+        }
+      },
+      {
+        "scenario": "duplicate-receipt",
+        "round": 2,
+        "passed": true,
+        "forced_competing_lock_queries": true,
+        "first_queued_worker": null,
+        "source_unchanged": true,
+        "worker_sources_match_run": true,
+        "invariants": {
+          "both_requests_safe": true,
+          "invoice_paid_exactly_once": true,
+          "one_paid_receipt": true,
+          "stock_committed_once": true
+        },
+        "workers": {
+          "a": {
+            "operation": "provider_receive",
+            "result": "accepted",
+            "status": "paid",
+            "faked_http_calls": 0
+          },
+          "b": {
+            "operation": "provider_receive",
+            "result": "accepted",
+            "status": "paid",
+            "faked_http_calls": 0
+          }
+        }
+      },
+      {
+        "scenario": "cash-provider",
+        "round": 2,
+        "passed": true,
+        "forced_competing_lock_queries": true,
+        "first_queued_worker": null,
+        "source_unchanged": true,
+        "worker_sources_match_run": true,
+        "invariants": {
+          "one_balance_method_accepted": true,
+          "no_online_checkout_left_on_paid_invoice": true,
+          "paid_receipts_do_not_exceed_invoice": true,
+          "original_due_date_unchanged": true,
+          "balanced_paid_invoice": true,
+          "stock_committed_once": true
+        },
+        "workers": {
+          "a": {
+            "operation": "cash",
+            "result": "validation_rejected",
+            "faked_http_calls": 0
+          },
+          "b": {
+            "operation": "provider_receive",
+            "result": "accepted",
+            "status": "paid",
+            "faked_http_calls": 0
+          }
+        }
+      },
+      {
+        "scenario": "cash-online-start",
+        "round": 2,
+        "passed": true,
+        "forced_competing_lock_queries": true,
+        "first_queued_worker": "a",
+        "source_unchanged": true,
+        "worker_sources_match_run": true,
+        "invariants": {
+          "one_balance_method_accepted": true,
+          "no_online_checkout_left_on_paid_invoice": true,
+          "paid_receipts_do_not_exceed_invoice": true,
+          "original_due_date_unchanged": true,
+          "balanced_paid_invoice": true,
+          "stock_committed_once": true
+        },
+        "workers": {
+          "a": {
+            "operation": "cash",
+            "result": "accepted",
+            "status": "paid",
+            "faked_http_calls": 0
+          },
+          "b": {
+            "operation": "online_start",
+            "result": "validation_rejected",
+            "faked_http_calls": 0
+          }
+        }
+      },
+      {
+        "scenario": "cash-replay",
+        "round": 2,
+        "passed": true,
+        "forced_competing_lock_queries": true,
+        "first_queued_worker": null,
+        "source_unchanged": true,
+        "worker_sources_match_run": true,
+        "invariants": {
+          "both_replays_accepted": true,
+          "same_receipt_returned": true,
+          "two_receipts_deposit_and_balance": true,
+          "invoice_paid_exactly_once": true,
+          "stock_committed_once": true,
+          "original_due_date_unchanged": true
+        },
+        "workers": {
+          "a": {
+            "operation": "cash",
+            "result": "accepted",
+            "status": "paid",
+            "faked_http_calls": 0
+          },
+          "b": {
+            "operation": "cash",
+            "result": "accepted",
+            "status": "paid",
+            "faked_http_calls": 0
+          }
+        }
+      },
+      {
+        "scenario": "refund-cap",
+        "round": 2,
+        "passed": true,
+        "forced_competing_lock_queries": true,
+        "first_queued_worker": null,
+        "source_unchanged": true,
+        "worker_sources_match_run": true,
+        "invariants": {
+          "one_refund_accepted": true,
+          "one_refund_rejected": true,
+          "combined_cap_enforced": true,
+          "remaining_balance_correct": true,
+          "invoice_receipt_stock_unchanged": true
+        },
+        "workers": {
+          "a": {
+            "operation": "refund_verify",
+            "result": "validation_rejected",
+            "faked_http_calls": 1
+          },
+          "b": {
+            "operation": "refund_verify",
+            "result": "accepted",
+            "status": "succeeded",
+            "amount": 40000,
+            "faked_http_calls": 1
+          }
+        }
+      },
+      {
+        "scenario": "last-unit",
+        "round": 3,
+        "passed": true,
+        "forced_competing_lock_queries": true,
+        "first_queued_worker": null,
+        "source_unchanged": true,
+        "worker_sources_match_run": true,
+        "invariants": {
+          "one_reservation_only": true,
+          "stock_not_decremented": true,
+          "last_unit_reserved_once": true,
+          "one_rejected": true
+        },
+        "workers": {
+          "a": {
+            "operation": "reserve",
+            "result": "accepted",
+            "faked_http_calls": 0
+          },
+          "b": {
+            "operation": "reserve",
+            "result": "validation_rejected",
+            "faked_http_calls": 0
+          }
+        }
+      },
+      {
+        "scenario": "duplicate-webhook",
+        "round": 3,
+        "passed": true,
+        "forced_competing_lock_queries": true,
+        "first_queued_worker": null,
+        "source_unchanged": true,
+        "worker_sources_match_run": true,
+        "invariants": {
+          "both_requests_safe": true,
+          "invoice_paid_exactly_once": true,
+          "one_paid_receipt": true,
+          "stock_committed_once": true,
+          "one_webhook_event": true
+        },
+        "workers": {
+          "a": {
+            "operation": "signed_webhook",
+            "result": "accepted",
+            "http_status": 200,
+            "outcome": "duplicate",
+            "faked_http_calls": 0
+          },
+          "b": {
+            "operation": "signed_webhook",
+            "result": "accepted",
+            "http_status": 200,
+            "outcome": "paid",
+            "faked_http_calls": 0
+          }
+        }
+      },
+      {
+        "scenario": "duplicate-receipt",
+        "round": 3,
+        "passed": true,
+        "forced_competing_lock_queries": true,
+        "first_queued_worker": null,
+        "source_unchanged": true,
+        "worker_sources_match_run": true,
+        "invariants": {
+          "both_requests_safe": true,
+          "invoice_paid_exactly_once": true,
+          "one_paid_receipt": true,
+          "stock_committed_once": true
+        },
+        "workers": {
+          "a": {
+            "operation": "provider_receive",
+            "result": "accepted",
+            "status": "paid",
+            "faked_http_calls": 0
+          },
+          "b": {
+            "operation": "provider_receive",
+            "result": "accepted",
+            "status": "paid",
+            "faked_http_calls": 0
+          }
+        }
+      },
+      {
+        "scenario": "cash-provider",
+        "round": 3,
+        "passed": true,
+        "forced_competing_lock_queries": true,
+        "first_queued_worker": null,
+        "source_unchanged": true,
+        "worker_sources_match_run": true,
+        "invariants": {
+          "one_balance_method_accepted": true,
+          "no_online_checkout_left_on_paid_invoice": true,
+          "paid_receipts_do_not_exceed_invoice": true,
+          "original_due_date_unchanged": true,
+          "balanced_paid_invoice": true,
+          "stock_committed_once": true
+        },
+        "workers": {
+          "a": {
+            "operation": "cash",
+            "result": "validation_rejected",
+            "faked_http_calls": 0
+          },
+          "b": {
+            "operation": "provider_receive",
+            "result": "accepted",
+            "status": "paid",
+            "faked_http_calls": 0
+          }
+        }
+      },
+      {
+        "scenario": "cash-online-start",
+        "round": 3,
+        "passed": true,
+        "forced_competing_lock_queries": true,
+        "first_queued_worker": "b",
+        "source_unchanged": true,
+        "worker_sources_match_run": true,
+        "invariants": {
+          "one_balance_method_accepted": true,
+          "no_online_checkout_left_on_paid_invoice": true,
+          "paid_receipts_do_not_exceed_invoice": true,
+          "original_due_date_unchanged": true,
+          "balanced_paid_invoice": true,
+          "stock_committed_once": true
+        },
+        "workers": {
+          "a": {
+            "operation": "cash",
+            "result": "validation_rejected",
+            "faked_http_calls": 0
+          },
+          "b": {
+            "operation": "online_start",
+            "result": "accepted",
+            "status": "pending",
+            "faked_http_calls": 1
+          }
+        }
+      },
+      {
+        "scenario": "cash-replay",
+        "round": 3,
+        "passed": true,
+        "forced_competing_lock_queries": true,
+        "first_queued_worker": null,
+        "source_unchanged": true,
+        "worker_sources_match_run": true,
+        "invariants": {
+          "both_replays_accepted": true,
+          "same_receipt_returned": true,
+          "two_receipts_deposit_and_balance": true,
+          "invoice_paid_exactly_once": true,
+          "stock_committed_once": true,
+          "original_due_date_unchanged": true
+        },
+        "workers": {
+          "a": {
+            "operation": "cash",
+            "result": "accepted",
+            "status": "paid",
+            "faked_http_calls": 0
+          },
+          "b": {
+            "operation": "cash",
+            "result": "accepted",
+            "status": "paid",
+            "faked_http_calls": 0
+          }
+        }
+      },
+      {
+        "scenario": "refund-cap",
+        "round": 3,
+        "passed": true,
+        "forced_competing_lock_queries": true,
+        "first_queued_worker": null,
+        "source_unchanged": true,
+        "worker_sources_match_run": true,
+        "invariants": {
+          "one_refund_accepted": true,
+          "one_refund_rejected": true,
+          "combined_cap_enforced": true,
+          "remaining_balance_correct": true,
+          "invoice_receipt_stock_unchanged": true
+        },
+        "workers": {
+          "a": {
+            "operation": "refund_verify",
+            "result": "accepted",
+            "status": "succeeded",
+            "amount": 40000,
+            "faked_http_calls": 1
+          },
+          "b": {
+            "operation": "refund_verify",
+            "result": "validation_rejected",
+            "faked_http_calls": 1
+          }
+        }
+      }
+    ]
+  },
+  "harness_sha256": {
+    "common.php": "afee8ec6eee368c07d8d876bfb1df981000280904e81fe516d48967acc023b50",
+    "run.php": "ae770fb1837904534a3faf0820aaeca31cdb37ebbc4589943b9f626836d3f3fd",
+    "worker.php": "feed7c505dfc76a5bdd08f1cf10b38913750e7ddd251532a9cb3e74f4c1a6061",
+    "phpunit-bootstrap.php": "d9b0db72e3d63376ff268c1f9005a0e59997da0529e37f4ff00a5699c38cb32b",
+    "phpunit.xml": "38ed75a2fb3f6e9715dcd18e1e7546fc9babc2d63b2601b4a349490ed8be7c2f"
+  }
+}

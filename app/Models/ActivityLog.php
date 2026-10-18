@@ -12,6 +12,7 @@ class ActivityLog extends Model
 
     public const ACTIONS = [
         'auth.login' => 'Signed in',
+        'auth.google_linked' => 'Linked Google sign-in to customer account',
         'auth.logout' => 'Signed out',
         'auth.registered' => 'Created an account',
         'auth.email_verified' => 'Verified account email',
@@ -38,6 +39,8 @@ class ActivityLog extends Model
         'invoice.terms_changed' => 'Changed installment terms',
         'refund.requested' => 'Requested a refund',
         'refund.reviewed' => 'Reviewed a refund request',
+        'refund.inspected' => 'Recorded or reused a physical return inspection',
+        'refund.policy_updated' => 'Changed the return policy',
         'refund.verified' => 'Verified refund with PayMongo',
         'refund.cash_recorded' => 'Recorded cash refund received',
         'product.created' => 'Created a product',

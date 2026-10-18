@@ -22,6 +22,13 @@ return [
         'key' => env('RESEND_API_KEY'),
     ],
 
+    'google' => [
+        'enabled' => (bool) env('GOOGLE_SIGN_IN_ENABLED', false),
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect' => env('GOOGLE_REDIRECT_URI'),
+    ],
+
     'brevo' => [
         'payment_reminders_enabled' => (bool) env('BREVO_PAYMENT_REMINDERS_ENABLED', false),
         'api_key' => env('BREVO_API_KEY'),

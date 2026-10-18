@@ -6,6 +6,9 @@
 <label>Email address<input name="email" type="email" autocomplete="email" required value="{{ old('email') }}"></label><label>Password<input name="password" type="password" autocomplete="{{ $mode==='login'?'current-password':'new-password' }}" required @if($mode==='register') minlength="10" @endif></label>
 @if($mode==='register')<label>Confirm password<input name="password_confirmation" type="password" autocomplete="new-password" required minlength="10"></label>@if(config('auth.email_verification.required'))<p class="muted">We’ll email a six-digit verification code after you create your account.</p>@endif @endif<button class="button dark">{{ $mode==='login'?'Sign in →':'Create account →' }}</button></form>
 @if($mode==='login')<p><a class="text-link" href="{{ route('password.request') }}">Forgot your password?</a></p>@endif
+@if(app(\App\Services\GoogleSignIn::class)->ready())
+<form method="post" action="{{ route('google.start') }}" class="stack">@csrf<button class="button" type="submit">Continue with Google</button><small class="muted">For customer accounts. Staff and owners sign in with email and password.</small></form>
+@endif
 <p>{{ $mode==='login'?'New here?':'Already have an account?' }} <a class="text-link" href="{{ $mode==='login'?route('register'):route('login') }}">{{ $mode==='login'?'Create an account':'Sign in' }}</a></p>
 @if(config('shop.demo'))<details class="demo-accounts"><summary>Local demo accounts</summary><p>admin@zoneone.test<br>staff@zoneone.test<br>customer@zoneone.test</p><p>Password: <code>ZoneOneDemo!2026</code></p></details>@endif</div></div>
 @endsection

@@ -7,8 +7,10 @@ use App\Models\PaymentAttempt;
 use App\Models\Refund;
 use App\Services\ActivityRecorder;
 use App\Services\RefundVerification;
+use App\Services\ReturnInspections;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -22,12 +24,12 @@ class RefundController extends Controller
             ->orderByRaw("CASE WHEN status = 'requested' THEN 0 WHEN status = 'approved' THEN 1 WHEN status IN ('pending', 'processing') THEN 2 ELSE 3 END")
             ->latest()->paginate(20)->withQueryString();
 
-        return view('admin.refunds', compact('refunds'));
+        return view('admin.refunds', ['refunds' => $refunds, 'returnPolicy' => app(ReturnInspections::class)->policy()]);
     }
 
     public function show(Refund $refund)
     {
-        $refund->load('order.user', 'paymentAttempt', 'cashRecordedBy');
+        $refund->load('order.user', 'order.items', 'order.returnInspections', 'paymentAttempt', 'cashRecordedBy', 'returnInspection.inspector');
         $paymentOptions = PaymentAttempt::where('order_id', $refund->order_id)->where('status', 'paid')->orderBy('received_at')->orderBy('id')->get()
             ->map(fn ($payment) => ['payment' => $payment, 'remaining' => min(Refund::remainingForOrder($refund->order, $refund->id), Refund::remainingForPayment($refund->order, $payment, $refund->id))]);
 
@@ -37,25 +39,34 @@ class RefundController extends Controller
     public function store(Request $request, Order $order)
     {
         abort_unless($request->user()->id === $order->user_id && $request->user()->role === 'customer', 403);
-        $data = $request->validate(['reason' => 'required|string|min:10|max:2000']);
-        $refund = DB::transaction(function () use ($request, $order, $data) {
-            $locked = Order::whereKey($order->id)->lockForUpdate()->firstOrFail();
-            if ($locked->payment_status !== 'paid' || (! $locked->payment_id && ! PaymentAttempt::where('order_id', $locked->id)->where('status', 'paid')->exists())) {
-                $this->fail('Refund requests are available only for verified paid orders.');
-            }
-            if (! $locked->deliveryConfirmed()) {
-                $this->fail('Refund requests are available only after confirmed delivery or a completed walk-in handover.');
-            }
-            if ($locked->refunds()->whereIn('status', ['requested', 'approved', 'pending', 'processing'])->exists()) {
-                $this->fail('This order already has a refund request under review or processing.');
-            }
-            $remaining = Refund::remainingForOrder($locked);
-            if ($remaining < 100) {
-                $this->fail('This payment has already been refunded.');
-            }
+        $data = $request->validate(['reason' => 'required|string|min:10|max:2000', 'customer_photo' => ReturnInspections::photoRules()]);
+        $photo = app(ReturnInspections::class)->storePhoto($request->file('customer_photo'));
+        try {
+            $refund = DB::transaction(function () use ($request, $order, $data, $photo) {
+                $locked = Order::whereKey($order->id)->lockForUpdate()->firstOrFail();
+                if ($locked->payment_status !== 'paid' || (! $locked->payment_id && ! PaymentAttempt::where('order_id', $locked->id)->where('status', 'paid')->exists())) {
+                    $this->fail('Refund requests are available only for verified paid orders.');
+                }
+                if (! $locked->deliveryConfirmed()) {
+                    $this->fail('Refund requests are available only after confirmed delivery or a completed walk-in handover.');
+                }
+                if ($locked->refunds()->whereIn('status', ['requested', 'approved', 'pending', 'processing'])->exists()) {
+                    $this->fail('This order already has a refund request under review or processing.');
+                }
+                $remaining = Refund::remainingForOrder($locked);
+                if ($remaining < 100) {
+                    $this->fail('This payment has already been refunded.');
+                }
 
-            return $locked->refunds()->create(['requested_by' => $request->user()->id, 'reason' => $data['reason'], 'requested_amount' => $remaining]);
-        }, 3);
+                return $locked->refunds()->create(['requested_by' => $request->user()->id, 'reason' => $data['reason'], 'requested_amount' => $remaining,
+                    'customer_photo_path' => $photo] + app(ReturnInspections::class)->snapshot($locked));
+            }, 3);
+        } catch (\Throwable $exception) {
+            if ($photo) {
+                Storage::disk('local')->delete($photo);
+            }
+            throw $exception;
+        }
         ActivityRecorder::mark($request, 'refund.requested', $refund);
 
         return back()->with('notice', 'Your refund request was sent for store review. This does not yet confirm a refund.');
@@ -86,6 +97,7 @@ class RefundController extends Controller
             }
             $updates = ['status' => $data['decision'], 'approved_amount' => $amount, 'decision_note' => $data['decision_note'], 'reviewed_by' => $request->user()->id, 'reviewed_at' => now()];
             if ($amount !== null) {
+                $updates += app(ReturnInspections::class)->allocation($locked, $amount);
                 $sourceId = $data['payment_attempt_id'] ?? $locked->payment_attempt_id;
                 if ($sourceId !== null) {
                     $source = PaymentAttempt::where('order_id', $order->id)->whereKey($sourceId)->where('status', 'paid')->whereIn('method', ['cash', 'paymongo'])->lockForUpdate()->first();
@@ -146,8 +158,9 @@ class RefundController extends Controller
                     || $amount > Refund::remainingForPayment($order, $source, $locked->id) || $amount > Refund::remainingForOrder($order, $locked->id)) {
                     $this->fail('The cash return exceeds the approved request or remaining amount on its paid cash receipt and invoice.');
                 }
+                $allocation = app(ReturnInspections::class)->allocation($locked, $amount);
                 $locked->update(['payment_attempt_id' => $source->id, 'amount' => $amount, 'status' => 'succeeded', 'confirmed_at' => now(),
-                    'cash_recorded_by' => $request->user()->id, 'cash_reason' => $data['cash_reason']]);
+                    'cash_recorded_by' => $request->user()->id, 'cash_reason' => $data['cash_reason']] + $allocation);
                 if (! $recorder->record($request->user(), 'refund.cash_recorded', $locked, ['reason' => $data['cash_reason'], 'amount' => $amount, 'method' => 'cash'])) {
                     throw new \RuntimeException('Cash refund audit could not be recorded.');
                 }
@@ -173,6 +186,63 @@ class RefundController extends Controller
         ActivityRecorder::mark($request, 'refund.verified', $refund);
 
         return back()->with('notice', $result->label().'.');
+    }
+
+    public function inspect(Request $request, Refund $refund, ReturnInspections $inspections)
+    {
+        abort_unless($request->user()->role === 'admin', 403);
+        $data = $request->validate(['existing_inspection_id' => 'nullable|integer|min:1',
+            'items' => 'nullable|array|max:100', 'items.*.order_item_id' => 'required|integer|min:1',
+            'items.*.quantity' => 'required|integer|min:0|max:10000000', 'items.*.condition' => ['required', Rule::in(['good', 'damaged', 'wrong_item'])],
+            'include_delivery' => 'nullable|boolean', 'inspection_note' => 'nullable|string|min:10|max:2000',
+            'inspection_photo' => ReturnInspections::photoRules(), 'photo_exception_reason' => 'nullable|string|min:10|max:2000',
+            'late_exception_reason' => 'nullable|string|min:10|max:2000']);
+        $photo = $inspections->storePhoto($request->file('inspection_photo'));
+        try {
+            $inspections->record($refund, $request->user(), $data, $photo);
+        } catch (\Throwable $exception) {
+            if ($photo) {
+                Storage::disk('local')->delete($photo);
+            }
+            throw $exception;
+        }
+
+        return back()->with('notice', 'The physical return inspection is saved. It can be reused for further receipt refunds on this same returned clothing.');
+    }
+
+    public function evidence(Request $request, Refund $refund, string $kind)
+    {
+        abort_unless(in_array($request->user()->role, ['admin', 'staff'], true), 403);
+        $path = match ($kind) {
+            'customer' => $refund->customer_photo_path,
+            'inspection' => $refund->returnInspection?->photo_path,
+            default => null,
+        };
+        abort_unless($path && str_starts_with($path, 'refund-evidence/') && Storage::disk('local')->exists($path), 404);
+
+        $response = response()->file(Storage::disk('local')->path($path), [
+            'X-Content-Type-Options' => 'nosniff', 'X-Robots-Tag' => 'noindex, nofollow']);
+        // BinaryFileResponse sets public caching during construction.
+        $response->setPrivate();
+        $response->headers->set('Cache-Control', 'private, no-store');
+
+        return $response;
+    }
+
+    public function policy(Request $request, ActivityRecorder $recorder)
+    {
+        abort_unless($request->user()->role === 'admin', 403);
+        $data = $request->validate(['days' => 'required|integer|between:1,30', 'delivery_eligible' => 'required|boolean',
+            'reason' => 'required|string|min:10|max:2000']);
+        DB::transaction(function () use ($request, $data, $recorder) {
+            DB::table('shop_settings')->updateOrInsert(['key' => 'return_policy'], ['value' => json_encode([
+                'days' => (int) $data['days'], 'delivery_eligible' => (bool) $data['delivery_eligible']])]);
+            if (! $recorder->record($request->user(), 'refund.policy_updated', null, ['reason' => $data['reason']])) {
+                throw new \RuntimeException('Return policy audit could not be recorded.');
+            }
+        });
+
+        return back()->with('notice', 'Return policy saved for future requests. Existing requests and recorded inspections keep their original policy.');
     }
 
     private function fail(string $message): never

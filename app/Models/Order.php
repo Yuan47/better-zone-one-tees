@@ -32,6 +32,11 @@ class Order extends Model
         return $this->hasMany(Refund::class);
     }
 
+    public function returnInspections()
+    {
+        return $this->hasMany(ReturnInspection::class);
+    }
+
     public function review()
     {
         return $this->hasOne(OrderReview::class);
