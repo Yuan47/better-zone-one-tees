@@ -66,11 +66,12 @@ class WebhookController extends Controller
             if (DB::table('webhook_events')->where('event_id', $eventId)->exists()) {
                 return 'duplicate';
             }
-            $payment = collect(data_get($session, 'attributes.payments', []))->first(function ($p) use ($order) {
-                return data_get($p, 'attributes.status') === 'paid' && data_get($p, 'attributes.currency') === 'PHP'
-                    && data_get($p, 'attributes.amount') === $order->total && is_string($p['id'] ?? null);
-            });
-            if (! $payment || data_get($session, 'attributes.reference_number') !== $order->number) {
+            $payments = collect(data_get($session, 'attributes.payments', []))->filter(fn ($p) => data_get($p, 'attributes.status') === 'paid');
+            $payment = $payments->first();
+            if ($payments->count() !== 1 || ! $payment || data_get($session, 'attributes.reference_number') !== $order->number
+                || data_get($payment, 'attributes.currency') !== 'PHP' || data_get($payment, 'attributes.amount') !== $order->total
+                || ! is_string($payment['id'] ?? null) || ! preg_match('/^pay_[A-Za-z0-9_]+$/D', $payment['id'])
+                || (array_key_exists('livemode', $payment['attributes']) && $payment['attributes']['livemode'] !== (config('shop.paymongo.mode') === 'live'))) {
                 return 'mismatch';
             }
             $timestamp = data_get($payment, 'attributes.paid_at');

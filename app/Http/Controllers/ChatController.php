@@ -23,12 +23,13 @@ class ChatController extends Controller
         $productMatches = $knowledge->matchingProducts($message, $products);
         $catalog = $knowledge->catalogContext($message, $products, $productMatches);
         $orders = collect();
-        if ($r->user() && preg_match('/\bZOT-[a-z0-9-]+\b/i', $message, $match)) {
+        $hasOrderReference = preg_match('/\bZOT-[a-z0-9-]+\b/i', $message, $match) === 1;
+        if ($r->user() && $hasOrderReference) {
             $query = Order::where('number', strtoupper($match[0]));
             if (! $staff) {
                 $query->where('user_id', $r->user()->id);
             }
-            $orders = $query->get(['number', 'status', 'payment_status', 'delivery_method', 'customer_confirmed_at', 'sales_channel', 'walk_in_received_at']);
+            $orders = $query->get(['number', 'status', 'payment_status', 'delivery_method', 'customer_confirmed_at', 'sales_channel', 'walk_in_received_at', 'total', 'amount_paid', 'due_at', 'inventory_released']);
             $orders->each(function ($order) {
                 if ($order->payment_status === 'paid' && $order->status !== 'cancelled') {
                     $order->status = $order->customerDeliveryLabel();
@@ -37,7 +38,7 @@ class ChatController extends Controller
         }
         $faqs = $knowledge->approvedFaqs();
         $storeInfo = $knowledge->info();
-        $context = ['catalog' => $catalog, 'requested_orders' => $orders, 'quantity_pricing' => StoreKnowledge::QUANTITY_PRICING,
+        $context = ['catalog' => $catalog, 'requested_orders' => $orders->map(fn ($order) => $order->only(['number', 'status', 'payment_status', 'delivery_method', 'customer_confirmed_at', 'sales_channel', 'walk_in_received_at'])), 'quantity_pricing' => StoreKnowledge::QUANTITY_PRICING,
             'payment_rules' => StoreKnowledge::PAYMENT_HELP, 'sizing_rules' => StoreKnowledge::SIZE_HELP,
             'policy' => 'Only active approved FAQs and store information establish store policies. Unknown policies, hours and contact details must be confirmed by staff. The quantity pricing, verified payment rules, product size charts and requested order records take precedence over conflicting FAQ text. Only each supplied variant establishes a size/color combination, its price and its current availability. Size charts do not establish offered variants. Catalog context includes at most three products and forty variants per product. When variants_complete is false, omitted variants are unknown, not unavailable. Never infer availability or prices from another size/color. Ask for a product name, size and color if the choice is ambiguous.',
             'approved_faqs' => $knowledge->relevantFaqs($message, $faqs)->map(fn ($faq) => $faq->only(['question', 'answer', 'keywords']))->values(),
@@ -53,10 +54,28 @@ class ChatController extends Controller
         $stockIntent = preg_match('/\b(?:stocks?|inventory|in\s+stock|sold\s+out|how\s+many.*(?:left|remaining))\b/i', $message)
             || (preg_match('/\b(?:available|availability)\b/i', $message) && ($productMatches->isNotEmpty() || ! $matched || preg_match('/\b(?:product|shirt|tee|size|color)\b/i', $message)))
             || ($productMatches->isNotEmpty() && preg_match('/\b(?:do\s+you\s+(?:have|carry|sell)|can\s+i\s+(?:buy|purchase))\b/i', $message));
-        $orderIntent = preg_match('/ZOT-|\b(?:order|payment|delivery)\s+(?:status|tracking)\b|\bstatus\s+of\s+(?:(?:my|the|our)\s+)?(?:order|payment)\b|\btrack(?:ing)?\s+(?:(?:my|the|our|an|a)\s+)?(?:order|payment|delivery)\b|\b(?:is|was|has)\s+(?:(?:my|the|our)\s+)?(?:order|payment)\b.{0,35}\b(?:paid|received|complete|completed)\b/i', $message);
+        $explicitBalanceIntent = preg_match('/\b(?:show|check|view)\b.{0,40}\b(?:balance|amount\s+(?:paid|received|due|owed))\b|\b(?:what|how\s+much)\b.{0,30}\b(?:my\s+(?:(?:remaining|outstanding)\s+)?balance|do\s+i\s+owe)\b/i', $message);
+        $balanceInstructions = $matched && preg_match('/\bhow\s+(?:(?:do|can|should)\s+i\s+)?(?:pay|settle)\b|\bcalculat(?:e|ed|ing|ion)\b|\bformula\b|\bdeadline\b|\bdue\s+date\b|\bpayment\s+terms\b/i', $message);
+        $balanceIntent = $explicitBalanceIntent || ($hasOrderReference && ! $balanceInstructions
+            && preg_match('/\bbalance\b|\bamount\s+(?:paid|received|due|owed)\b|\bhow\s+much\b.{0,20}\bowe\b/i', $message));
+        $orderIntent = $balanceIntent || preg_match('/\b(?:order|payment|delivery)\s+(?:status|tracking)\b|\bstatus\s+of\s+(?:(?:my|the|our)\s+)?(?:order|payment)\b|\btrack(?:ing)?\s+(?:(?:my|the|our|an|a)\s+)?(?:order|payment|delivery)\b|\b(?:is|was|has)\s+(?:(?:my|the|our)\s+)?(?:order|payment)\b.{0,35}\b(?:paid|received|complete|completed)\b/i', $message)
+            || ($hasOrderReference && preg_match('/\btrack(?:ing)?\b/i', $message))
+            || ($hasOrderReference && ! $matched);
         if ($orderIntent) {
             $protectedReply = true;
-            $reply = $orders->isNotEmpty() ? $orders->map(fn ($o) => $o->number.': '.str_replace('_', ' ', $o->status).'; payment '.$o->payment_status.'.')->join("\n") : 'Sign in and share your full order number (ZOT-…). You can also open My orders for its status.';
+            $reply = $orders->isNotEmpty() ? $orders->map(function ($order) use ($balanceIntent) {
+                if ($balanceIntent) {
+                    if ($order->inventory_released || $order->status === 'cancelled') {
+                        return $order->number.': this unpaid invoice is closed. No payment is due on this closed invoice. Open it in My orders for details.';
+                    }
+                    $money = fn (int $amount) => '₱'.number_format($amount / 100, 2);
+
+                    return $order->number.': invoice total '.$money((int) $order->total).'; payment received '.$money($order->paidAmount()).'; outstanding balance '.$money($order->outstandingBalance()).'.'
+                        .($order->due_at ? ' Due: '.$order->due_at->timezone('Asia/Manila')->format('M j, Y g:i A').' (Philippine time).' : '').' Open this invoice in My orders for payment details.';
+                }
+
+                return $order->number.': '.str_replace('_', ' ', $order->status).'; payment '.$order->payment_status.'.';
+            })->join("\n") : 'Sign in and share your full order number (ZOT-…). You can also open My orders for its status and balance.';
         } elseif (preg_match('/payments?.*confirm|confirm.*payments?|proof.of.payment|payment.screenshot/i', $message)) {
             $protectedReply = true;
             $reply = StoreKnowledge::PAYMENT_HELP;
@@ -70,7 +89,7 @@ class ChatController extends Controller
                 : $knowledge->variantAnswer($message, $productMatches);
         } elseif ($matched) {
             $reply = $matched->answer;
-            $protectedReply = $knowledge->isExactFaq($message, $matched);
+            $protectedReply = true;
         } elseif (preg_match('/size|sizing|fit|measure/i', $message)) {
             $reply = StoreKnowledge::SIZE_HELP;
         } elseif ($infoReply = $knowledge->basicStoreInfo($message, $storeInfo)) {
@@ -85,7 +104,7 @@ class ChatController extends Controller
             return response()->json(['reply' => $reply, 'mode' => 'basic']);
         }
         if ($protectedReply) {
-            // Critical commerce facts and exact approved FAQs do not depend on AI output.
+            // Critical commerce facts and matched approved FAQs do not depend on AI output.
             return response()->json(['reply' => $reply, 'mode' => 'store']);
         }
         try {

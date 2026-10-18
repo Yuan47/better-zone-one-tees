@@ -2,6 +2,18 @@
 
 A web-based Laravel 13 / PHP 8.4 / MySQL clothing store, developed locally in XAMPP and intended to replace the earlier website after acceptance testing and deployment.
 
+## Customer account and reliability update · 17 October 2026
+
+Customers can open **My dashboard** for recent owned orders, their outstanding balance, favorites / wishlist, full order history, and My Account. Original ZOT invoice numbers remain the same across installments. Invoice payments shows each payment reference, method, amount, status and received date, plus the provider transaction reference for a confirmed PayMongo payment. Pending attempts are not receipts.
+
+Customer sessions expire after 15 minutes without activity, with a final-minute warning and Stay signed in. Background requests do not renew access; visible interactions are acknowledged at most once per minute per tab. Staff and owner sessions retain their existing behavior. The server enforces the deadline even without JavaScript, and expiry does not change invoices, stock, payments or due dates. Read [Customer inactivity sign-out](docs/customer-session-timeout.md) for cache requirements and deployment checks.
+
+The FAQ update adds 15 operational answers while preserving owner-edited and inactive entries. Approved matches answer directly; a policy question mentioning an order reference no longer becomes a tracking request. Private order status and balance lookups still require ownership or staff access. Other verified fixes reject ambiguous legacy payment transactions, invalidate old recovery links after a signed-in password change, and exclude missing/future payment dates from all-time sales totals and rankings.
+
+The final application suite passed **896 tests / 7,523 assertions on SQLite and the same 896 tests / 7,523 assertions on isolated MariaDB 10.4.32**, with zero failures, errors or skips. These are the same scenarios on two engines, not 1,792 unique tests. Client timer tests cover warnings, expiry, cross-tab activity and network failures. All page templates compile, changed PHP formatting passes, and the locked dependency audit reports no published advisories. A full local database backup was restored into the disposable schema and matched all 19 business tables exactly. These checks use mocked external services and do not establish real payment, delivery or inbox behavior.
+
+For the forecast formulas and examples, read [Forecast guide](docs/forecast-guide.md).
+
 ## Local use
 
 Project directory: C:\xampp\htdocs\better-zone-one-tees

@@ -2,7 +2,9 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content"><meta name="csrf-token" content="{{ csrf_token() }}"><meta name="theme-color" content="#941B0C"><link rel="icon" type="image/png" href="{{ asset('brand/zone-one-tees-logo.png') }}">
 <title>@yield('title','Zone One Tee’s') · 2.0</title>
 @if(request()->routeIs('checkout'))<link rel="stylesheet" href="{{ asset('vendor/leaflet/leaflet.css') }}"><script src="{{ asset('vendor/leaflet/leaflet.js') }}" defer></script>@endif
-<link rel="stylesheet" href="{{ asset('shop.css') }}?v={{ filemtime(public_path('shop.css')) }}"><script src="{{ asset('shop.js') }}?v={{ filemtime(public_path('shop.js')) }}" defer></script></head>
+<link rel="stylesheet" href="{{ asset('shop.css') }}?v={{ filemtime(public_path('shop.css')) }}"><script src="{{ asset('shop.js') }}?v={{ filemtime(public_path('shop.js')) }}" defer></script>
+@if(auth()->check() && auth()->user()->role === 'customer')<link rel="stylesheet" href="{{ asset('customer-session.css') }}?v={{ filemtime(public_path('customer-session.css')) }}">@endif
+</head>
 <body class="{{ (request()->routeIs('admin.*') || ((request()->routeIs('account*') || request()->routeIs('orders.show')) && auth()->check() && auth()->user()->role!=='customer')) ? 'admin-body' : 'store-body' }}{{ request()->routeIs('verification.*', 'password.*', 'admin.staff.create', 'admin.staff.show') ? ' verification-page' : '' }}{{ request()->routeIs('admin.staff.*') ? ' staff-setup-page' : '' }}">
 <a class="skip-link" href="#main-content">Skip to content</a>
 @php($isAdmin=(request()->routeIs('admin.*') || ((request()->routeIs('account*') || request()->routeIs('orders.show')) && auth()->check() && auth()->user()->role!=='customer')))
@@ -32,7 +34,19 @@
 <header class="store-header"><a class="brand" href="{{ route('store') }}"><img class="brand-logo" src="{{ asset('brand/zone-one-tees-logo.png') }}" alt="Zone One Tee’s logo"><span>Zone One Tee’s<small>EVERYDAY STARTS HERE</small></span></a>
 <form class="header-search" action="{{ route('store') }}" role="search"><span aria-hidden="true">⌕</span><input type="search" name="q" aria-label="Search products" placeholder="Search tees, brands, and essentials" value="{{ request('q') }}"><button class="icon-btn" aria-label="Search">→</button></form>
 <nav class="header-actions" aria-label="Customer navigation"><a href="{{ auth()->check()?route('store',['wishlist'=>1]):route('login') }}" aria-label="Wishlist">♡ <span>Wishlist</span></a><a href="{{ route('cart') }}">▢ <span>Cart</span><b>{{ array_sum(session('cart',[])) }}</b></a>
-@auth<a href="{{ route('orders') }}">My orders</a><details class="account-menu"><summary aria-label="Account menu for {{ auth()->user()->name }}">{{ explode(' ',auth()->user()->name)[0] }} ▾</summary><div><a href="{{ route('account') }}">My Account</a><a class="mobile-account-link" href="{{ route('orders') }}">My orders</a><a class="mobile-account-link" href="{{ route('store',['wishlist'=>1]) }}">Wishlist</a>@if(auth()->user()->role!=='customer')<a href="{{ route('admin.dashboard') }}">Store workspace</a>@endif<form action="{{ route('logout') }}" method="post">@csrf<button class="text-button">Sign out</button></form></div></details>
+@auth
+@if(auth()->user()->role==='customer')
+<a href="{{ route('dashboard') }}">My dashboard</a>
+@endif
+<a href="{{ route('orders') }}">My orders</a><details class="account-menu"><summary aria-label="Account menu for {{ auth()->user()->name }}">{{ explode(' ',auth()->user()->name)[0] }} ▾</summary><div>
+@if(auth()->user()->role==='customer')
+<a href="{{ route('dashboard') }}">My dashboard</a>
+@endif
+<a href="{{ route('account') }}">My Account</a><a href="{{ route('orders') }}">My orders · History</a><a href="{{ route('store',['wishlist'=>1]) }}">Favorites / wishlist</a>
+@if(auth()->user()->role!=='customer')
+<a href="{{ route('admin.dashboard') }}">Store workspace</a>
+@endif
+<form action="{{ route('logout') }}" method="post">@csrf<button class="text-button">Sign out</button></form></div></details>
 @else<a class="login-link" href="{{ route('login') }}">Sign in ↗</a>@endauth</nav></header>
 <nav class="store-nav" aria-label="Store navigation"><a href="{{ route('store') }}">Shop all</a><a href="{{ route('store') }}#catalog">Our brands</a><a href="{{ route('store') }}#quantity">Buy more, save more</a><span>Made for your everyday.</span></nav>
 @endif
@@ -50,4 +64,5 @@
 <button id="chat-toggle" class="chat-launcher" aria-controls="chat-panel" aria-expanded="false">✧ <span>{{ $isAdmin?'Staff assistant':'Ask Zone One' }}</span></button>
 <section id="chat-panel" class="chat-panel" hidden aria-label="Store assistant"><header><div><b>{{ $isAdmin?'Store assistant':'Hey, welcome to Zone One.' }}</b><small>{{ config('shop.grok.key')?'Powered by Grok':'Basic help · Grok not connected' }}</small></div><button id="chat-close" class="icon-btn" aria-label="Close chat">×</button></header>
 <div id="chat-messages" class="chat-messages" role="log" aria-live="polite"><p class="assistant-message">How can I help? Ask about products, quantity pricing, or your order number.</p></div><form id="chat-form" data-url="{{ route('chat') }}" data-side="{{ $isAdmin?'staff':'customer' }}"><label class="sr-only" for="chat-input">Message</label><input id="chat-input" required maxlength="1500" placeholder="Ask a question…"><button aria-label="Send message">↑</button></form><small class="chat-disclosure">AI answers may be inaccurate. Store staff can help resolve questions.</small></section>
+@include('partials.customer-session')
 </body></html>

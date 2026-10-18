@@ -8,6 +8,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
@@ -180,5 +181,26 @@ class AccountTest extends TestCase
         $this->assertDatabaseMissing('sessions', ['id' => 'another-device']);
         $this->assertDatabaseHas('sessions', ['id' => 'another-user']);
         $this->assertAuthenticatedAs($user);
+    }
+
+    public function test_password_change_invalidates_older_recovery_links_only_for_that_account(): void
+    {
+        $user = $this->user();
+        $other = $this->user();
+        $oldLink = Password::broker('users')->createToken($user);
+        $otherLink = Password::broker('users')->createToken($other);
+
+        $this->actingAs($user)->patch('/account/password', ['current_password' => 'WrongPassword!2026',
+            'password' => 'NewPassword!2026', 'password_confirmation' => 'NewPassword!2026'])->assertSessionHasErrors('current_password');
+        $this->assertTrue(Password::broker('users')->tokenExists($user, $oldLink));
+        $this->assertTrue(Password::broker('users')->tokenExists($other, $otherLink));
+
+        $this->actingAs($user)->patch('/account/password', ['current_password' => 'OriginalPassword!2026',
+            'password' => 'NewPassword!2026', 'password_confirmation' => 'NewPassword!2026'])->assertRedirect('/account');
+
+        $this->assertFalse(Password::broker('users')->tokenExists($user->fresh(), $oldLink));
+        $this->assertTrue(Password::broker('users')->tokenExists($other, $otherLink));
+        $this->assertAuthenticatedAs($user);
+        $this->get('/account')->assertOk();
     }
 }

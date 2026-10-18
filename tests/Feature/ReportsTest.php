@@ -420,4 +420,28 @@ class ReportsTest extends TestCase
         $this->assertTrue($response->viewData('salesChart')['rows'][0]['current']);
         $this->travelBack();
     }
+
+    public function test_all_time_sales_cards_bestsellers_and_export_exclude_unconfirmed_payment_dates(): void
+    {
+        $this->travelTo(Carbon::parse('2026-10-12 12:00:00', 'Asia/Manila'));
+        $verified = $this->order('2026-10-12 11:59:59', 10000);
+        $future = $this->order('2026-10-12 12:00:01', 90000);
+        $missing = $this->order('2026-10-11 10:00:00', 80000);
+        $missing->update(['paid_at' => null]);
+        $this->item($verified, $this->variant($this->product('Confirmed tee', '2026-01-01')), 2);
+        foreach ([$future, $missing] as $order) {
+            $this->item($order, $this->variant($this->product('Unconfirmed '.$order->id, '2026-01-01')), 99);
+        }
+
+        $this->actingAs($this->user('staff'))->get('/admin')->assertOk()
+            ->assertViewHas('revenue', 10000)->assertViewHas('ordersCount', 1)
+            ->assertViewHas('best', fn ($rows) => $rows->pluck('name')->all() === ['Confirmed tee'])
+            ->assertViewHas('salesChart', fn ($chart) => $chart['total'] === 10000);
+        $export = $this->get(route('admin.reports.export'))->assertOk()->streamedContent();
+        $this->assertStringContainsString($verified->number, $export);
+        $this->assertStringNotContainsString($future->number, $export);
+        $this->assertStringNotContainsString($missing->number, $export);
+        $this->assertEquals([$verified->id], app(SalesReport::class)->paidOrders()->pluck('id')->all());
+        $this->travelBack();
+    }
 }

@@ -5,6 +5,8 @@ use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ChatController;
+use App\Http\Controllers\CustomerDashboardController;
+use App\Http\Controllers\CustomerSessionController;
 use App\Http\Controllers\DeliveryRecoveryController;
 use App\Http\Controllers\EmailVerificationController;
 use App\Http\Controllers\FaqController;
@@ -47,6 +49,9 @@ Route::middleware(['signed', 'throttle:20,1,guest-invoices'])->prefix('guest/inv
     Route::post('/refunds', [GuestInvoiceController::class, 'refund'])->name('refunds');
 });
 Route::middleware('auth')->group(function () {
+    Route::post('/session/activity', [CustomerSessionController::class, 'show'])->middleware('throttle:30,1')->name('customer.session.activity');
+    Route::post('/session/status', [CustomerSessionController::class, 'show'])->middleware('throttle:30,1')->name('customer.session.status');
+    Route::get('/dashboard', [CustomerDashboardController::class, 'index'])->name('dashboard');
     Route::get('/email/verify', [EmailVerificationController::class, 'show'])->name('verification.notice');
     Route::post('/email/verification-code', [EmailVerificationController::class, 'send'])->middleware('throttle:5,1,email-code-send')->name('verification.send');
     Route::post('/email/verify', [EmailVerificationController::class, 'verify'])->middleware('throttle:10,1,email-code-check')->name('verification.verify');

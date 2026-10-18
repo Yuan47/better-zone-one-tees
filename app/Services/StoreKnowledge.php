@@ -233,7 +233,8 @@ class StoreKnowledge
         foreach (explode(',', $faq->keywords ?? '') as $keyword) {
             $keyword = $this->normalize($keyword);
             if ($keyword !== '' && str_contains(' '.$normalized.' ', ' '.$keyword.' ')) {
-                $score += 3;
+                // A configured phrase is more specific than generic words shared by many FAQs.
+                $score += 3 * count(explode(' ', $keyword));
             }
         }
         $questionWords = $this->words($question);

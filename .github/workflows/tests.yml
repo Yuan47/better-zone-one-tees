@@ -5,6 +5,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check public/shop.js
+      - run: node --check public/customer-session.js
+      - run: node --test tests/Browser/*.test.cjs
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'

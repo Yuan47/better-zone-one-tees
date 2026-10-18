@@ -43,11 +43,11 @@ class SalesReport
 
     public function paidOrders(?string $startDate = null, ?string $endDate = null): Builder
     {
-        $query = Order::where('payment_status', 'paid');
+        $query = Order::where('payment_status', 'paid')
+            ->where('paid_at', '<=', CarbonImmutable::now('Asia/Manila')->format('Y-m-d H:i:s'));
         if ($startDate !== null && $endDate !== null) {
             $query->where('paid_at', '>=', CarbonImmutable::parse($startDate, 'Asia/Manila')->startOfDay()->format('Y-m-d H:i:s'))
-                ->where('paid_at', '<', CarbonImmutable::parse($endDate, 'Asia/Manila')->addDay()->startOfDay()->format('Y-m-d H:i:s'))
-                ->where('paid_at', '<=', CarbonImmutable::now('Asia/Manila')->format('Y-m-d H:i:s'));
+                ->where('paid_at', '<', CarbonImmutable::parse($endDate, 'Asia/Manila')->addDay()->startOfDay()->format('Y-m-d H:i:s'));
         }
 
         return $query;

@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Middleware\CustomerIdleTimeout;
 use App\Models\User;
 use App\Rules\AccountPasswordSize;
 use App\Services\ActivityRecorder;
+use App\Services\CustomerSessions;
 use App\Services\EmailVerificationCodes;
 use App\Services\InstallmentCredit;
 use Illuminate\Http\Request;
@@ -15,6 +17,10 @@ class AuthController extends Controller
 {
     public function form(string $mode = 'login')
     {
+        if ($mode === 'login' && request()->boolean('session_expired')) {
+            session()->now('notice', CustomerIdleTimeout::NOTICE);
+        }
+
         return view('auth', compact('mode'));
     }
 
@@ -25,6 +31,9 @@ class AuthController extends Controller
             return back()->withErrors(['email' => 'The email or password is incorrect.'])->onlyInput('email');
         }
         $r->session()->regenerate();
+        if ($r->user()->role === 'customer') {
+            app(CustomerSessions::class)->start($r);
+        }
 
         ActivityRecorder::mark($r, 'auth.login', $r->user());
         if (app(InstallmentCredit::class)->alertsFor($r->user())->isNotEmpty()) {
@@ -43,6 +52,7 @@ class AuthController extends Controller
         $user = User::create($data);
         Auth::login($user);
         $r->session()->regenerate();
+        app(CustomerSessions::class)->start($r);
         ActivityRecorder::mark($r, 'auth.registered', $user);
 
         $codes = app(EmailVerificationCodes::class);
@@ -56,6 +66,14 @@ class AuthController extends Controller
     public function logout(Request $r)
     {
         $user = $r->user();
+        if ($user?->role === 'customer') {
+            try {
+                app(CustomerSessions::class)->end($r);
+            } catch (\Throwable $exception) {
+                // Signing out must still discard the browser session during a cache outage.
+                report($exception);
+            }
+        }
         Auth::logout();
         $r->session()->invalidate();
         $r->session()->regenerateToken();

@@ -103,6 +103,9 @@ class PaymentRecovery
             if (! is_array($payments)) {
                 $this->fail('Payment details are unavailable. Inventory remains reserved.');
             }
+            if (count(array_filter($payments, fn ($payment) => data_get($payment, 'attributes.status') === 'paid')) > 1) {
+                $this->fail('This checkout contains multiple paid transactions. Owner reconciliation is required. Inventory remains reserved.');
+            }
             foreach ($payments as $payment) {
                 if (data_get($payment, 'attributes.status') !== 'paid') {
                     continue;

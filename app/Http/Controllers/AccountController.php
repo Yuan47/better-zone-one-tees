@@ -8,9 +8,12 @@ use App\Services\ImageUploads;
 use App\Services\StructuredAddress;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password as PasswordBroker;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\Validation\ValidationException;
 
 class AccountController extends Controller
 {
@@ -80,9 +83,17 @@ class AccountController extends Controller
             'password' => ['required', 'string', 'confirmed', 'different:current_password', Password::min(10), new AccountPasswordSize],
         ]);
         $user = $request->user();
-        $user->update(['password' => $data['password'], 'remember_token' => Str::random(60)]);
-        // Revoke other browser sessions and remembered logins after a password change.
-        DB::table('sessions')->where('user_id', $user->id)->where('id', '!=', $request->session()->getId())->delete();
+        DB::transaction(function () use ($user, $data, $request) {
+            // Recovery and signed-in password changes serialize on the same account.
+            $locked = $user->newQuery()->whereKey($user->id)->lockForUpdate()->firstOrFail();
+            if (! Hash::check($data['current_password'], $locked->password)) {
+                throw ValidationException::withMessages(['current_password' => 'The current password is incorrect.']);
+            }
+            $locked->update(['password' => $data['password'], 'remember_token' => Str::random(60)]);
+            PasswordBroker::broker('users')->deleteToken($locked);
+            DB::table('sessions')->where('user_id', $user->id)->where('id', '!=', $request->session()->getId())->delete();
+        });
+        $user->refresh();
         $request->session()->regenerate(true);
         $request->session()->regenerateToken();
         $request->session()->put('password_hash_web', $user->password);

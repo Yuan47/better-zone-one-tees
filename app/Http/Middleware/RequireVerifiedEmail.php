@@ -12,7 +12,7 @@ class RequireVerifiedEmail
     {
         if (config('auth.email_verification.required') !== true || ! $request->user()
             || $request->user()->email_verified_at !== null
-            || $request->routeIs('verification.*', 'password.*', 'logout', 'webhooks.paymongo', 'guest.orders.*')
+            || $request->routeIs('verification.*', 'password.*', 'logout', 'webhooks.paymongo', 'guest.orders.*', 'customer.session.*')
             || ($request->isMethod('GET') && $request->routeIs('store', 'product', 'cart', 'account'))) {
             return $next($request);
         }

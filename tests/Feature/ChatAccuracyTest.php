@@ -99,7 +99,7 @@ class ChatAccuracyTest extends TestCase
     public function test_grok_catalog_context_has_actual_scoped_variant_prices_and_stock(): void
     {
         $this->product()->variants()->where('size', 'S')->where('color', 'White')->update(['stock' => 15, 'reserved' => 4]);
-        $this->chat('Help me choose a fit for Dannon collar size S White')->assertOk()->assertJsonPath('mode', 'grok');
+        $this->chat('Help me choose Dannon collar S White')->assertOk()->assertJsonPath('mode', 'grok');
         Http::assertSent(function ($request) {
             $system = $request['messages'][0]['content'];
             $context = json_decode(substr($system, strpos($system, 'Context: ') + 9), true);
