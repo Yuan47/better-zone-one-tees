@@ -212,6 +212,9 @@ class StoreController extends Controller
             'delivery_method' => 'required|in:pickup,lalamove',
             'lat' => 'nullable|numeric|between:-90,90', 'lng' => 'nullable|numeric|between:-180,180',
             'payment_option' => 'nullable|in:full,partial', 'payment_amount' => 'required_if:payment_option,partial', 'payment_days' => 'nullable|integer|between:7,30']);
+        if ($data['delivery_method'] === 'lalamove' && Lalamove::internationalPhone($data['phone']) === null) {
+            throw ValidationException::withMessages(['phone' => 'Enter a Philippine mobile number (09… or +639…) or an international number with +country code for courier delivery.']);
+        }
         $address = $addresses->validatedInput($r, $data['delivery_method'] === 'lalamove');
         $data = array_merge($data, $address);
         $data['address'] = filled($data['street_address']) ? $addresses->format($data) : 'Store pickup';

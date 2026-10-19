@@ -54,6 +54,12 @@ class Lalamove
 
     public function book(Order $order): array
     {
+        $senderPhone = self::internationalPhone((string) config('shop.lalamove.phone'));
+        $recipientPhone = self::internationalPhone((string) $order->phone);
+        if ($senderPhone === null || $recipientPhone === null) {
+            $label = $senderPhone === null ? 'store pickup' : 'customer delivery';
+            throw new DeliveryBookingNotStarted('The '.$label.' phone number needs a Philippine mobile number (09… or +639…) or an international number with +country code. No delivery was booked.');
+        }
         // Quotes expire quickly; re-quote when packing is complete.
         try {
             $quote = $this->quote($order->address, $order->lat, $order->lng);
@@ -94,10 +100,23 @@ class Lalamove
 
         return $this->call('POST', '/v3/orders', [
             'quotationId' => $quote['quotationId'],
-            'sender' => ['stopId' => $quote['stops'][0]['stopId'], 'name' => 'Zone One Tee’s', 'phone' => config('shop.lalamove.phone')],
-            'recipients' => [['stopId' => $quote['stops'][1]['stopId'], 'name' => $order->recipient, 'phone' => $order->phone]],
+            'sender' => ['stopId' => $quote['stops'][0]['stopId'], 'name' => 'Zone One Tee’s', 'phone' => $senderPhone],
+            'recipients' => [['stopId' => $quote['stops'][1]['stopId'], 'name' => $order->recipient, 'phone' => $recipientPhone]],
             'isPODEnabled' => true, 'metadata' => ['order_number' => $order->number],
         ]);
+    }
+
+    public static function internationalPhone(string $phone): ?string
+    {
+        $value = preg_replace('/[\s().-]+/u', '', trim($phone));
+        if (is_string($value) && preg_match('/^(?:\+?63|0)?(9[0-9]{9})$/D', $value, $matches)) {
+            return '+63'.$matches[1];
+        }
+        if (is_string($value) && preg_match('/^\+[1-9][0-9]{7,14}$/D', $value)) {
+            return $value;
+        }
+
+        return null;
     }
 
     public function track(string $id): array

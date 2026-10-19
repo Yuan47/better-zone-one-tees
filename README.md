@@ -14,6 +14,8 @@ The final application suite passed **896 tests / 7,523 assertions on SQLite and 
 
 For the forecast formulas and examples, read [Forecast guide](docs/forecast-guide.md).
 
+For Step 3 preparation, use [Provider setup and acceptance](docs/integration-setup.md). The read-only `php artisan shop:check-integrations` command checks selected configuration without contacting providers, revealing keys, changing data or enabling services. Actual service acceptance still requires credentials and controlled tests.
+
 ## Local use
 
 Project directory: C:\xampp\htdocs\better-zone-one-tees

@@ -76,6 +76,21 @@ class DeliveryRecoveryTest extends TestCase
             'priceBreakdown' => ['currency' => 'PHP', 'total' => $total], 'stops' => [['stopId' => 'pickup'], ['stopId' => 'buyer']]];
     }
 
+    public function test_invalid_delivery_contact_returns_order_to_ready_without_provider_or_financial_changes(): void
+    {
+        $order = $this->order(['phone' => '123']);
+        $this->actingAs($this->user())->post('/admin/orders/'.$order->id.'/delivery')->assertSessionHasErrors('delivery');
+        $order->refresh();
+        $this->assertSame('ready', $order->status);
+        $this->assertNull($order->delivery_booking_context);
+        $this->assertNull($order->delivery_id);
+        $this->assertSame('paid', $order->payment_status);
+        $this->assertSame(40000, $order->total);
+        $this->assertTrue($order->inventory_committed);
+        $this->assertDatabaseCount('delivery_attempts', 0);
+        Http::assertNothingSent();
+    }
+
     public function test_recovery_endpoints_deny_guests_and_customers_before_provider_access(): void
     {
         $order = $this->uncertain();

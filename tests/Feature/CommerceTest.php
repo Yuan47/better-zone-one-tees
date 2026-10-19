@@ -11,6 +11,7 @@ use App\Services\Lalamove;
 use App\Services\OrderFlow;
 use App\Services\PayMongo;
 use App\Services\Pricing;
+use App\Services\StructuredAddress;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -47,6 +48,30 @@ class CommerceTest extends TestCase
     private function payConfig(): void
     {
         config(['shop.paymongo.secret' => 'sk_test_demo', 'shop.paymongo.webhook_secret' => 'webhook-secret', 'shop.paymongo.mode' => 'test']);
+    }
+
+    public function test_invalid_courier_phone_is_rejected_before_reserving_stock_or_starting_payment(): void
+    {
+        $this->payConfig();
+        Http::preventStrayRequests();
+        Http::fake(['https://api.paymongo.com/v2/checkout_sessions' => Http::response(['data' => ['id' => 'cs_phone_fixture',
+            'attributes' => ['checkout_url' => 'https://checkout.paymongo.com/cs_phone_fixture']]])]);
+        $variant = $this->variant(5);
+        $this->actingAs($this->user())->withSession(['cart' => [$variant->id => 1]]);
+        $this->get('/checkout')->assertOk();
+        $details = ['recipient' => 'Sample buyer', 'phone' => '1111111111', 'delivery_method' => 'lalamove',
+            'street_address' => '1 Sample Street', 'city' => 'Quezon City', 'province' => 'Metro Manila',
+            'postal_code' => '1100', 'country' => 'Philippines', 'lat' => '14.6', 'lng' => '121.1'];
+        $address = app(StructuredAddress::class)->format($details);
+        $this->withSession(['delivery_quote' => ['address' => $address, 'lat' => '14.6', 'lng' => '121.1',
+            'quote' => ['expiresAt' => now()->addMinutes(5)->toIso8601String(), 'priceBreakdown' => ['total' => '100']]]]);
+        $this->post('/checkout', $details)->assertSessionHasErrors('phone');
+        $this->assertDatabaseCount('orders', 0);
+        $this->assertDatabaseCount('payment_attempts', 0);
+        $this->assertSame(5, $variant->fresh()->stock);
+        $this->assertSame(0, $variant->fresh()->reserved);
+        $this->assertSame([$variant->id => 1], session('cart'));
+        Http::assertNothingSent();
     }
 
     private function envelope(Order $order, string $event = 'evt_demo', ?int $amount = null): array
