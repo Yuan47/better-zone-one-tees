@@ -20,6 +20,12 @@ return [
 
     'driver' => env('SESSION_DRIVER', 'database'),
 
+    // Every web response saves a session snapshot, including read-only requests.
+    // Keep same-browser requests in order, allowing for a three-call payment check.
+    'block' => true,
+    'block_lock_seconds' => 90,
+    'block_wait_seconds' => 90,
+
     /*
     |--------------------------------------------------------------------------
     | Session Lifetime

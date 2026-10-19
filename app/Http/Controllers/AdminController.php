@@ -109,9 +109,10 @@ class AdminController extends Controller
             'size' => 'required|string|max:40', 'color_group' => 'required|in:WHITE,COLORED',
             'color' => ['required', 'string', 'max:80', Rule::unique('variants', 'color')->where(fn ($q) => $q->where('product_id', $product->id)->where('size', $r->input('size')))->ignore($variant?->id)],
             'stock' => 'required|integer|min:0|max:1000000', 'reorder_level' => 'required|integer|min:0|max:1000000',
+            'expected_stock' => [Rule::requiredIf($variant !== null), 'nullable', 'integer', 'min:0', 'max:1000000'],
             'retail' => 'required|numeric|min:1|max:100000', 'wholesale' => 'required|numeric|min:1|max:100000', 'reseller' => 'required|numeric|min:1|max:100000',
             'photo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120', 'remove_photo' => 'nullable|boolean',
-        ]);
+        ], ['expected_stock.required' => 'This stock form is out of date. Reopen the variant before saving.']);
         if ($group === 'COLORED' && strtolower($data['color']) === 'white') {
             throw ValidationException::withMessages(['color' => 'Select WHITE for white clothing.']);
         }
@@ -122,12 +123,15 @@ class AdminController extends Controller
         if ($data['wholesale_price'] > $data['retail_price'] || $data['reseller_price'] > $data['wholesale_price']) {
             throw ValidationException::withMessages(['prices' => 'Prices must stay the same or decrease as quantity increases.']);
         }
-        unset($data['photo'],$data['remove_photo']);
+        unset($data['photo'],$data['remove_photo'],$data['expected_stock']);
         $oldPhoto = $variant?->image_path;
         $savedVariant = null;
         DB::transaction(function () use ($r, $product, $variant, $uploads, &$data, &$savedVariant) {
             Product::whereKey($product->id)->lockForUpdate()->firstOrFail();
             $locked = $variant ? Variant::whereKey($variant->id)->lockForUpdate()->firstOrFail() : null;
+            if ($locked && $r->integer('expected_stock') !== (int) $locked->stock) {
+                throw ValidationException::withMessages(['stock' => 'Stock changed while this page was open. The current count is '.$locked->stock.'. Review the refreshed count before saving again.']);
+            }
             if ($locked && $data['stock'] < $locked->reserved) {
                 throw ValidationException::withMessages(['stock' => 'Some stock is committed to orders. On-hand stock cannot be reduced below those commitments.']);
             }

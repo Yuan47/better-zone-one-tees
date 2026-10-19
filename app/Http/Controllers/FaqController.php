@@ -15,7 +15,7 @@ class FaqController extends Controller
 {
     public function create()
     {
-        return view('admin.faq', ['faq' => new ChatbotFaq(['active' => true, 'sort_order' => 0])]);
+        return view('admin.faq', ['faq' => new ChatbotFaq(['active' => true, 'sort_order' => 0, 'audience' => 'customer'])]);
     }
 
     public function store(Request $r)
@@ -23,9 +23,9 @@ class FaqController extends Controller
         $data = $r->validate($this->rules());
         $data['sort_order'] = (int) ($data['sort_order'] ?? 0);
         $faq = ChatbotFaq::create($data);
-        ActivityRecorder::mark($r, 'faq.created', $faq, ['fields' => ['question', 'answer', 'keywords', 'active', 'sort_order']]);
+        ActivityRecorder::mark($r, 'faq.created', $faq, ['fields' => ['question', 'answer', 'keywords', 'active', 'sort_order', 'audience']]);
 
-        return redirect()->route('admin.settings')->with('notice', 'FAQ added. Active answers are available to the assistant.');
+        return redirect()->route('admin.settings')->with('notice', 'FAQ added. Active answers are available to the selected audience.');
     }
 
     public function edit(ChatbotFaq $faq)
@@ -50,7 +50,7 @@ class FaqController extends Controller
     public function destroy(Request $r, ChatbotFaq $faq)
     {
         if ($faq->delete()) {
-            ActivityRecorder::mark($r, 'faq.deleted', $faq, ['fields' => ['question', 'answer', 'keywords', 'active', 'sort_order']]);
+            ActivityRecorder::mark($r, 'faq.deleted', $faq, ['fields' => ['question', 'answer', 'keywords', 'active', 'sort_order', 'audience']]);
         }
 
         return redirect()->route('admin.settings')->with('notice', 'FAQ deleted. Its answer is no longer available to the assistant.');
@@ -77,8 +77,8 @@ class FaqController extends Controller
             $headers = array_map(fn ($header) => strtolower(trim((string) $header)), $headers);
             if (! in_array('question', $headers, true) || ! in_array('answer', $headers, true)
                 || count(array_unique($headers)) !== count($headers)
-                || array_diff($headers, ['question', 'answer', 'keywords', 'active', 'sort_order']) !== []) {
-                throw ValidationException::withMessages(['faq_csv' => 'Use question and answer headers. Optional headers: keywords, active, sort_order.']);
+                || array_diff($headers, ['question', 'answer', 'keywords', 'active', 'sort_order', 'audience']) !== []) {
+                throw ValidationException::withMessages(['faq_csv' => 'Use question and answer headers. Optional headers: keywords, active, sort_order, audience.']);
             }
             $seen = [];
             $line = 1;
@@ -101,6 +101,7 @@ class FaqController extends Controller
                 $row['active'] = ! in_array($active, ['0', 'false', 'no', 'inactive'], true);
                 $row['sort_order'] = ($row['sort_order'] ?? '') === '' ? 0 : $row['sort_order'];
                 $row['keywords'] = ($row['keywords'] ?? '') === '' ? null : $row['keywords'];
+                $row['audience'] = ($row['audience'] ?? '') === '' ? 'customer' : $row['audience'];
                 $validator = Validator::make($row, $this->rules());
                 if ($validator->fails()) {
                     throw ValidationException::withMessages(['faq_csv' => 'CSV row '.$line.': '.implode(' ', $validator->errors()->all())]);
@@ -125,7 +126,7 @@ class FaqController extends Controller
         });
         ActivityRecorder::mark($r, 'faq.imported', null, ['imported_count' => count($rows)]);
 
-        return redirect()->route('admin.settings')->with('notice', count($rows).' FAQ entries imported. Only active answers are available to the assistant.');
+        return redirect()->route('admin.settings')->with('notice', count($rows).' FAQ entries imported. Active answers are available only to their selected audience.');
     }
 
     public function template()
@@ -133,8 +134,8 @@ class FaqController extends Controller
         return response()->streamDownload(function () {
             $stream = fopen('php://output', 'w');
             fwrite($stream, "\xEF\xBB\xBF");
-            fputcsv($stream, ['question', 'answer', 'keywords', 'active', 'sort_order'], ',', '"', '');
-            fputcsv($stream, ['Where can I see product measurements?', StoreKnowledge::SIZE_HELP, 'size chart, measurements', '1', '0'], ',', '"', '');
+            fputcsv($stream, ['question', 'answer', 'keywords', 'active', 'sort_order', 'audience'], ',', '"', '');
+            fputcsv($stream, ['Where can I see product measurements?', StoreKnowledge::SIZE_HELP, 'size chart, measurements', '1', '0', 'customer'], ',', '"', '');
             fclose($stream);
         }, 'zone-one-faq-template.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
@@ -145,6 +146,7 @@ class FaqController extends Controller
             'question' => ['required', 'string', 'max:250', Rule::unique('chatbot_faqs', 'question')->ignore($faq?->id)],
             'answer' => 'required|string|max:2500', 'keywords' => 'nullable|string|max:500',
             'active' => 'required|boolean', 'sort_order' => 'nullable|integer|min:0|max:100000',
+            'audience' => ['sometimes', 'required', Rule::in(ChatbotFaq::AUDIENCES)],
         ];
     }
 }

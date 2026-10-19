@@ -19,11 +19,12 @@
 @forelse($orders as $order)
     @php($received = $order->paidAmount())
     @php($balance = $order->outstandingBalance())
+    @php($invoiceClosed = $order->status === 'cancelled' || $order->inventory_released)
     <tr><td>{{ $order->number }}<small>{{ $order->created_at->format('M d, Y') }} · {{ $order->sales_channel === 'walk_in' ? 'Walk-in' : 'Online' }}</small></td>
         <td>{{ $order->user?->name ?? $order->recipient }}@if(!$order->user)<small>Guest invoice</small>@endif</td>
-        <td>{{ $order->quantity }} pcs / {{ $order->tier }}</td><td>₱{{ number_format($order->total/100,2) }}</td><td>₱{{ number_format($received/100,2) }}</td>
-        <td>₱{{ number_format($balance/100,2) }}
-            @if($balance && $order->due_at)
+        <td>{{ $order->quantity }} pcs / {{ $order->tier }}</td><td>₱{{ number_format($order->total/100,2) }}@if($invoiceClosed)<small>Original invoice</small>@endif</td><td>₱{{ number_format($received/100,2) }}</td>
+        <td>@if($invoiceClosed)No payment due<small>Uncollected at closure: ₱{{ number_format($balance/100,2) }}</small>@else₱{{ number_format($balance/100,2) }}@endif
+            @if(!$invoiceClosed && $balance && $order->due_at)
             <small>Due {{ $order->due_at->format('M d, Y · g:i A') }}
                 @if($order->status !== 'cancelled' && $order->invoiceOverdue())
                 · Overdue
@@ -32,7 +33,7 @@
             @endif
         </td>
         <td><span class="badge">{{ ucfirst(str_replace('_',' ',$order->payment_status)) }}</span></td>
-        <td>{{ $order->status === 'cancelled' ? 'Cancelled' : ($order->payment_status === 'paid' ? $order->customerDeliveryLabel() : 'Awaiting full payment') }}</td>
+        <td>{{ $invoiceClosed ? 'Closed invoice' : ($order->payment_status === 'paid' ? $order->customerDeliveryLabel() : 'Awaiting full payment') }}@if($order->status === 'cancelled')<small>Cancelled</small>@endif</td>
         <td><a class="text-link" href="{{ route('orders.show',$order) }}">Open →</a></td></tr>
 @empty<tr><td colspan="9" class="empty-note">No invoices match these filters.</td></tr>@endforelse
 </tbody></table></div>{{ $orders->links('pagination') }}

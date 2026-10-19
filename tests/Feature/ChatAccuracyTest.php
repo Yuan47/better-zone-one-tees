@@ -159,4 +159,44 @@ class ChatAccuracyTest extends TestCase
         $this->chat('Does proof of payment confirm my payment?')->assertJsonPath('mode', 'store')->assertSee('verified PayMongo payment notification')->assertDontSee('Invented FAQ');
         Http::assertNothingSent();
     }
+
+    public function test_approved_delivery_refund_cost_guidance_is_not_mistaken_for_variant_pricing(): void
+    {
+        $answer = 'Delivery refunds follow the return policy saved with your request and require owner review.';
+        $this->faq('Can delivery costs be refunded?', $answer);
+        foreach ([[null, 'basic'], ['test-grok', 'store']] as [$key, $mode]) {
+            config(['shop.grok.key' => $key]);
+            foreach (['Can delivery costs be refunded?', 'Are delivery costs refundable?'] as $message) {
+                $this->chat($message)->assertOk()->assertJsonPath('mode', $mode)->assertJsonPath('reply', $answer);
+            }
+            $this->chat('Can delivery costs be refunded for Dannon collar?')->assertOk()->assertJsonPath('mode', $mode)->assertJsonPath('reply', $answer);
+        }
+        Http::assertNothingSent();
+    }
+
+    public function test_approved_inventory_policy_guidance_is_not_mistaken_for_an_exact_stock_lookup(): void
+    {
+        $answer = 'Only the owner can adjust inventory after checking the counted stock.';
+        $this->faq('What is your inventory adjustment policy?', $answer);
+        foreach ([[null, 'basic'], ['test-grok', 'store']] as [$key, $mode]) {
+            config(['shop.grok.key' => $key]);
+            foreach (['What is your inventory adjustment policy?', 'Explain the inventory adjustment policy.'] as $message) {
+                $this->chat($message)->assertOk()->assertJsonPath('mode', $mode)->assertJsonPath('reply', $answer);
+            }
+        }
+        Http::assertNothingSent();
+    }
+
+    public function test_policy_wording_does_not_allow_stale_catalog_or_pricing_faq_claims(): void
+    {
+        $this->product()->variants()->where('size', 'S')->where('color', 'White')->update(['stock' => 8, 'reserved' => 3]);
+        $this->faq('What is Dannon collar S White stock policy?', 'Stale policy says 999 pieces are available.');
+        $this->faq('What is the wholesale discount policy?', 'Stale policy says all quantities receive a 90% discount.');
+        $this->chat('What is Dannon collar S White stock policy?')->assertOk()->assertJsonPath('mode', 'store')
+            ->assertSee('5 pieces currently available')->assertDontSee('Stale policy');
+        $this->chat('What is the wholesale discount policy?')->assertOk()->assertJsonPath('mode', 'store')
+            ->assertJsonPath('reply', fn ($reply) => str_contains($reply, '6–50 Wholesale') && str_contains($reply, '5% off'))
+            ->assertDontSee('Stale policy');
+        Http::assertNothingSent();
+    }
 }

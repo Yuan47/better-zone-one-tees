@@ -1,19 +1,23 @@
 @php
     $guest = $guest ?? false;
     $staff = !$guest && auth()->check() && in_array(auth()->user()->role,['staff','admin']);
+    $invoiceClosed = $order->status === 'cancelled' || $order->inventory_released;
+    $balance = $order->outstandingBalance();
+    $balanceDue = !$invoiceClosed && $balance > 0;
     $activePayment = $order->payments->whereIn('status',\App\Models\PaymentAttempt::ACTIVE)->sortByDesc('id')->first();
     $sign = fn($name) => \Illuminate\Support\Facades\URL::temporarySignedRoute($name,\Carbon\Carbon::createFromTimestamp((int)request('expires')),['order'=>$order->id]);
     $payUrl = $guest ? $sign('guest.orders.pay') : route('orders.payments.store',$order);
     $checkUrl = $guest ? $sign('guest.orders.check') : route('orders.payment.check',$order);
 @endphp
 <section class="panel invoice-payments" aria-labelledby="invoice-payments-heading">
-<div class="section-heading"><div><span class="eyebrow">SAME INVOICE · EVERY PAYMENT</span><h2 id="invoice-payments-heading">Invoice payments</h2></div><span class="badge">{{ $order->payment_status==='partially_paid'?'Partially paid':ucfirst($order->payment_status) }}</span></div>
+<div class="section-heading"><div><span class="eyebrow">SAME INVOICE · EVERY PAYMENT</span><h2 id="invoice-payments-heading">Invoice payments</h2></div><span class="badge">{{ $invoiceClosed ? 'Closed invoice' : ($order->payment_status==='partially_paid'?'Partially paid':ucfirst($order->payment_status)) }}</span></div>
 <p class="muted">Each received payment below is a payment receipt with its own reference. Pending attempts are not receipts.</p>
-<div class="invoice-totals"><div><span>Original invoice</span><strong>₱{{ number_format($order->total/100,2) }}</strong></div><div><span>Payment received</span><strong>₱{{ number_format($order->paidAmount()/100,2) }}</strong></div><div><span>Remaining balance</span><strong>₱{{ number_format($order->outstandingBalance()/100,2) }}</strong></div></div>
-@if($order->due_at)<p class="{{ $order->invoiceOverdue()?'error':'mini-note' }}">Balance due <strong>{{ $order->due_at->format('M d, Y · g:i A') }}</strong>{{ $order->invoiceOverdue()?' · Overdue':'' }}. Another payment does not extend this deadline.</p>@if($order->original_due_at && !$order->due_at->equalTo($order->original_due_at))<p class="muted">Original deadline: {{ $order->original_due_at->format('M d, Y') }}. A later agreement is recorded in the activity log.</p>@endif @endif
-@if($order->sales_channel==='walk_in')<p class="mini-note">Walk-in rule: payment must be received in full before the sale is Delivered. Cash receipt is recorded by staff; online payment is verified by PayMongo.</p>@elseif($order->outstandingBalance()>0)<p class="muted">Packing and delivery begin after the full invoice balance is received.</p>@endif
+@if($invoiceClosed)<p class="notice">No payment due. This invoice is closed; the amounts below are retained for its history.</p>@endif
+<div class="invoice-totals"><div><span>Original invoice</span><strong>₱{{ number_format($order->total/100,2) }}</strong></div><div><span>Payment received</span><strong>₱{{ number_format($order->paidAmount()/100,2) }}</strong></div><div><span>{{ $invoiceClosed ? 'Uncollected at closure' : 'Remaining balance' }}</span><strong>₱{{ number_format($balance/100,2) }}</strong></div></div>
+@if($order->due_at)<p class="{{ $balanceDue && $order->invoiceOverdue()?'error':'mini-note' }}">{{ $balanceDue ? 'Balance due' : 'Recorded balance deadline' }} <strong>{{ $order->due_at->format('M d, Y · g:i A') }}</strong>@if($balanceDue){{ $order->invoiceOverdue()?' · Overdue':'' }}. Another payment does not extend this deadline.@endif</p>@if($order->original_due_at && !$order->due_at->equalTo($order->original_due_at))<p class="muted">Original deadline: {{ $order->original_due_at->format('M d, Y') }}. A later agreement is recorded in the activity log.</p>@endif @endif
+@if($balanceDue)@if($order->sales_channel==='walk_in')<p class="mini-note">Walk-in rule: payment must be received in full before the sale is Delivered. Cash receipt is recorded by staff; online payment is verified by PayMongo.</p>@else<p class="muted">Packing and delivery begin after the full invoice balance is received.</p>@endif @endif
 @if($order->payments->isNotEmpty())<div class="table-scroll"><table><thead><tr><th>Payment</th><th>Method</th><th>Status</th><th>Amount</th><th>Received</th></tr></thead><tbody>@foreach($order->payments->sortBy('id') as $payment)<tr><td>#{{ $payment->id }}<small>Reference: {{ $payment->reference }}</small>@if($payment->method==='paymongo' && $payment->status==='paid' && $payment->payment_id)<small>PayMongo transaction: {{ $payment->payment_id }}</small>@endif</td><td>{{ $payment->method==='cash'?'Cash at counter':'PayMongo' }}</td><td>{{ $payment->status==='paid'?'Payment received':ucfirst($payment->status) }}</td><td>₱{{ number_format($payment->amount/100,2) }}</td><td>{{ $payment->received_at?->format('M d, Y · g:i A') ?? 'Not yet received' }}@if($payment->method==='cash')<small>{{ $payment->recorder?->name ?? 'Recorded store receipt' }}</small>@endif</td></tr>@endforeach</tbody></table></div>@endif
-@if(!$order->inventory_released && $order->outstandingBalance()>0)
+@if($balanceDue)
 @if($activePayment)
     @if($activePayment->status==='pending' && $activePayment->checkout_url)<a class="button dark" href="{{ $activePayment->checkout_url }}">Continue saved PayMongo payment →</a>@else<p class="notice">A checkout response is being checked. Another online or cash payment cannot be recorded until this request is reconciled.</p>@endif
     @if($activePayment->checkout_session_id)<form action="{{ $checkUrl }}" method="post">@csrf<button class="button">Check payment with PayMongo</button></form>

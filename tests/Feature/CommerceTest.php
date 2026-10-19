@@ -292,7 +292,7 @@ class CommerceTest extends TestCase
         $v = $this->variant();
         $this->reserved($v, $this->user(), 6);
         $this->actingAs($this->user('admin'))->patch('/admin/products/'.$v->product_id.'/variants/'.$v->id, [
-            'sku' => $v->sku, 'size' => 'M', 'color' => 'Ivory', 'stock' => 5, 'reorder_level' => 10, 'retail' => 250, 'wholesale' => 200, 'reseller' => 180,
+            'sku' => $v->sku, 'size' => 'M', 'color' => 'Ivory', 'stock' => 5, 'expected_stock' => 500, 'reorder_level' => 10, 'retail' => 250, 'wholesale' => 200, 'reseller' => 180,
         ])->assertSessionHasErrors('stock');
         $this->assertSame(500, $v->fresh()->stock);
     }

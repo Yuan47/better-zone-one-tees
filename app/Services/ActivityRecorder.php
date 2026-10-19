@@ -14,7 +14,7 @@ class ActivityRecorder
     private const FIELDS = [
         'name', 'username', 'avatar_path', 'phone', 'street_address', 'city', 'province', 'postal_code', 'country', 'lat', 'lng',
         'description', 'active', 'image_path', 'size_chart', 'size_chart_note', 'size', 'color', 'color_group', 'stock', 'reorder_level',
-        'retail_price', 'wholesale_price', 'reseller_price', 'question', 'answer', 'keywords', 'sort_order',
+        'retail_price', 'wholesale_price', 'reseller_price', 'question', 'answer', 'keywords', 'sort_order', 'audience',
         'opening_hours', 'pickup_address', 'pickup_instructions', 'support_email', 'support_phone', 'store_note',
     ];
 

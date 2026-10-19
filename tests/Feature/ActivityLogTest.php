@@ -187,7 +187,7 @@ class ActivityLogTest extends TestCase
     {
         $variant = $this->variant();
         $this->actingAs($this->user('admin'));
-        $data = ['size' => 'M', 'color_group' => 'COLORED', 'color' => 'Red', 'stock' => 100, 'reorder_level' => $variant->reorder_level,
+        $data = ['size' => 'M', 'color_group' => 'COLORED', 'color' => 'Red', 'stock' => 100, 'expected_stock' => 100, 'reorder_level' => $variant->reorder_level,
             'retail' => 160, 'wholesale' => 150, 'reseller' => 140];
         $this->patch('/admin/products/'.$variant->product_id.'/variants/'.$variant->id, $data)->assertRedirect()->assertSessionHasNoErrors();
         $this->assertDatabaseCount('activity_logs', 0);

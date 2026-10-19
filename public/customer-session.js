@@ -90,7 +90,7 @@
     if (activity && (document.hidden || idleSeconds > 60)) return;
     busy = true;
     if (activity) { pending = false; lastSent = Date.now(); }
-    stay.disabled = true;
+    stay.disabled = activity;
     var timeout, controller = window.AbortController ? new AbortController() : null;
     try {
       var request = fetch(activity ? panel.dataset.activityUrl : panel.dataset.statusUrl, {
@@ -109,7 +109,11 @@
       if (!response.ok) throw new Error(data.message || 'Your session could not be checked. Try again or sign in again.');
       accept(data, true);
     } catch (error) { unavailable(error.message); }
-    finally { clearTimeout(timeout); busy = false; stay.disabled = false; }
+    finally {
+      clearTimeout(timeout); busy = false; stay.disabled = false;
+      // A trusted gesture may have arrived while a read-only status check was pending.
+      flushActivity();
+    }
   }
   function flushActivity() {
     clearTimeout(activityTimer);

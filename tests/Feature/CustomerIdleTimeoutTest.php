@@ -200,7 +200,12 @@ class CustomerIdleTimeoutTest extends TestCase
     {
         $this->customer();
         $expiry = session('customer_idle.expires_at');
-        Cache::shouldReceive('lock')->andThrow(new \RuntimeException('Simulated session cache outage'));
+        $state = session(CustomerSessions::SESSION_KEY);
+        $key = 'customer-idle:'.hash('sha256', $state['user_id'].'|'.$state['id']).':lock';
+        // Keep the real browser-session lock; only the idle-state cache is unavailable.
+        Cache::swap(\Mockery::mock(Cache::getFacadeRoot())->makePartial());
+        Cache::shouldReceive('lock')->with($key, 5)->twice()
+            ->andThrow(new \RuntimeException('Simulated idle-state cache outage'));
         $this->travel(100)->seconds();
         $this->postJson('/session/activity')->assertStatus(503);
         $this->assertSame($expiry, session('customer_idle.expires_at'));

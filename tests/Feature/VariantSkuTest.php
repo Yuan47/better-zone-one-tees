@@ -19,7 +19,7 @@ class VariantSkuTest extends TestCase
         $product = Product::where('slug', 'thanos')->firstOrFail();
         $variant = $product->variants()->where('size', 'M')->where('color', 'Red')->firstOrFail();
         $originalSku = $variant->sku;
-        $fields = ['size' => 'M', 'color_group' => 'COLORED', 'color' => 'Custom Coral', 'stock' => 0,
+        $fields = ['size' => 'M', 'color_group' => 'COLORED', 'color' => 'Custom Coral', 'stock' => 0, 'expected_stock' => $variant->stock,
             'reorder_level' => 10, 'retail' => 129, 'wholesale' => 119, 'reseller' => 114];
 
         $this->patch(route('admin.variants.save', [$product, $variant]), $fields)

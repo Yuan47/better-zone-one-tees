@@ -140,6 +140,7 @@ class DeliveryRecovery
                 $actual = $stops[$index][$field] ?? null;
                 $wanted = $expected[$index][$field] ?? null;
                 if (! is_string($actual) || ! is_string($wanted) || ! filled($wanted)
+                    || $this->identity($actual, $field) === null
                     || $this->identity($actual, $field) !== $this->identity($wanted, $field)) {
                     $this->fail('The Lalamove pickup or recipient details do not match this booking. No order state was changed.');
                 }
@@ -156,12 +157,10 @@ class DeliveryRecovery
         return $this->providerStatus($data);
     }
 
-    private function identity(string $value, string $field): string
+    private function identity(string $value, string $field): ?string
     {
         if ($field === 'phone') {
-            $value = preg_replace('/\D/', '', $value);
-
-            return strlen($value) === 11 && str_starts_with($value, '09') ? '63'.substr($value, 1) : $value;
+            return Lalamove::internationalPhone($value);
         }
 
         return mb_strtolower(preg_replace('/\s+/u', ' ', trim($value)));

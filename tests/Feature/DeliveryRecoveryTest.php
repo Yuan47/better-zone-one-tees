@@ -129,6 +129,72 @@ class DeliveryRecoveryTest extends TestCase
         Http::assertSentCount(1);
     }
 
+    public static function normalizedContacts(): array
+    {
+        $cases = [];
+        foreach (['sender', 'recipient'] as $side) {
+            foreach (['recover', 'refresh'] as $operation) {
+                foreach (['09123456780', '9123456780', '639123456780', '+639123456780', '+65 8123 4567'] as $phone) {
+                    $cases[$side.' '.$operation.' '.$phone] = [$side, $operation, $phone,
+                        str_starts_with($phone, '+65') ? '+6581234567' : '+639123456780'];
+                }
+            }
+        }
+
+        return $cases;
+    }
+
+    #[DataProvider('normalizedContacts')]
+    public function test_delivery_reconciliation_accepts_the_phone_format_sent_when_booking(string $side, string $operation, string $phone, string $normalized): void
+    {
+        if ($side === 'sender') {
+            config(['shop.lalamove.phone' => $phone]);
+        }
+        $order = app(DeliveryRecovery::class)->beginBooking($this->order($side === 'recipient' ? ['phone' => $phone] : []));
+        if ($operation === 'refresh') {
+            app(DeliveryRecovery::class)->acceptBooking($order, ['orderId' => '107900701184', 'status' => 'ASSIGNING_DRIVER']);
+            $order->refresh();
+        }
+        $data = $this->provider($order, 'COMPLETED');
+        $data['stops'][$side === 'sender' ? 0 : 1]['phone'] = $normalized;
+        $this->tracking($data);
+
+        $this->actingAs($this->user())->post('/admin/orders/'.$order->id.'/delivery/'.$operation, ['delivery_id' => '107900701184'])
+            ->assertRedirect()->assertSessionHasNoErrors();
+
+        $order->refresh();
+        $this->assertSame('out_for_delivery', $order->status);
+        $this->assertNotNull($order->provider_completed_at);
+        $this->assertNull($order->customer_confirmed_at);
+        $this->assertSame($side === 'recipient' ? $phone : '09123456780', $order->phone);
+        $this->assertSame($phone, $order->delivery_booking_context['stops'][$side === 'sender' ? 0 : 1]['phone']);
+        Http::assertSentCount(1);
+    }
+
+    public static function invalidMatchingContacts(): array
+    {
+        return [['sender', 'not-a-number'], ['recipient', '123'], ['recipient', '+0000000000']];
+    }
+
+    #[DataProvider('invalidMatchingContacts')]
+    public function test_recovery_rejects_matching_invalid_contacts(string $side, string $phone): void
+    {
+        if ($side === 'sender') {
+            config(['shop.lalamove.phone' => $phone]);
+        }
+        $order = app(DeliveryRecovery::class)->beginBooking($this->order($side === 'recipient' ? ['phone' => $phone] : []));
+        $data = $this->provider($order, 'COMPLETED');
+        $data['stops'][$side === 'sender' ? 0 : 1]['phone'] = $phone;
+        $this->tracking($data);
+
+        $this->actingAs($this->user())->post('/admin/orders/'.$order->id.'/delivery/recover', ['delivery_id' => '107900701184'])
+            ->assertSessionHasErrors('delivery');
+
+        $this->assertSame('delivery_booking', $order->fresh()->status);
+        $this->assertNull($order->fresh()->delivery_id);
+        $this->assertNull($order->fresh()->provider_completed_at);
+    }
+
     public static function endedStatuses(): array
     {
         return [['CANCELED'], ['REJECTED'], ['EXPIRED']];

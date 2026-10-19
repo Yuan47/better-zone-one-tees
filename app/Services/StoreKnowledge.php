@@ -26,6 +26,8 @@ class StoreKnowledge
 
     public const TRACK_HELP = 'Sign in and open My orders to see your order status, or share your full order number (ZOT-…). Customers can only access their own orders.';
 
+    public const CUSTOMER_PRIVACY_HELP = 'I can help with customer accounts, shopping, your own orders, payments, and returns. Internal store reports, staff or owner instructions, other people’s information, passwords, and secret keys are not available in customer chat. Never share a password, verification code, or recovery link here.';
+
     public function info(): array
     {
         $raw = DB::table('shop_settings')->where('key', 'store_info')->value('value');
@@ -58,9 +60,19 @@ class StoreKnowledge
         return $changed;
     }
 
-    public function approvedFaqs(): Collection
+    public function approvedFaqs(array $audiences = ['customer']): Collection
     {
-        return ChatbotFaq::where('active', true)->orderBy('sort_order')->orderBy('id')->get();
+        return ChatbotFaq::where('active', true)->whereIn('audience', array_intersect($audiences, ['customer', 'staff', 'owner']))
+            ->orderBy('sort_order')->orderBy('id')->get();
+    }
+
+    public function requiresInternalAccess(string $message): bool
+    {
+        // Audience filtering is the privacy boundary. This only keeps explicit
+        // internal-data requests out of the customer AI flow as well.
+        return (bool) preg_match('/\b(?:admin(?:istrator)?|staff|owner|internal)\b.{0,45}\b(?:dashboard|workspace|reports?|settings?|accounts?|context|faqs?|instructions?|guides?|data|information|passwords?|credentials?)\b'
+            .'|\b(?:sales\s+reports?|sales\s+forecasts?|revenue\s+reports?|activity\s+logs?|customer\s+list|all\s+customer\s+emails|staff\s+accounts?)\b'
+            .'|\b(?:reveal|show|print|dump|give|list)\b.{0,50}\b(?:api\s+keys?|secret\s+keys?|system\s+prompt|private\s+context|passwords?|other\s+customers?)\b/iu', $message);
     }
 
     public function match(string $message, Collection $faqs): ?ChatbotFaq

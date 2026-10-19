@@ -5,6 +5,7 @@ use App\Http\Middleware\GoogleCallbackPrivacy;
 use App\Http\Middleware\RecordActivity;
 use App\Http\Middleware\RequireVerifiedEmail;
 use App\Http\Middleware\StaffAccess;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -24,6 +25,13 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->preventRequestForgery(except: ['webhooks/paymongo']);
     })->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->dontFlash(['code', 'token']);
+        $exceptions->render(function (LockTimeoutException $exception, Request $request) {
+            $message = 'Your previous request is still finishing. Wait a moment and try again.';
+
+            return ($request->expectsJson()
+                ? response()->json(['message' => $message], 503)
+                : response($message, 503))->header('Cache-Control', 'no-store, private');
+        });
         $exceptions->respond(function (Response $response) {
             if (request()->routeIs('password.*')) {
                 $response->headers->set('Cache-Control', 'no-store, private');

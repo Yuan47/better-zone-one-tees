@@ -260,6 +260,60 @@ test('a status check near expiry does not delay an explicit Stay signed in reque
   assert.deepEqual(tab.redirects, []);
 });
 
+for (const gesture of ['wheel', 'stay']) {
+  test(`a ${gesture} interaction during an in-flight status check is acknowledged after the response`, async () => {
+    const clock = world();
+    let finishStatus;
+    const tab = clock.createTab({ response: ({ url, now }) => {
+      if (url === '/session/status') return new Promise(resolve => { finishStatus = () => resolve({
+        status: 200, ok: true,
+        json: async () => ({ expires_at: START / 1000 + 900, server_time: Math.floor(now / 1000) }),
+      }); });
+      return Promise.resolve({ status: 200, ok: true,
+        json: async () => ({ expires_at: Math.floor(now / 1000) + 900, server_time: Math.floor(now / 1000) }),
+      });
+    } });
+    tab.visible(false);
+    await clock.advance(14 * MINUTE + 30_000);
+    tab.visible(true);
+    await clock.tickMicrotasks();
+    assert.deepEqual(tab.calls.map(call => call.url), ['/session/status']);
+    if (gesture === 'stay') {
+      assert.equal(tab.nodes['customer-session-stay'].disabled, false, 'A read-only check must allow the customer to request renewal');
+      tab.clickStay();
+    } else tab.interact(gesture);
+    await clock.advance(1000);
+    finishStatus();
+    await clock.tickMicrotasks();
+    await clock.tickMicrotasks();
+    assert.deepEqual(tab.calls.map(call => call.url), ['/session/status', '/session/activity']);
+    assert.equal(JSON.parse(tab.calls[1].body).idle_seconds, 1, 'The queued gesture must keep its original activity time');
+    assert.deepEqual(tab.redirects, []);
+    await clock.advance(MINUTE);
+    assert.equal(tab.calls.length, 2, 'Acknowledging the queued gesture must not create an idle keepalive');
+    assert.equal(tab.panel.open, false);
+  });
+}
+
+test('server-confirmed expiry wins over activity queued during a status check', async () => {
+  const clock = world();
+  let finishStatus;
+  const tab = clock.createTab({ response: () => new Promise(resolve => {
+    finishStatus = () => resolve({ status: 401, ok: false, json: async () => ({}) });
+  }) });
+  tab.visible(false);
+  await clock.advance(14 * MINUTE + 30_000);
+  tab.visible(true);
+  await clock.tickMicrotasks();
+  tab.interact('wheel');
+  finishStatus();
+  await clock.tickMicrotasks();
+  assert.deepEqual(tab.calls.map(call => call.url), ['/session/status']);
+  assert.deepEqual(tab.redirects, ['/login?session_expired=1']);
+  await clock.advance(2 * MINUTE);
+  assert.equal(tab.calls.length, 1, 'Queued activity cannot revive an expired server session');
+});
+
 test('an unavailable expiry check asks the customer to sign in and does not silently extend or poll', async () => {
   const clock = world();
   const tab = clock.createTab({ response: async () => { throw new Error('Connection unavailable'); } });

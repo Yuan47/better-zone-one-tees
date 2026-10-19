@@ -5,9 +5,11 @@ namespace Tests\Feature;
 use App\Models\Product;
 use App\Models\User;
 use App\Models\Variant;
+use App\Services\OrderFlow;
 use App\Services\Sku;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -178,7 +180,7 @@ class ProductRevisionTest extends TestCase
         $path = $sizes[0]->image_path;
         foreach ($sizes as $i => $variant) {
             $this->patch(route('admin.variants.save', [$product, $variant]), $this->variantInput([
-                'size' => $variant->size, 'color' => 'Aqua', 'stock' => 0, 'remove_photo' => 1,
+                'size' => $variant->size, 'color' => 'Aqua', 'stock' => 0, 'expected_stock' => 0, 'remove_photo' => 1,
             ]))->assertRedirect()->assertSessionHasNoErrors();
             $this->assertNull($variant->fresh()->image_path);
             if ($i === 0) {
@@ -258,5 +260,42 @@ class ProductRevisionTest extends TestCase
             ->assertSee('name="size_chart[0][size]"', false)
             ->assertSee('name="size_chart[1][size]"', false)
             ->assertDontSee('name="size_chart[2][size]"', false);
+    }
+
+    public function test_stale_variant_editor_cannot_restore_stock_sold_since_the_page_was_opened(): void
+    {
+        $this->admin();
+        $product = $this->product();
+        $variant = $this->variant($product, ['stock' => 10]);
+        $editor = route('admin.products.edit', [$product, 'variant' => $variant->id]);
+        $this->get($editor)->assertOk();
+        $flow = app(OrderFlow::class);
+        $order = $flow->reserve([$variant->id => 3], [
+            'recipient' => 'Stock audit customer', 'phone' => '09123456789',
+            'address' => 'Store pickup', 'delivery_method' => 'pickup', 'shipping' => 0,
+        ], User::factory()->create()->id);
+        DB::transaction(fn () => $flow->paid($order->newQuery()->whereKey($order->id)->lockForUpdate()->firstOrFail(), 'pay_stock_audit'));
+        $this->assertSame(7, $variant->fresh()->stock);
+
+        $this->from($editor)->patch(route('admin.variants.save', [$product, $variant]), $this->variantInput([
+            'stock' => 10, 'expected_stock' => 10, 'retail' => 150,
+        ]))->assertRedirect($editor)->assertSessionHasErrors('stock');
+        $this->assertSame([7, 14000], [$variant->fresh()->stock, $variant->fresh()->retail_price]);
+        $page = $this->get($editor)->assertOk()->getContent();
+        $this->assertMatchesRegularExpression('/name="stock"[^>]*value="7"/', $page);
+        $this->assertMatchesRegularExpression('/name="expected_stock"[^>]*value="7"/', $page);
+    }
+
+    public function test_existing_variant_requires_the_displayed_stock_and_accepts_a_fresh_count_adjustment(): void
+    {
+        $this->admin();
+        $product = $this->product();
+        $variant = $this->variant($product, ['stock' => 7]);
+        $url = route('admin.variants.save', [$product, $variant]);
+        $this->patch($url, $this->variantInput(['stock' => 12]))->assertSessionHasErrors('expected_stock');
+        $this->assertSame(7, $variant->fresh()->stock);
+        $this->patch($url, $this->variantInput(['stock' => 12, 'expected_stock' => 7]))
+            ->assertRedirect()->assertSessionHasNoErrors();
+        $this->assertSame(12, $variant->fresh()->stock);
     }
 }
