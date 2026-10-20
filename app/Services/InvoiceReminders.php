@@ -20,7 +20,7 @@ class InvoiceReminders
 
         return is_string($key) && trim($key) !== '' && ! preg_match('/[\r\n]/', $key)
             && $this->validEmail(config('services.brevo.from_email'))
-            && is_string($name) && trim($name) !== '' && mb_strlen($name) <= 100 && ! preg_match('/[\r\n]/', $name);
+            && is_string($name) && trim($name) !== '' && mb_strlen(trim($name)) <= BrevoTransactions::DISPLAY_NAME_LIMIT && ! preg_match('/[\r\n]/', $name);
     }
 
     public function ready(): bool
@@ -124,7 +124,7 @@ class InvoiceReminders
                     ->withoutRedirecting()->connectTimeout(3)->timeout(8)
                     ->post('https://api.brevo.com/v3/smtp/email', [
                         'sender' => ['name' => trim(config('services.brevo.from_name')), 'email' => trim(config('services.brevo.from_email'))],
-                        'to' => [['email' => $recipient, 'name' => $name]],
+                        'to' => [['email' => $recipient, 'name' => BrevoTransactions::recipientName($name)]],
                         'subject' => 'Payment reminder: '.$order->number.' is due in '.$days.' '.($days === 1 ? 'day' : 'days'),
                         'htmlContent' => $html,
                         'textContent' => 'Hello '.$name.', your Zone One Tees invoice '.$order->number.' has a remaining balance of PHP '.number_format($amount / 100, 2)

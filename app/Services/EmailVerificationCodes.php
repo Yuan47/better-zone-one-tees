@@ -23,7 +23,7 @@ class EmailVerificationCodes
 
         return is_string($key) && trim($key) !== '' && ! preg_match('/[\r\n]/', $key)
             && $this->validEmail(config('services.brevo.from_email'))
-            && is_string($name) && trim($name) !== '' && mb_strlen($name) <= 100 && ! preg_match('/[\r\n]/', $name);
+            && is_string($name) && trim($name) !== '' && mb_strlen(trim($name)) <= BrevoTransactions::DISPLAY_NAME_LIMIT && ! preg_match('/[\r\n]/', $name);
     }
 
     public function ready(): bool
@@ -88,7 +88,7 @@ class EmailVerificationCodes
                 ->withoutRedirecting()->connectTimeout(3)->timeout(8)
                 ->post('https://api.brevo.com/v3/smtp/email', [
                     'sender' => ['name' => trim(config('services.brevo.from_name')), 'email' => trim(config('services.brevo.from_email'))],
-                    'to' => [['email' => $claim['email'], 'name' => $claim['name']]],
+                    'to' => [['email' => $claim['email'], 'name' => BrevoTransactions::recipientName($claim['name'])]],
                     'subject' => 'Verify your Zone One Tees email address', 'htmlContent' => $html,
                     'textContent' => 'Hello '.$claim['name'].', your Zone One Tees email verification code is '.$claim['code']
                         .'. It expires in 10 minutes. Never share this code. If you did not create or verify an account, ignore this email.',

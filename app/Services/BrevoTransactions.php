@@ -6,6 +6,8 @@ use Illuminate\Support\Facades\Http;
 
 class BrevoTransactions
 {
+    public const DISPLAY_NAME_LIMIT = 70;
+
     public function configured(): bool
     {
         $key = config('services.brevo.api_key');
@@ -15,7 +17,12 @@ class BrevoTransactions
         return is_string($key) && trim($key) !== '' && ! preg_match('/[\r\n]/', $key)
             && is_string($email) && strlen($email) <= 254 && ! preg_match('/[\r\n]/', $email)
             && filter_var(trim($email), FILTER_VALIDATE_EMAIL) !== false
-            && is_string($name) && trim($name) !== '' && mb_strlen($name) <= 100 && ! preg_match('/[\r\n]/', $name);
+            && is_string($name) && trim($name) !== '' && mb_strlen(trim($name)) <= self::DISPLAY_NAME_LIMIT && ! preg_match('/[\r\n]/', $name);
+    }
+
+    public static function recipientName(string $name): string
+    {
+        return mb_substr(trim($name), 0, self::DISPLAY_NAME_LIMIT, 'UTF-8');
     }
 
     public function send(#[\SensitiveParameter] array $payload): array
@@ -23,6 +30,11 @@ class BrevoTransactions
         $result = ['status' => 'unavailable', 'provider_status' => null, 'message_id' => null];
         if (! $this->configured()) {
             return $result;
+        }
+        foreach ($payload['to'] ?? [] as $index => $recipient) {
+            if (isset($recipient['name'])) {
+                $payload['to'][$index]['name'] = self::recipientName($recipient['name']);
+            }
         }
         try {
             $response = Http::withHeaders(['api-key' => trim(config('services.brevo.api_key'))])->acceptJson()->asJson()
