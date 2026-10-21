@@ -158,21 +158,21 @@ class OperationsController extends Controller
         }
         $statusRows = [];
         foreach (self::STATUSES as $status => $label) {
-            $statusRows[] = ['status' => $status, 'label' => $label, 'count' => $statusCounts[$status],
+            $statusRows[] = ['status' => $status, 'label' => $label, 'count' => $statusCounts[$status], 'color' => Order::DELIVERY_STAGE_COLORS[$status],
                 'percentage' => $stats['fulfillment_orders'] ? $statusCounts[$status] / $stats['fulfillment_orders'] * 100 : 0,
                 'url' => route('admin.orders', $filters + ['fulfillment' => $status, 'payment_status' => 'paid'])];
         }
 
         $deliveryStages = [
-            'packing' => ['Packing', 'Payment is confirmed. Pack the clothing before arranging a courier.', '#220901'],
-            'ready' => ['Ready for delivery', 'Packing is complete. Arrange a courier booking for this order.', '#941B0C'],
-            'courier' => ['With courier', 'A courier booking is active. Open the order to check its latest Lalamove status.', '#BC3908'],
-            'delivered' => ['Delivered', 'The order is marked delivered. Open it to review the delivery details.', '#F6AA1C'],
+            'packing' => ['Packing', 'Payment is confirmed. Pack the clothing before arranging a courier.'],
+            'ready' => ['Ready for delivery', 'Packing is complete. Arrange a courier booking for this order.'],
+            'courier' => ['With courier', 'A courier booking is active. Open the order to check its latest Lalamove status.'],
+            'delivered' => ['Delivered', 'The order is marked delivered. Open it to review the delivery details.'],
         ];
         $deliveryTotal = array_sum($deliveryCounts);
         $deliveryRows = [];
-        foreach ($deliveryStages as $status => [$label, $description, $color]) {
-            $deliveryRows[] = ['status' => $status, 'label' => $label, 'description' => $description, 'color' => $color,
+        foreach ($deliveryStages as $status => [$label, $description]) {
+            $deliveryRows[] = ['status' => $status, 'label' => $label, 'description' => $description, 'color' => Order::DELIVERY_STAGE_COLORS[$status],
                 'count' => $deliveryCounts[$status], 'percentage' => $deliveryTotal ? $deliveryCounts[$status] / $deliveryTotal * 100 : 0,
                 'url' => route('admin.orders', $filters + ['fulfillment' => $status, 'payment_status' => 'paid', 'delivery_method' => 'lalamove'])];
         }

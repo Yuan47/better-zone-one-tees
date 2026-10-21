@@ -18,7 +18,7 @@
         <div class="order-grid">
             @forelse($recentOrders as $order)
                 <article class="panel customer-order-card">
-                    <div class="section-heading"><h3>{{ $order->number }}</h3><span class="badge">{{ $order->status === 'cancelled' ? 'Cancelled' : ($order->payment_status === 'paid' ? $order->customerDeliveryLabel() : ucfirst(str_replace('_',' ',$order->payment_status))) }}</span></div>
+                    <div class="section-heading"><h3>{{ $order->number }}</h3><span class="badge {{ $order->customerDeliveryBadgeClass() }}">{{ $order->status === 'cancelled' ? 'Cancelled' : ($order->payment_status === 'paid' ? $order->customerDeliveryLabel() : ucfirst(str_replace('_',' ',$order->payment_status))) }}</span></div>
                     <p class="muted">{{ $order->created_at->format('M d, Y') }} · {{ $order->sales_channel === 'walk_in' ? 'Walk-in' : 'Online' }} · {{ number_format($order->quantity) }} {{ $order->quantity === 1 ? 'piece' : 'pieces' }}</p>
                     <p>{{ $order->items->pluck('name')->unique()->join(', ') }}</p>
                     <dl class="customer-order-amounts"><div><dt>Invoice total</dt><dd>₱{{ number_format($order->total / 100, 2) }}</dd></div><div><dt>Payment received</dt><dd>₱{{ number_format($order->paidAmount() / 100, 2) }}</dd></div></dl>

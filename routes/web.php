@@ -17,6 +17,7 @@ use App\Http\Controllers\OperationsController;
 use App\Http\Controllers\OrderReceiptController;
 use App\Http\Controllers\PasswordRecoveryController;
 use App\Http\Controllers\PaymentRecoveryController;
+use App\Http\Controllers\ReadyNotificationController;
 use App\Http\Controllers\RefundController;
 use App\Http\Controllers\ReportsController;
 use App\Http\Controllers\StaffAccountController;
@@ -90,6 +91,7 @@ Route::middleware(['auth', 'staff'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/orders', [AdminController::class, 'orders'])->name('orders');
     Route::get('/reports/export', [AdminController::class, 'export'])->name('reports.export');
     Route::patch('/orders/{order}', [AdminController::class, 'status'])->name('orders.status');
+    Route::post('/orders/{order}/ready-email/retry', [ReadyNotificationController::class, 'retry'])->middleware('throttle:3,1')->name('orders.ready-email.retry');
     Route::post('/orders/{order}/delivery', [AdminController::class, 'book'])->middleware('throttle:5,1')->name('orders.delivery');
     Route::post('/orders/{order}/delivery/refresh', [DeliveryRecoveryController::class, 'refresh'])->middleware('throttle:6,1')->name('orders.delivery.refresh');
     Route::post('/orders/{order}/delivery/recover', [DeliveryRecoveryController::class, 'recover'])->middleware('throttle:3,1')->name('orders.delivery.recover');

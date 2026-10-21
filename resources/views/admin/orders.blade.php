@@ -33,7 +33,7 @@
             @endif
         </td>
         <td><span class="badge">{{ ucfirst(str_replace('_',' ',$order->payment_status)) }}</span></td>
-        <td>{{ $invoiceClosed ? 'Closed invoice' : ($order->payment_status === 'paid' ? $order->customerDeliveryLabel() : 'Awaiting full payment') }}@if($order->status === 'cancelled')<small>Cancelled</small>@endif</td>
+        <td><span class="badge {{ $order->customerDeliveryBadgeClass() }}">{{ $invoiceClosed ? 'Closed invoice' : ($order->payment_status === 'paid' ? $order->customerDeliveryLabel() : 'Awaiting full payment') }}</span>@if($order->status === 'cancelled')<small>Cancelled</small>@endif</td>
         <td><a class="text-link" href="{{ route('orders.show',$order) }}">Open →</a></td></tr>
 @empty<tr><td colspan="9" class="empty-note">No invoices match these filters.</td></tr>@endforelse
 </tbody></table></div>{{ $orders->links('pagination') }}

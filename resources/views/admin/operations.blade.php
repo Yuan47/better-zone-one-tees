@@ -62,7 +62,7 @@
     @if($stats['cancelled_paid'])<p class="muted">{{ number_format($stats['cancelled_paid']) }} cancelled paid orders are excluded from fulfillment stages and remain in paid-order totals for reconciliation.</p>@endif
     <div class="stat-grid operations-stat-grid">
         @foreach($statusRows as $row)
-            <a class="panel stat operations-card operations-status-card" href="{{ $row['url'] }}" aria-label="{{ $row['label'] }}: {{ $row['count'] }} paid orders; open filtered orders"><span>{{ $row['label'] }}</span><h2>{{ number_format($row['count']) }}</h2><small>View orders →</small></a>
+            <a class="panel stat operations-card operations-status-card delivery-stage-{{ $row['status'] }}" href="{{ $row['url'] }}" aria-label="{{ $row['label'] }}: {{ $row['count'] }} paid orders; open filtered orders"><span>{{ $row['label'] }}</span><h2>{{ number_format($row['count']) }}</h2><small>View orders →</small></a>
         @endforeach
     </div>
 </section>
@@ -71,7 +71,7 @@
         <div class="section-heading"><h3>Fulfillment breakdown</h3><span class="badge">{{ number_format($stats['fulfillment_orders']) }} paid, non-cancelled orders</span></div>
         <div class="operations-status-chart" role="img" aria-label="Current fulfillment stage of paid, non-cancelled orders placed from {{ $startDate }} through {{ $endDate }}. Exact counts and percentages appear in the table below.">
             @foreach($statusRows as $row)
-                <div class="operations-status-row" aria-hidden="true"><span>{{ $row['label'] }}</span><div class="operations-status-track"><div class="operations-status-fill" style="width:{{ $row['percentage'] }}%"></div></div><b>{{ number_format($row['count']) }}</b></div>
+                <div class="operations-status-row" aria-hidden="true"><span>{{ $row['label'] }}</span><div class="operations-status-track"><div class="operations-status-fill" style="width:{{ $row['percentage'] }}%;background:{{ $row['color'] }}"></div></div><b>{{ number_format($row['count']) }}</b></div>
             @endforeach
         </div>
         @if(!$stats['paid_orders'])<p class="empty-note">No confirmed paid orders were placed in these dates.</p>@endif

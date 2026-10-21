@@ -11,6 +11,8 @@ class Order extends Model
 
     public const DELIVERY_STAGES = ['packing' => 'Packing', 'ready' => 'Ready for delivery', 'courier' => 'With courier', 'delivered' => 'Delivered'];
 
+    public const DELIVERY_STAGE_COLORS = ['packing' => '#220901', 'ready' => '#F6AA1C', 'courier' => '#BC3908', 'delivered' => '#15803D'];
+
     protected function casts(): array
     {
         return ['delivery_quote' => 'array', 'delivery_booking_context' => 'array', 'paid_at' => 'datetime', 'provider_completed_at' => 'datetime',
@@ -86,6 +88,12 @@ class Order extends Model
     public function customerDeliveryLabel(): string
     {
         return self::DELIVERY_STAGES[$this->customerDeliveryStage()];
+    }
+
+    public function customerDeliveryBadgeClass(): string
+    {
+        return $this->payment_status === 'paid' && $this->status !== 'cancelled' && ! $this->inventory_released
+            ? 'delivery-stage-'.$this->customerDeliveryStage() : '';
     }
 
     public function scopeWhereDeliveryStage(Builder $query, string $stage): Builder

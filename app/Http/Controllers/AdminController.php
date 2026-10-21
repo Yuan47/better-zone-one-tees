@@ -16,6 +16,7 @@ use App\Services\ImageUploads;
 use App\Services\InvoiceReminders;
 use App\Services\Lalamove;
 use App\Services\PayMongo;
+use App\Services\ReadyOrderNotifications;
 use App\Services\SalesReport;
 use App\Services\Sku;
 use App\Services\StoreKnowledge;
@@ -217,11 +218,11 @@ class AdminController extends Controller
         return view('admin.orders', compact('orders'));
     }
 
-    public function status(Request $r, Order $order, ActivityRecorder $audit)
+    public function status(Request $r, Order $order, ActivityRecorder $audit, ReadyOrderNotifications $notifications)
     {
         $data = $r->validate(['status' => 'required|in:packing,ready', 'reason' => 'required|string|min:10|max:1000']);
         $previousStatus = null;
-        DB::transaction(function () use ($r, $order, $data, $audit, &$previousStatus) {
+        DB::transaction(function () use ($r, $order, $data, $audit, $notifications, &$previousStatus) {
             $locked = Order::whereKey($order->id)->lockForUpdate()->firstOrFail();
             if ($locked->fulfillmentOnHold()) {
                 throw ValidationException::withMessages(['refund' => 'Review the approved, processing or fully completed refund before advancing fulfillment.']);
@@ -233,9 +234,20 @@ class AdminController extends Controller
             if (! $audit->record($r->user(), 'order.status_changed', $locked, ['previous_status' => $previousStatus, 'status' => $data['status'], 'reason' => $data['reason']])) {
                 throw new \RuntimeException('The order change could not be audited.');
             }
+            if ($data['status'] === 'ready') {
+                $notifications->enqueue($locked);
+            }
         });
 
-        return back()->with('notice', 'Order updated.');
+        $email = $data['status'] === 'ready' ? $notifications->send($order->id) : null;
+
+        return back()->with('notice', 'Order updated.'.match ($email) {
+            'sent' => ' Brevo accepted the customer readiness email.',
+            'failed' => ' Customer email was rejected. Check its email panel before retrying.',
+            'unknown', 'review' => ' Customer email needs review. Do not resend until its outcome is confirmed.',
+            'unavailable' => ' Customer email sending is disabled or not configured.',
+            default => '',
+        });
     }
 
     public function book(Request $r, Order $order, Lalamove $delivery, DeliveryRecovery $recovery)

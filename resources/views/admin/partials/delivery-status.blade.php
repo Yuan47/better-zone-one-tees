@@ -5,9 +5,9 @@
     </div>
     <div class="delivery-summary" aria-label="Delivery summary">
         <div><span>Delivery orders</span><strong>{{ number_format($deliveryTotals['total']) }}</strong><small>Paid, non-cancelled orders in this date range</small></div>
-        <div><span>Delivered</span><strong>{{ number_format($deliveryTotals['completed']) }}</strong><small>Customer confirmed receipt and submitted a review</small></div>
+        <div class="delivery-stage-delivered"><span>Delivered</span><strong>{{ number_format($deliveryTotals['completed']) }}</strong><small>Customer confirmed receipt and submitted a review</small></div>
         <div><span>Still open</span><strong>{{ number_format($deliveryTotals['active']) }}</strong><small>Includes preparation and courier handover</small></div>
-        <div><span>Ready for delivery</span><strong>{{ number_format($deliveryTotals['ready']) }}</strong><small>Includes orders whose booking needs checking</small></div>
+        <div class="delivery-stage-ready"><span>Ready for delivery</span><strong>{{ number_format($deliveryTotals['ready']) }}</strong><small>Includes orders whose booking needs checking</small></div>
     </div>
     @if($deliveryTotals['attention'])<p class="delivery-snapshot-note">{{ number_format($deliveryTotals['attention']) }} orders in Ready for delivery need a booking check. Check the existing booking before retrying.</p>@endif
     @if($stats['cancelled_paid_lalamove'])<p class="delivery-snapshot-note">{{ number_format($stats['cancelled_paid_lalamove']) }} cancelled paid delivery orders are excluded from these four stages. They remain in the paid-order totals for reconciliation.</p>@endif

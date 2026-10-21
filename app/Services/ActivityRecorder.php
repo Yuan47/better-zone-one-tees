@@ -90,6 +90,7 @@ class ActivityRecorder
             'cart.added', 'cart.updated', 'cart.removed' => ['quantity', 'previous_quantity', 'cart_quantity'],
             'order.created' => ['quantity', 'delivery_method', 'status'],
             'order.status_changed', 'order.received' => ['previous_status', 'status', 'reason'],
+            'order.ready_email_retried' => ['reason'],
             'invoice.payment_received', 'refund.cash_recorded' => ['amount', 'method', 'reason'],
             'refund.inspected', 'refund.policy_updated' => ['reason'],
             'invoice.due_changed' => ['reason', 'previous_due_at', 'due_at'],

@@ -7,7 +7,7 @@
 @php($received = $order->paidAmount())
 @php($balance = $order->outstandingBalance())
 @php($invoiceClosed = $order->status === 'cancelled' || $order->inventory_released)
-<article class="panel"><div class="section-heading"><h3>{{ $order->number }}</h3><span class="badge">{{ $invoiceClosed ? 'Closed invoice' : ($order->payment_status === 'paid' ? $order->customerDeliveryLabel() : ucfirst(str_replace('_',' ',$order->payment_status))) }}</span></div>
+<article class="panel"><div class="section-heading"><h3>{{ $order->number }}</h3><span class="badge {{ $order->customerDeliveryBadgeClass() }}">{{ $invoiceClosed ? 'Closed invoice' : ($order->payment_status === 'paid' ? $order->customerDeliveryLabel() : ucfirst(str_replace('_',' ',$order->payment_status))) }}</span></div>
 <p class="muted">{{ $order->created_at->format('M d, Y') }} · {{ $order->sales_channel === 'walk_in' ? 'Walk-in' : 'Online' }} · {{ $order->quantity }} pieces · {{ ucfirst($order->tier) }} pricing</p><p>{{ $order->items->pluck('name')->unique()->join(', ') }}</p>
 @if($invoiceClosed)<p>No payment due{{ $order->status === 'cancelled' ? ' · Cancelled' : '' }}.</p>@endif
 <p>Received: ₱{{ number_format($received/100,2) }} · {{ $invoiceClosed ? 'Uncollected at closure' : 'Outstanding' }}: ₱{{ number_format($balance/100,2) }}</p>

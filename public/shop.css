@@ -169,6 +169,10 @@ a:focus-visible,button:focus-visible,summary:focus-visible,input:focus-visible,t
 .operations-stat-grid{margin-bottom:24px}.operations-card{display:block}.operations-card:hover{border-color:#941B0C}
 .operations-status-chart{display:flex;flex-direction:column;gap:16px;margin-top:20px}.operations-status-row{display:grid;grid-template-columns:135px minmax(40px,1fr) 40px;align-items:center;gap:12px;font-size:13px}
 .operations-status-track{height:13px;background:#fff0e6;border-radius:8px;overflow:hidden}.operations-status-fill{height:100%;background:#941B0C;border-radius:8px;min-width:0}
+/* Delivery colors keep the status wording readable without relying on color alone. */
+.badge.delivery-stage-ready{background:#F6AA1C;border-color:#d68a06;color:#422006}.badge.delivery-stage-delivered{background:#dcfce7;border-color:#15803D;color:#166534}
+.delivery-summary>.delivery-stage-ready,.operations-status-card.delivery-stage-ready{border-top:4px solid #F6AA1C}.delivery-summary>.delivery-stage-delivered,.operations-status-card.delivery-stage-delivered{border-top:4px solid #15803D}
+.delivery-summary>.delivery-stage-ready strong,.operations-status-card.delivery-stage-ready h2{color:#854d0e}.delivery-summary>.delivery-stage-delivered strong,.operations-status-card.delivery-stage-delivered h2{color:#15803D}
 .operations-legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;margin:14px 0}.operations-legend span{display:inline-flex;align-items:center;gap:6px}
 .operations-chart-scroll{overflow-x:auto;max-width:100%}.operations-legend i{width:18px;height:3px;background:#941B0C}.operations-legend .operations-refund-key{background:repeating-linear-gradient(to right,#BC3908 0 5px,transparent 5px 8px)}
 .operations-period-note{font-size:13px;color:#735b52}.preserve-lines{white-space:pre-wrap;overflow-wrap:anywhere}.refund-order{margin-top:24px}.refund-order article{padding:16px 0;border-bottom:1px solid var(--border)}

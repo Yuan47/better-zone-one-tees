@@ -1,7 +1,7 @@
 @extends('layout')
 @section('title',$order->number)
 @section('content')
-<div class="page-heading"><span class="eyebrow">ORDER DETAILS</span><h1>{{ $order->number }}</h1><span class="badge">{{ $order->payment_status==='paid' && $order->status!=='cancelled' ? $order->customerDeliveryLabel() : ucfirst(str_replace('_',' ',$order->status)) }}</span></div>
+<div class="page-heading"><span class="eyebrow">ORDER DETAILS</span><h1>{{ $order->number }}</h1><span class="badge {{ $order->customerDeliveryBadgeClass() }}">{{ $order->payment_status==='paid' && $order->status!=='cancelled' ? $order->customerDeliveryLabel() : ucfirst(str_replace('_',' ',$order->status)) }}</span></div>
 <div class="checkout-grid"><div class="panel"><h2>Your order</h2><div class="table-scroll"><table><thead><tr><th>Product</th><th>Quantity</th><th>Amount</th></tr></thead><tbody>@foreach($order->items as $item)<tr><td>{{ $item->name }}<small>{{ $item->size }} / {{ $item->color }}</small></td><td>{{ $item->quantity }}</td><td>₱{{ number_format($item->total/100,2) }}</td></tr>@endforeach</tbody></table></div>
 <h3>Contact & delivery</h3><p>{{ $order->recipient }} · {{ $order->phone }}</p><p>{{ $order->address }}</p><p>{{ $order->delivery_method==='pickup'?'Store pickup':'Lalamove delivery' }}</p>
 @if($order->tracking_url && str_starts_with($order->tracking_url,'https://share.lalamove.com/'))<a class="button" href="{{ $order->tracking_url }}" target="_blank" rel="noopener">Track delivery ↗</a>@endif</div>
@@ -19,6 +19,7 @@
 @endif</aside></div>
 @include('partials.invoice-payments')
 @include('admin.partials.invoice-reminders')
+@include('admin.partials.ready-notification')
 @if(!$order->user_id && auth()->user()->role!=='customer')
 <section class="panel"><h2>Private customer invoice</h2><p>Share this link only with this walk-in customer. It allows viewing this invoice, paying its balance and requesting an eligible refund without an account.</p><a class="button" href="{{ \Illuminate\Support\Facades\URL::temporarySignedRoute('guest.orders.show',now()->addDays(30),['order'=>$order->id]) }}">Open private customer invoice →</a><small>The link expires in 30 days. This staff page can create another link when needed.</small></section>
 @endif

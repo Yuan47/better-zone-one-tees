@@ -31,6 +31,7 @@ return [
 
     'brevo' => [
         'payment_reminders_enabled' => (bool) env('BREVO_PAYMENT_REMINDERS_ENABLED', false),
+        'delivery_notifications_enabled' => (bool) env('BREVO_DELIVERY_NOTIFICATIONS_ENABLED', false),
         'api_key' => env('BREVO_API_KEY'),
         'from_email' => env('BREVO_FROM_EMAIL'),
         'from_name' => env('BREVO_FROM_NAME', 'Zone One Tees'),
