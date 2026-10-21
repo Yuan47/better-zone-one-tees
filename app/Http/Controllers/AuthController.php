@@ -9,8 +9,10 @@ use App\Services\ActivityRecorder;
 use App\Services\CustomerSessions;
 use App\Services\EmailVerificationCodes;
 use App\Services\InstallmentCredit;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 
 class AuthController extends Controller
@@ -48,8 +50,25 @@ class AuthController extends Controller
 
     public function register(Request $r)
     {
-        $data = $r->validate(['name' => 'required|string|max:100', 'email' => 'required|email|max:254|unique:users', 'password' => ['required', 'string', 'confirmed', Password::min(10), new AccountPasswordSize]]);
-        $user = User::create($data);
+        if (is_string($r->input('username'))) {
+            $r->merge(['username' => Str::lower(trim($r->input('username')))]);
+        }
+        if (is_string($r->input('name'))) {
+            $r->merge(['name' => trim($r->input('name'))]);
+        }
+        $data = $r->validate([
+            'name' => ['bail', 'required', 'string', 'max:100'],
+            'username' => ['bail', 'required', 'string', 'min:3', 'max:40', 'regex:/^[a-z0-9_.-]+$/', 'unique:users,username'],
+            'email' => 'required|email|max:254|unique:users',
+            'password' => ['required', 'string', 'confirmed', Password::min(10), new AccountPasswordSize],
+        ]);
+        try {
+            $user = User::create($data);
+        } catch (UniqueConstraintViolationException $exception) {
+            // The unique indexes also protect accounts created after validation finishes.
+            $r->validate(['username' => 'unique:users,username', 'email' => 'unique:users,email']);
+            throw $exception;
+        }
         Auth::login($user);
         $r->session()->regenerate();
         app(CustomerSessions::class)->start($r);

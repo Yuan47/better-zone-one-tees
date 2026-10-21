@@ -52,7 +52,7 @@ class ActivityLogTest extends TestCase
         $this->assertDatabaseHas('activity_logs', ['action' => 'auth.login', 'actor_id' => $staff->id, 'actor_name' => 'Staff Member', 'actor_role' => 'staff']);
         $this->post('/logout')->assertRedirect('/');
         $this->assertDatabaseHas('activity_logs', ['action' => 'auth.logout', 'actor_id' => $staff->id, 'actor_name' => 'Staff Member', 'actor_role' => 'staff']);
-        $this->post('/register', ['name' => 'New Customer', 'email' => 'newcustomer@example.com', 'password' => 'RegisterPassword!2026', 'password_confirmation' => 'RegisterPassword!2026'])
+        $this->post('/register', ['name' => 'New Customer', 'username' => 'new_customer', 'email' => 'newcustomer@example.com', 'password' => 'RegisterPassword!2026', 'password_confirmation' => 'RegisterPassword!2026'])
             ->assertRedirect('/');
         $customer = User::where('email', 'newcustomer@example.com')->firstOrFail();
         $this->assertDatabaseHas('activity_logs', ['action' => 'auth.registered', 'actor_id' => $customer->id, 'actor_name' => 'New Customer', 'actor_role' => 'customer']);

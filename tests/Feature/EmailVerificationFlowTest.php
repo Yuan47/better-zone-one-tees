@@ -194,7 +194,7 @@ class EmailVerificationFlowTest extends TestCase
     public function test_registration_creates_an_unverified_customer_and_sends_one_code_to_the_registered_email(string $email): void
     {
         $this->acceptEmail();
-        $this->post('/register', ['name' => 'New Verification Customer', 'email' => $email,
+        $this->post('/register', ['name' => 'New Verification Customer', 'username' => 'new_verification_customer', 'email' => $email,
             'password' => 'VerificationPassword!2026', 'password_confirmation' => 'VerificationPassword!2026',
             'role' => 'admin', 'email_verified_at' => now()->toDateTimeString()])->assertRedirect('/email/verify');
         $user = User::where('email', $email)->sole();
@@ -249,7 +249,7 @@ class EmailVerificationFlowTest extends TestCase
         $this->post('/login', ['email' => $user->email, 'password' => 'VerificationPassword!2026'])->assertRedirect('/');
         $this->get('/orders')->assertOk();
         $this->post('/logout')->assertRedirect('/');
-        $this->post('/register', ['name' => 'Local Customer', 'email' => 'local@example.test',
+        $this->post('/register', ['name' => 'Local Customer', 'username' => 'local_customer', 'email' => 'local@example.test',
             'password' => 'VerificationPassword!2026', 'password_confirmation' => 'VerificationPassword!2026'])->assertRedirect('/');
         $this->assertNull(User::where('email', 'local@example.test')->sole()->email_verified_at);
         Http::assertNothingSent();
@@ -258,7 +258,7 @@ class EmailVerificationFlowTest extends TestCase
     public function test_required_but_unconfigured_email_keeps_the_new_account_unverified_without_provider_work(): void
     {
         config(['services.brevo.api_key' => '']);
-        $this->post('/register', ['name' => 'Waiting Customer', 'email' => 'waiting@example.test',
+        $this->post('/register', ['name' => 'Waiting Customer', 'username' => 'waiting_customer', 'email' => 'waiting@example.test',
             'password' => 'VerificationPassword!2026', 'password_confirmation' => 'VerificationPassword!2026'])->assertRedirect('/email/verify');
         $this->assertNull(User::where('email', 'waiting@example.test')->sole()->email_verified_at);
         $this->get('/email/verify')->assertOk();

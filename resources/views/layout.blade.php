@@ -3,6 +3,7 @@
 <title>@yield('title','Zone One Tee’s') · 2.0</title>
 @if(request()->routeIs('checkout'))<link rel="stylesheet" href="{{ asset('vendor/leaflet/leaflet.css') }}"><script src="{{ asset('vendor/leaflet/leaflet.js') }}" defer></script>@endif
 <link rel="stylesheet" href="{{ asset('shop.css') }}?v={{ filemtime(public_path('shop.css')) }}"><script src="{{ asset('shop.js') }}?v={{ filemtime(public_path('shop.js')) }}" defer></script>
+<link rel="stylesheet" href="{{ asset('password-visibility.css') }}?v={{ filemtime(public_path('password-visibility.css')) }}"><script src="{{ asset('password-visibility.js') }}?v={{ filemtime(public_path('password-visibility.js')) }}" defer></script>
 @if(auth()->check() && auth()->user()->role === 'customer')<link rel="stylesheet" href="{{ asset('customer-session.css') }}?v={{ filemtime(public_path('customer-session.css')) }}">@endif
 </head>
 <body class="{{ (request()->routeIs('admin.*') || ((request()->routeIs('account*') || request()->routeIs('orders.show')) && auth()->check() && auth()->user()->role!=='customer')) ? 'admin-body' : 'store-body' }}{{ request()->routeIs('verification.*', 'password.*', 'admin.staff.create', 'admin.staff.show') ? ' verification-page' : '' }}{{ request()->routeIs('admin.staff.*') ? ' staff-setup-page' : '' }}">

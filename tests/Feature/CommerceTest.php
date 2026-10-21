@@ -332,7 +332,7 @@ class CommerceTest extends TestCase
 
     public function test_registration_does_not_accept_admin_role_and_sales_export_works(): void
     {
-        $this->post('/register', ['name' => 'Buyer', 'email' => 'buyer@example.test', 'password' => 'LongPassword!2026', 'password_confirmation' => 'LongPassword!2026', 'role' => 'admin'])->assertRedirect();
+        $this->post('/register', ['name' => 'Buyer', 'username' => 'buyer', 'email' => 'buyer@example.test', 'password' => 'LongPassword!2026', 'password_confirmation' => 'LongPassword!2026', 'role' => 'admin'])->assertRedirect();
         $this->assertSame('customer', User::where('email', 'buyer@example.test')->firstOrFail()->role);
         $this->actingAs($this->user('admin'));
         $response = $this->get('/admin/reports/export')->assertOk();

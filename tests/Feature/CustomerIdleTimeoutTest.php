@@ -64,7 +64,7 @@ class CustomerIdleTimeoutTest extends TestCase
 
     public function test_registration_seeds_a_customer_deadline_and_only_customers_receive_idle_interface(): void
     {
-        $this->post('/register', ['name' => 'Idle customer', 'email' => 'idle-register@example.test',
+        $this->post('/register', ['name' => 'Idle customer', 'username' => 'idle_customer', 'email' => 'idle-register@example.test',
             'password' => 'IdleCustomer!2026', 'password_confirmation' => 'IdleCustomer!2026'])->assertRedirect('/');
         $this->assertSame(now()->timestamp + 900, session('customer_idle.expires_at'));
         Auth::forgetGuards();
