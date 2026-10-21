@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
                 $user->name = $name;
                 $user->password = 'ZoneOneDemo!2026';
                 $user->role = $role;
+                $user->email_verified_at = now();
                 $user->save();
             }
         }
