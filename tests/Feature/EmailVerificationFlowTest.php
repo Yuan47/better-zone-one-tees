@@ -185,20 +185,61 @@ class EmailVerificationFlowTest extends TestCase
         Http::assertNothingSent();
     }
 
-    public function test_registration_creates_an_unverified_customer_and_sends_one_code_when_ready(): void
+    public static function registrationEmails(): array
+    {
+        return [['first-customer@example.test'], ['second.customer+shop@another.example.test']];
+    }
+
+    #[DataProvider('registrationEmails')]
+    public function test_registration_creates_an_unverified_customer_and_sends_one_code_to_the_registered_email(string $email): void
     {
         $this->acceptEmail();
-        $this->post('/register', ['name' => 'New Verification Customer', 'email' => 'new@example.test',
+        $this->post('/register', ['name' => 'New Verification Customer', 'email' => $email,
             'password' => 'VerificationPassword!2026', 'password_confirmation' => 'VerificationPassword!2026',
             'role' => 'admin', 'email_verified_at' => now()->toDateTimeString()])->assertRedirect('/email/verify');
-        $user = User::where('email', 'new@example.test')->sole();
+        $user = User::where('email', $email)->sole();
         $this->assertAuthenticatedAs($user);
         $this->assertSame('customer', $user->role);
         $this->assertNull($user->email_verified_at);
         Http::assertSentCount(1);
+        Http::assertSent(fn ($request) => $request->url() === 'https://api.brevo.com/v3/smtp/email'
+            && $request->method() === 'POST'
+            && $request['to'] === [['email' => $user->email, 'name' => $user->name]]
+            && ! isset($request['cc']) && ! isset($request['bcc'])
+            && $request['tags'] === ['account-email-verification']);
         $this->assertSame(6, strlen($this->deliveredCode()));
         $this->get('/email/verify')->assertOk();
         Http::assertSentCount(1);
+    }
+
+    public static function resendRecipientOverrides(): array
+    {
+        return [['email'], ['recipient'], ['user_id']];
+    }
+
+    #[DataProvider('resendRecipientOverrides')]
+    public function test_resend_cannot_redirect_mail_away_from_the_signed_in_saved_account(string $field): void
+    {
+        $user = $this->user();
+        $other = $this->user();
+        $this->acceptEmail();
+        $this->actingAs($user)->post('/email/verification-code')->assertRedirect('/email/verify');
+        $this->travel(61)->seconds();
+        $this->post('/email/verification-code', [$field => $field === 'user_id' ? $other->id : $other->email])
+            ->assertRedirect('/email/verify');
+        Http::assertSentCount(2);
+        foreach (Http::recorded() as [$request]) {
+            $this->assertSame('https://api.brevo.com/v3/smtp/email', $request->url());
+            $this->assertSame([['email' => $user->email, 'name' => $user->name]], $request['to']);
+            $this->assertFalse(isset($request['cc']));
+            $this->assertFalse(isset($request['bcc']));
+        }
+        $this->assertDatabaseHas('email_verification_codes', ['user_id' => $user->id, 'email' => $user->email, 'send_count' => 2]);
+        $this->assertDatabaseMissing('email_verification_codes', ['user_id' => $other->id]);
+        $this->assertSame($user->email, $user->fresh()->email);
+        $this->assertNull($user->fresh()->email_verified_at);
+        $this->assertNull($other->fresh()->email_verified_at);
+        $this->travelBack();
     }
 
     public function test_disabled_local_mode_preserves_registration_and_login_without_sending_email(): void
