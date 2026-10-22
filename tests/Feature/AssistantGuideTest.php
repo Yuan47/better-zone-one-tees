@@ -63,9 +63,9 @@ class AssistantGuideTest extends TestCase
     #[DataProvider('guides')]
     public function test_scoped_how_to_question_returns_its_approved_steps_without_calling_ai(string $audience, string $question, bool $configured): void
     {
-        config(['shop.grok.key' => $configured ? 'test-grok' : null, 'shop.grok.model' => 'guide-test']);
+        config(['shop.groq.key' => $configured ? 'test-groq' : null, 'shop.groq.model' => 'guide-test']);
         Http::preventStrayRequests();
-        Http::fake(['api.x.ai/*' => Http::response(['choices' => [['message' => ['content' => 'Unexpected generated answer.']]]])]);
+        Http::fake(['api.groq.com/*' => Http::response(['choices' => [['message' => ['content' => 'Unexpected generated answer.']]]])]);
         $role = ['customer' => 'customer', 'staff' => 'staff', 'owner' => 'admin'][$audience];
         $this->actingAs(User::factory()->create(['role' => $role]));
         $faq = ChatbotFaq::where('question', $question)->firstOrFail();
@@ -94,7 +94,7 @@ class AssistantGuideTest extends TestCase
     #[DataProvider('registrationQuestions')]
     public function test_customer_registration_paraphrases_work_without_an_ai_connection(string $question): void
     {
-        config(['shop.grok.key' => null]);
+        config(['shop.groq.key' => null]);
         Http::preventStrayRequests();
         Http::fake();
         $faq = ChatbotFaq::where('question', 'How do I create a customer account?')->firstOrFail();

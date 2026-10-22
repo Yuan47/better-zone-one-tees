@@ -18,7 +18,7 @@ class IntegrationPreparationTest extends TestCase
         config(['app.url' => 'http://localhost', 'trustedproxy.proxies' => [], 'services.google.enabled' => false,
             'services.google.client_id' => null, 'services.google.client_secret' => null,
             'services.brevo.api_key' => null, 'services.brevo.from_email' => null,
-            'shop.paymongo.secret' => null, 'shop.lalamove.key' => null, 'shop.grok.key' => null]);
+            'shop.paymongo.secret' => null, 'shop.lalamove.key' => null, 'shop.groq.key' => null]);
         Route::get('/_integration/proxy', fn (Request $request) => response()->json([
             'secure' => $request->isSecure(), 'google_callback' => route('google.callback'),
             'invoice' => URL::temporarySignedRoute('guest.orders.show', now()->addMinutes(10), ['order' => 1]),
@@ -63,10 +63,10 @@ class IntegrationPreparationTest extends TestCase
 
     public function test_public_profile_rejects_local_debug_demo_and_insecure_sessions(): void
     {
-        config(['shop.grok.key' => 'fixture-private-key', 'shop.grok.model' => 'fixture-model',
+        config(['shop.groq.key' => 'fixture-private-key', 'shop.groq.model' => 'fixture-model',
             'app.debug' => true, 'shop.demo' => true, 'session.secure' => false,
             'session.driver' => 'array', 'cache.default' => 'array']);
-        $result = $this->check(['--provider' => 'grok', '--public' => true]);
+        $result = $this->check(['--provider' => 'groq', '--public' => true]);
         $this->assertFalse($result['configuration_ready']);
         $this->assertSame('needs setup', $result['checks'][0]['status']);
         $this->assertSame('needs setup', $result['checks'][1]['status']);
@@ -82,8 +82,8 @@ class IntegrationPreparationTest extends TestCase
             'session.secure' => true, 'session.http_only' => true, 'session.same_site' => 'lax',
             'session.driver' => 'database', 'cache.default' => 'database',
             'trustedproxy.proxies' => ['127.0.0.1', '::1', '10.10.0.0/24'],
-            'shop.grok.key' => 'fixture-key', 'shop.grok.model' => 'fixture-model']);
-        $result = $this->check(['--provider' => 'grok', '--public' => true], 0);
+            'shop.groq.key' => 'fixture-key', 'shop.groq.model' => 'fixture-model']);
+        $result = $this->check(['--provider' => 'groq', '--public' => true], 0);
         $this->assertTrue($result['configuration_ready']);
         $this->assertStringContainsString('Configuration only', $result['scope']);
         Http::assertNothingSent();
@@ -92,8 +92,8 @@ class IntegrationPreparationTest extends TestCase
     public function test_wildcard_proxy_trust_is_flagged_before_public_acceptance(): void
     {
         foreach (['*', 'REMOTE_ADDR', '0.0.0.0/0', '::/0', '127.0.0.1/99'] as $proxy) {
-            config(['trustedproxy.proxies' => [$proxy], 'shop.grok.key' => 'fixture-key']);
-            $result = $this->check(['--provider' => 'grok']);
+            config(['trustedproxy.proxies' => [$proxy], 'shop.groq.key' => 'fixture-key']);
+            $result = $this->check(['--provider' => 'groq']);
             $this->assertSame('needs setup', $result['checks'][1]['status']);
         }
     }

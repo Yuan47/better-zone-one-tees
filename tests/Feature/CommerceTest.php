@@ -143,7 +143,7 @@ class CommerceTest extends TestCase
         $owner = $this->user();
         $o = $this->reserved($v, $owner);
         $this->actingAs($this->user())->get('/orders/'.$o->id)->assertForbidden();
-        config(['shop.grok.key' => null]);
+        config(['shop.groq.key' => null]);
         $this->postJson('/chat', ['message' => 'Track '.$o->number, 'side' => 'customer'])->assertOk()->assertDontSee('awaiting payment');
     }
 

@@ -10,7 +10,7 @@ Prepared 19 October 2026 (Asia/Manila). Steps 1 and 2 are implemented. **Real pr
 | Google | Web application OAuth client ID/secret and exact callback | Sign in using the owned Google account; verify cancellation, fixed email and explicit existing-account linking |
 | PayMongo | Test secret key, webhook signing secret, account-enabled methods | One synthetic test order, verified payment and receipt; then repeated/delayed notifications and reconciliation |
 | Lalamove | Sandbox key/secret, supported service, pickup address/coordinates/phone | Sandbox quote, then controlled booking/status recovery; no production courier booking |
-| Grok | API key and an account-available model ID | One general support question; verify fallback when unavailable and that approved policies/commerce facts remain deterministic |
+| GroqCloud | `GROQ_API_KEY` and `GROQ_MODEL` (default `openai/gpt-oss-20b`) | One general support question; verify fallback when unavailable and that approved policies/commerce facts remain deterministic |
 
 The private worksheet is an **overlay**, not a replacement for Laravel's `.env`. Merge only reviewed integration settings into the intended test application. Preserve `APP_KEY`, `DB_*`, existing accounts, invoices, uploads, cookie names and storage paths. Back up the private environment first; never reseed the real store to prepare integration data. Provider keys are secrets; client screenshots and diagnostics must not expose them.
 
@@ -42,7 +42,7 @@ PayMongo webhook:   https://YOUR-TEST-HOST/webhooks/paymongo
 
 Set `APP_URL` to that origin and `GOOGLE_REDIRECT_URI` to its exact callback. The application supplies its own order return URLs; a browser redirect never proves payment. A hostname change requires reviewing registered callbacks and existing signed guest/payment-return links. Do not rotate `APP_KEY` as a workaround.
 
-ngrok exposes the local server; Grok supplies AI answers. They are separate services. For this machine the intended storefront upstream is `http://localhost:8081`, not the separate simulation on 8082. Starting a tunnel makes the selected site externally reachable: first prepare an isolated test copy, replace known demo credentials, confirm authorized real inbox accounts, and review public exposure before starting it. This preparation does not start a tunnel or register a webhook.
+ngrok exposes the local server; GroqCloud supplies AI answers. They are separate services. For this machine the intended storefront upstream is `http://localhost:8081`, not the separate simulation on 8082. Starting a tunnel makes the selected site externally reachable: first prepare an isolated test copy, replace known demo credentials, confirm authorized real inbox accounts, and review public exposure before starting it. This preparation does not start a tunnel or register a webhook.
 
 If the ngrok agent runs locally, set `TRUSTED_PROXIES=127.0.0.1,::1` in that test copy only. Leave it empty for direct localhost. On hosting use the documented proxy IPs/CIDRs; do not use wildcard trust. This configuration is loaded through Laravel's configuration cache. The application trusts forwarded HTTPS/host/port/client IP only from configured proxies and ignores forwarded path prefixes. Verify generated Google callback, checkout return and signed invoice URLs through the actual tunnel. The upstream and proxy must sanitize forwarded headers from untrusted clients; ngrok documents how its forwarded headers are appended. Do not assume an arbitrary forwarded HTTPS header proves a secure request.
 
@@ -67,7 +67,7 @@ For every case record the date/time, build, provider mode, anonymized invoice/te
 - [ ] PayMongo: supported methods, complete and partial settlement, original invoice/deadline unchanged, receipt, failure/cancel/expiry, repeated/out-of-order notifications, provider reconciliation after interruption.
 - [ ] Refund: delivered and fully paid invoice, immutable inspection, approved amount/receipt caps, actual provider verification, processing/failure/lower verified amount, no duplicated money or restocking.
 - [ ] Lalamove: supported sandbox service, quote/expiry/changed cost, one booking, status refresh, uncertain booking reconciliation before rebooking, customer-only online Delivered confirmation.
-- [ ] Grok: approved FAQ precedence, accurate variant facts, private-order ownership, no financial actions, safe timeout/authentication/rate-limit fallback.
+- [ ] GroqCloud: approved FAQ precedence, accurate variant facts, private-order ownership, no financial actions, safe timeout/authentication/rate-limit fallback.
 
 Creating provider credentials, changing provider permissions, starting a public tunnel, consent, and final financial/courier actions remain controlled operator steps. No production payment, refund or courier booking is required to establish sandbox acceptance. Temporary-domain operational checks and participant usability measurements remain Steps 4 and 5.
 
@@ -81,4 +81,4 @@ Creating provider credentials, changing provider permissions, starting a public 
 - [PayMongo hosted checkout quick start](https://docs.paymongo.com/docs/payment-channels-hosted-checkout-quick-start)
 - [PayMongo webhooks](https://docs.paymongo.com/reference/webhook-resource)
 - [Lalamove API reference](https://developers.lalamove.com/)
-- [xAI chat-completion compatibility](https://docs.x.ai/developers/model-capabilities/legacy/chat-completions)
+- [Groq OpenAI compatibility](https://console.groq.com/docs/openai)

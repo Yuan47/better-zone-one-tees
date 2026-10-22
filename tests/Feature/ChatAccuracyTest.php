@@ -18,8 +18,8 @@ class ChatAccuracyTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        config(['shop.grok.key' => 'test-grok', 'shop.grok.model' => 'test-model']);
-        Http::fake(['api.x.ai/*' => Http::response(['choices' => [['message' => ['content' => 'AI answer should not establish commerce facts.']]]])]);
+        config(['shop.groq.key' => 'test-groq', 'shop.groq.model' => 'test-model']);
+        Http::fake(['api.groq.com/*' => Http::response(['choices' => [['message' => ['content' => 'AI answer should not establish commerce facts.']]]])]);
         app(CatalogBatch::class)->import();
     }
 
@@ -55,7 +55,7 @@ class ChatAccuracyTest extends TestCase
         $this->chat('How much stock is there for Dannon with collar S Red?')->assertJsonPath('mode', 'store')->assertSee('currently out of stock (0 pieces available)');
         $this->chat('Is Dannon with collar S Teal in stock?')->assertJsonPath('mode', 'store')->assertSee('14 pieces currently available');
         $this->chat('Do you have Dannon with collar S Teal?')->assertJsonPath('mode', 'store')->assertSee('14 pieces currently available');
-        config(['shop.grok.key' => null]);
+        config(['shop.groq.key' => null]);
         $this->chat('Is Dannon with collar S Teal in stock?')->assertJsonPath('mode', 'basic')->assertSee('14 pieces currently available');
         Http::assertNothingSent();
     }
@@ -96,10 +96,10 @@ class ChatAccuracyTest extends TestCase
         Http::assertNothingSent();
     }
 
-    public function test_grok_catalog_context_has_actual_scoped_variant_prices_and_stock(): void
+    public function test_groq_catalog_context_has_actual_scoped_variant_prices_and_stock(): void
     {
         $this->product()->variants()->where('size', 'S')->where('color', 'White')->update(['stock' => 15, 'reserved' => 4]);
-        $this->chat('Help me choose Dannon collar S White')->assertOk()->assertJsonPath('mode', 'grok');
+        $this->chat('Help me choose Dannon collar S White')->assertOk()->assertJsonPath('mode', 'groq');
         Http::assertSent(function ($request) {
             $system = $request['messages'][0]['content'];
             $context = json_decode(substr($system, strpos($system, 'Context: ') + 9), true);
@@ -114,9 +114,9 @@ class ChatAccuracyTest extends TestCase
         });
     }
 
-    public function test_grok_context_is_bounded_and_does_not_treat_omitted_variants_as_unavailable(): void
+    public function test_groq_context_is_bounded_and_does_not_treat_omitted_variants_as_unavailable(): void
     {
-        $this->chat('Recommend options for a uniform')->assertJsonPath('mode', 'grok');
+        $this->chat('Recommend options for a uniform')->assertJsonPath('mode', 'groq');
         Http::assertSent(function ($request) {
             $system = $request['messages'][0]['content'];
             $context = json_decode(substr($system, strpos($system, 'Context: ') + 9), true);
@@ -133,7 +133,7 @@ class ChatAccuracyTest extends TestCase
     {
         $this->product()->update(['active' => false]);
         $this->chat('Is Dannon collar S White available?')->assertJsonPath('mode', 'store')->assertSee('specify one product name')->assertDontSee('₱202.00');
-        $this->chat('Recommend Thanos')->assertJsonPath('mode', 'grok');
+        $this->chat('Recommend Thanos')->assertJsonPath('mode', 'groq');
         Http::assertSent(function ($request) {
             $system = $request['messages'][0]['content'];
             $context = json_decode(substr($system, strpos($system, 'Context: ') + 9), true);
@@ -164,8 +164,8 @@ class ChatAccuracyTest extends TestCase
     {
         $answer = 'Delivery refunds follow the return policy saved with your request and require owner review.';
         $this->faq('Can delivery costs be refunded?', $answer);
-        foreach ([[null, 'basic'], ['test-grok', 'store']] as [$key, $mode]) {
-            config(['shop.grok.key' => $key]);
+        foreach ([[null, 'basic'], ['test-groq', 'store']] as [$key, $mode]) {
+            config(['shop.groq.key' => $key]);
             foreach (['Can delivery costs be refunded?', 'Are delivery costs refundable?'] as $message) {
                 $this->chat($message)->assertOk()->assertJsonPath('mode', $mode)->assertJsonPath('reply', $answer);
             }
@@ -178,8 +178,8 @@ class ChatAccuracyTest extends TestCase
     {
         $answer = 'Only the owner can adjust inventory after checking the counted stock.';
         $this->faq('What is your inventory adjustment policy?', $answer);
-        foreach ([[null, 'basic'], ['test-grok', 'store']] as [$key, $mode]) {
-            config(['shop.grok.key' => $key]);
+        foreach ([[null, 'basic'], ['test-groq', 'store']] as [$key, $mode]) {
+            config(['shop.groq.key' => $key]);
             foreach (['What is your inventory adjustment policy?', 'Explain the inventory adjustment policy.'] as $message) {
                 $this->chat($message)->assertOk()->assertJsonPath('mode', $mode)->assertJsonPath('reply', $answer);
             }

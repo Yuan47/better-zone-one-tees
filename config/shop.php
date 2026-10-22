@@ -21,5 +21,5 @@ return [
         'lng' => env('STORE_PICKUP_LNG'),
         'phone' => env('STORE_PICKUP_PHONE'),
     ],
-    'grok' => ['key' => env('GROK_API_KEY'), 'model' => env('GROK_MODEL', 'grok-4')],
+    'groq' => ['key' => env('GROQ_API_KEY'), 'model' => env('GROQ_MODEL', 'openai/gpt-oss-20b')],
 ];

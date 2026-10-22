@@ -48,7 +48,7 @@ class FaqCoverageTest extends TestCase
 
     public function test_operational_faqs_cover_implemented_rules_without_depending_on_ai_or_email_configuration(): void
     {
-        config(['shop.grok.key' => 'test-grok']);
+        config(['shop.groq.key' => 'test-groq']);
         Http::fake();
         $faqs = ChatbotFaq::whereBetween('sort_order', [100, 299])->orderBy('sort_order')->get();
         $this->assertCount(18, $faqs);
@@ -60,7 +60,7 @@ class FaqCoverageTest extends TestCase
 
     public function test_receipts_order_history_and_favorites_have_approved_faq_guidance(): void
     {
-        config(['shop.grok.key' => 'test-grok']);
+        config(['shop.groq.key' => 'test-groq']);
         Http::fake();
         foreach (['Where can I find my payment receipt and order reference?', 'Where are my order history and favorites?', 'Why was I signed out after being inactive?'] as $question) {
             $faq = ChatbotFaq::where('question', $question)->firstOrFail();
@@ -71,7 +71,7 @@ class FaqCoverageTest extends TestCase
 
     public function test_operational_faqs_answer_common_paraphrases_without_ai(): void
     {
-        config(['shop.grok.key' => 'test-grok']);
+        config(['shop.groq.key' => 'test-groq']);
         Http::fake();
         foreach ([
             'What is the minimum partial payment eligibility?' => 'more than ₱1,000',
@@ -88,7 +88,7 @@ class FaqCoverageTest extends TestCase
 
     public function test_closed_invoice_is_not_presented_as_an_outstanding_payment(): void
     {
-        config(['shop.grok.key' => 'test-grok']);
+        config(['shop.groq.key' => 'test-groq']);
         Http::fake();
         $customer = User::factory()->create();
         $order = $this->invoice($customer);
@@ -101,7 +101,7 @@ class FaqCoverageTest extends TestCase
 
     public function test_policy_question_with_order_reference_uses_the_approved_faq(): void
     {
-        config(['shop.grok.key' => 'test-grok']);
+        config(['shop.groq.key' => 'test-groq']);
         Http::fake();
         ChatbotFaq::create(['question' => 'Can I return my paid order?', 'answer' => 'Approved return guidance: request a refund after delivery.',
             'keywords' => 'return, refunds', 'active' => true]);
@@ -114,7 +114,7 @@ class FaqCoverageTest extends TestCase
 
     public function test_installment_and_reminder_policy_questions_can_include_an_order_reference(): void
     {
-        config(['shop.grok.key' => 'test-grok']);
+        config(['shop.groq.key' => 'test-groq']);
         Http::fake();
         foreach ([
             'Can I pay an order in installments? ZOT-261017-ABCD1234' => 'more than ₱1,000',
@@ -131,7 +131,7 @@ class FaqCoverageTest extends TestCase
 
     public function test_balance_and_status_requests_remain_private_and_take_precedence_over_faqs(): void
     {
-        config(['shop.grok.key' => 'test-grok']);
+        config(['shop.groq.key' => 'test-groq']);
         Http::fake();
         $customer = User::factory()->create();
         $order = $this->invoice($customer);

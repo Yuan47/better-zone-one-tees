@@ -17,9 +17,9 @@ class AssistantPrivacyTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        config(['shop.grok.key' => 'fixture-private-key']);
+        config(['shop.groq.key' => 'fixture-private-key']);
         Http::preventStrayRequests();
-        Http::fake(['api.x.ai/*' => Http::response(['choices' => [['message' => ['content' => 'A public product suggestion.']]]])]);
+        Http::fake(['api.groq.com/*' => Http::response(['choices' => [['message' => ['content' => 'A public product suggestion.']]]])]);
         ChatbotFaq::query()->delete();
         foreach (['customer' => 'PUBLIC_HELP', 'staff' => 'INTERNAL_STAFF_GUIDE', 'owner' => 'INTERNAL_OWNER_GUIDE'] as $audience => $answer) {
             ChatbotFaq::create(['question' => 'Explain '.$audience.' workspace procedure.', 'answer' => $answer,
@@ -40,7 +40,7 @@ class AssistantPrivacyTest extends TestCase
     {
         $this->actingAs(User::factory()->create(['role' => 'customer']));
         $this->postJson(route('chat'), ['side' => 'customer', 'message' => 'Suggest something comfortable for school.',
-            'audience' => 'owner', 'role' => 'admin'])->assertOk()->assertJsonPath('mode', 'grok');
+            'audience' => 'owner', 'role' => 'admin'])->assertOk()->assertJsonPath('mode', 'groq');
         Http::assertSent(function ($request) {
             $system = $request['messages'][0]['content'];
             $context = $this->context($system);
@@ -71,7 +71,7 @@ class AssistantPrivacyTest extends TestCase
         $this->postJson(route('chat'), ['side' => 'staff', 'message' => 'Explain staff workspace procedure.'])
             ->assertOk()->assertJsonPath('reply', 'INTERNAL_STAFF_GUIDE');
         $this->postJson(route('chat'), ['side' => 'staff', 'message' => 'Suggest something comfortable for school.',
-            'audience' => 'owner', 'role' => 'admin'])->assertOk()->assertJsonPath('mode', 'grok');
+            'audience' => 'owner', 'role' => 'admin'])->assertOk()->assertJsonPath('mode', 'groq');
         Http::assertSent(function ($request) {
             $system = $request['messages'][0]['content'];
 
@@ -86,7 +86,7 @@ class AssistantPrivacyTest extends TestCase
         $this->postJson(route('chat'), ['side' => 'staff', 'message' => 'Explain owner workspace procedure.'])
             ->assertOk()->assertJsonPath('reply', 'INTERNAL_OWNER_GUIDE');
         $this->postJson(route('chat'), ['side' => 'customer', 'message' => 'Suggest something comfortable for school.'])
-            ->assertOk()->assertJsonPath('mode', 'grok');
+            ->assertOk()->assertJsonPath('mode', 'groq');
         Http::assertSent(function ($request) {
             $context = $this->context($request['messages'][0]['content']);
 

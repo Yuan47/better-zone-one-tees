@@ -24,7 +24,7 @@ class OrderBoundaryTest extends TestCase
         parent::setUp();
         $this->travelTo(Carbon::parse('2026-10-15 12:00:00', 'Asia/Manila'));
         config(['shop.paymongo.mode' => 'test', 'shop.paymongo.secret' => 'sk_test_boundary',
-            'shop.paymongo.webhook_secret' => 'boundary-secret', 'shop.grok.key' => 'test-grok']);
+            'shop.paymongo.webhook_secret' => 'boundary-secret', 'shop.groq.key' => 'test-groq']);
         Http::preventStrayRequests();
     }
 

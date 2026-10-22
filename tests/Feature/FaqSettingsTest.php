@@ -82,7 +82,7 @@ class FaqSettingsTest extends TestCase
 
     public function test_admin_creates_edits_deactivates_and_deletes_faq_with_immediate_chat_updates(): void
     {
-        config(['shop.grok.key' => null]);
+        config(['shop.groq.key' => null]);
         $this->login();
         $this->get(route('admin.faqs.create'))->assertOk()->assertSee('Add an approved FAQ');
         $this->post(route('admin.faqs.store'), $this->faqInput(['sort_order' => '']))->assertRedirect(route('admin.settings'))->assertSessionHasNoErrors();
@@ -185,7 +185,7 @@ class FaqSettingsTest extends TestCase
     public function test_store_information_has_separate_validated_fields_and_is_used_by_basic_chat(): void
     {
         $this->login();
-        config(['shop.grok.key' => null]);
+        config(['shop.groq.key' => null]);
         $data = ['opening_hours' => 'Monday to Friday, 9 AM to 5 PM', 'pickup_address' => '123 Sample Street',
             'pickup_instructions' => 'Bring your order number.', 'support_email' => 'support@example.test', 'support_phone' => '09123456789', 'store_note' => 'Approved sample note.'];
         $this->post(route('admin.settings.save'), $data)->assertRedirect()->assertSessionHasNoErrors();
@@ -215,7 +215,7 @@ class FaqSettingsTest extends TestCase
 
     public function test_basic_matching_uses_active_approved_faqs_and_does_not_guess_for_unrelated_questions(): void
     {
-        config(['shop.grok.key' => null]);
+        config(['shop.groq.key' => null]);
         ChatbotFaq::create($this->faqInput(['answer' => 'Approved embroidery answer.']));
         ChatbotFaq::create($this->faqInput(['question' => 'Can you stitch names?', 'answer' => 'Inactive private answer.', 'keywords' => 'names', 'active' => false]));
         $this->chat('Can I request embroidery?')->assertJsonPath('reply', 'Approved embroidery answer.');
@@ -226,23 +226,23 @@ class FaqSettingsTest extends TestCase
 
     public function test_approved_size_help_edits_and_paid_or_bulk_return_questions_are_used_by_chat(): void
     {
-        config(['shop.grok.key' => null]);
+        config(['shop.groq.key' => null]);
         ChatbotFaq::where('question', 'Where can I see the size chart?')->firstOrFail()->update(['answer' => 'Check the chart on each product and ask staff for fit assistance.']);
         ChatbotFaq::create($this->faqInput(['question' => 'Can I return bulk orders?', 'answer' => 'Ask staff to review your return request.', 'keywords' => 'return bulk orders']));
         ChatbotFaq::create($this->faqInput(['question' => 'Can I return my paid order?', 'answer' => 'Ask staff to review the approved return policy.', 'keywords' => 'return paid order']));
         $this->chat('Where can I see the size chart?')->assertJsonPath('reply', 'Check the chart on each product and ask staff for fit assistance.');
         $this->chat('Can I return bulk orders?')->assertJsonPath('reply', 'Ask staff to review your return request.');
         $this->chat('Can I return my paid order?')->assertJsonPath('reply', 'Ask staff to review the approved return policy.');
-        config(['shop.grok.key' => 'test-grok']);
+        config(['shop.groq.key' => 'test-groq']);
         Http::fake();
         $this->chat('Can I return my paid order?')->assertJsonPath('mode', 'store')->assertJsonPath('reply', 'Ask staff to review the approved return policy.');
         $this->chat('Can I return bulk orders?')->assertJsonPath('mode', 'store')->assertJsonPath('reply', 'Ask staff to review your return request.');
         Http::assertNothingSent();
     }
 
-    public function test_grok_receives_relevant_active_faqs_and_store_info_with_at_most_ten_entries(): void
+    public function test_groq_receives_relevant_active_faqs_and_store_info_with_at_most_ten_entries(): void
     {
-        config(['shop.grok.key' => 'test-grok', 'shop.grok.model' => 'test-model']);
+        config(['shop.groq.key' => 'test-groq', 'shop.groq.model' => 'test-model']);
         for ($i = 1; $i <= 15; $i++) {
             ChatbotFaq::create($this->faqInput(['question' => 'General library topic '.$i.'?', 'keywords' => '', 'sort_order' => 100 + $i]));
         }
@@ -250,12 +250,12 @@ class FaqSettingsTest extends TestCase
         ChatbotFaq::create($this->faqInput(['question' => 'Hidden embargo question?', 'answer' => 'HIDDEN-DO-NOT-SEND', 'keywords' => 'embroidery', 'active' => false]));
         app(StoreKnowledge::class)->saveInfo(['opening_hours' => 'Confirmed test hours']);
         Http::fake([
-            'api.x.ai/*' => Http::response([
+            'api.groq.com/*' => Http::response([
                 'choices' => [['message' => ['content' => 'Approved AI reply.']]],
             ]),
         ]);
         $this->assertSame('Relevant approved answer.', app(StoreKnowledge::class)->relevantFaqs('embroidery', app(StoreKnowledge::class)->approvedFaqs())->first()->answer);
-        $this->chat('Please explain your custom threadwork service')->assertJsonPath('mode', 'grok');
+        $this->chat('Please explain your custom threadwork service')->assertJsonPath('mode', 'groq');
         Http::assertSent(function ($request) {
             $content = $request['messages'][0]['content'];
             $context = json_decode(substr($content, strpos($content, 'Context: ') + 9), true);
@@ -268,7 +268,7 @@ class FaqSettingsTest extends TestCase
 
     public function test_faqs_cannot_override_pricing_verified_payment_rules_or_private_order_status(): void
     {
-        config(['shop.grok.key' => null]);
+        config(['shop.groq.key' => null]);
         ChatbotFaq::create($this->faqInput(['question' => 'What is the bulk price?', 'answer' => 'Wrong discount answer.', 'keywords' => 'bulk']));
         ChatbotFaq::create($this->faqInput(['question' => 'Does proof of payment confirm my payment?', 'answer' => 'Wrong payment answer.', 'keywords' => 'proof of payment']));
         $owner = User::factory()->create();
@@ -282,11 +282,11 @@ class FaqSettingsTest extends TestCase
         $this->chat('Track '.$privateOrder->number)->assertSee('awaiting payment')->assertSee('pending');
     }
 
-    public function test_payment_and_order_facts_do_not_depend_on_grok_output(): void
+    public function test_payment_and_order_facts_do_not_depend_on_groq_output(): void
     {
-        config(['shop.grok.key' => 'test-grok', 'shop.grok.model' => 'test-model']);
+        config(['shop.groq.key' => 'test-groq', 'shop.groq.model' => 'test-model']);
         Http::fake([
-            'api.x.ai/*' => Http::response([
+            'api.groq.com/*' => Http::response([
                 'choices' => [['message' => ['content' => 'Unverified payment claim.']]],
             ]),
         ]);

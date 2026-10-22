@@ -10,7 +10,7 @@ use Illuminate\Console\Command;
 
 class CheckIntegrations extends Command
 {
-    protected $signature = 'shop:check-integrations {--provider=all : all, brevo, google, paymongo, lalamove, or grok}
+    protected $signature = 'shop:check-integrations {--provider=all : all, brevo, google, paymongo, lalamove, or groq}
         {--public : Require the settings needed before a public HTTPS acceptance test}
         {--json : Return a secret-free JSON report}';
 
@@ -19,9 +19,9 @@ class CheckIntegrations extends Command
     public function handle(): int
     {
         $provider = $this->option('provider');
-        $providers = ['brevo', 'google', 'paymongo', 'lalamove', 'grok'];
+        $providers = ['brevo', 'google', 'paymongo', 'lalamove', 'groq'];
         if (! in_array($provider, ['all', ...$providers], true)) {
-            $this->error('Choose all, brevo, google, paymongo, lalamove, or grok.');
+            $this->error('Choose all, brevo, google, paymongo, lalamove, or groq.');
 
             return self::INVALID;
         }
@@ -53,9 +53,11 @@ class CheckIntegrations extends Command
                 'lalamove' => [app(Lalamove::class)->ready() && $this->validCoordinates()
                     && Lalamove::internationalPhone((string) config('shop.lalamove.phone')) !== null
                     && (! $public || config('shop.lalamove.mode') === 'sandbox'), 'Use sandbox credentials and complete pickup address, coordinates, phone and supported service type.'],
-                'grok' => [filled(config('shop.grok.key')) && filled(config('shop.grok.model')), 'Set GROK_API_KEY and an account-available GROK_MODEL. Basic approved answers remain available without AI.'],
+                'groq' => [filled(config('shop.groq.key')) && filled(config('shop.groq.model')), 'Set GROQ_API_KEY and an account-available GROQ_MODEL. Basic approved answers remain available without AI.'],
             };
-            $checks[] = $this->row($selected === 'paymongo' ? 'PayMongo' : ucfirst($selected), $ready, $note);
+            $checks[] = $this->row(match ($selected) {
+                'paymongo' => 'PayMongo', 'groq' => 'GroqCloud', default => ucfirst($selected)
+            }, $ready, $note);
         }
         $result = ['configuration_ready' => collect($checks)->every(fn ($row) => $row['status'] === 'ready'),
             'scope' => 'Configuration only; no provider credentials, sender approval, public reachability, schema, or inbox delivery verified.',

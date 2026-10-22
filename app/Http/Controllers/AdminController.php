@@ -335,7 +335,7 @@ class AdminController extends Controller
         return view('admin.settings', [
             'faqs' => $faqs, 'faqSearch' => $search, 'faqStatus' => $status,
             'storeInfo' => app(StoreKnowledge::class)->info(),
-            'payReady' => $pay->ready(), 'deliveryReady' => $delivery->ready(), 'grokReady' => filled(config('shop.grok.key')),
+            'payReady' => $pay->ready(), 'deliveryReady' => $delivery->ready(), 'groqReady' => filled(config('shop.groq.key')) && filled(config('shop.groq.model')),
             'reminderEnabled' => config('services.brevo.payment_reminders_enabled') === true, 'reminderConfigured' => $reminders->configured(),
             'reminderReviewCount' => PaymentReminder::whereIn('status', ['claimed', 'failed', 'unknown'])->count(),
             'reminderHistory' => PaymentReminder::with('order:id,number')->latest('id')->limit(12)->get(),

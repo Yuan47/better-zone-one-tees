@@ -1,6 +1,6 @@
 # Customer and workspace assistance
 
-The assistant includes 28 editable how-to guides: 12 for customers, 9 for staff and owners, and 7 for owners. They explain account creation, verification, recovery, shopping, invoices, installments, receipt/review, returns, counter sales, fulfillment, reporting, forecasts and owner tools in short numbered steps. Matched approved guides work without Grok credentials.
+The assistant includes 28 editable how-to guides: 12 for customers, 9 for staff and owners, and 7 for owners. They explain account creation, verification, recovery, shopping, invoices, installments, receipt/review, returns, counter sales, fulfillment, reporting, forecasts and owner tools in short numbered steps. Matched approved guides work without GroqCloud credentials.
 
 The chat panel offers three quick questions appropriate to the page and signed-in workspace role. Answers preserve line breaks so steps remain readable on mobile. The assistant explains actions; it cannot perform payments, refunds, stock changes, staff activation or other management actions.
 
@@ -26,4 +26,4 @@ Do not store passwords, private verification codes, recovery links, API keys or 
 
 ## Verification limits
 
-Automated tests check role selection, context filtering, hidden/inactive guides, forged audience requests, private-order boundaries, FAQ routing, imports, quick-question visibility and offline help. AI tests use simulated responses; these checks do not establish the real provider's availability or answer quality. Real Grok acceptance and participant usability measurements remain separate integration and defense tasks.
+Automated tests check role selection, context filtering, hidden/inactive guides, forged audience requests, private-order boundaries, FAQ routing, imports, quick-question visibility and offline help. AI tests use simulated responses; these checks do not establish the real provider's availability or answer quality. Real GroqCloud acceptance and participant usability measurements remain separate integration and defense tasks.

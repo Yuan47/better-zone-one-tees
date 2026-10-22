@@ -13,7 +13,7 @@ class RefundSafeguardFaqTest extends TestCase
 
     public function test_default_refund_guidance_is_available_without_ai_and_does_not_invent_approval(): void
     {
-        config(['shop.grok.key' => '']);
+        config(['shop.groq.key' => '']);
         Http::preventStrayRequests();
         $this->postJson('/chat', ['message' => 'How are returned clothes checked before a refund?', 'side' => 'customer'])
             ->assertOk()->assertJsonPath('mode', 'basic')
