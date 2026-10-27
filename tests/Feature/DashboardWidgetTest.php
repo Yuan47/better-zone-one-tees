@@ -144,7 +144,7 @@ class DashboardWidgetTest extends TestCase
 
     public function test_widget_data_is_available_to_both_workspace_roles_and_empty_data_is_zero_safe(): void
     {
-        $this->get('/admin')->assertRedirect(route('login'));
+        $this->get('/admin')->assertRedirect(route('admin.login'));
         $this->actingAs(User::factory()->create(['role' => 'customer']))->get('/admin')->assertForbidden();
         foreach (['staff', 'admin'] as $role) {
             $this->actingAs(User::factory()->create(['role' => $role]));

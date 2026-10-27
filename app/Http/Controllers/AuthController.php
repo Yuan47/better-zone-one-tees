@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Middleware\CustomerIdleTimeout;
 use App\Models\User;
 use App\Rules\AccountPasswordSize;
+use App\Services\AccountNavigation;
 use App\Services\ActivityRecorder;
 use App\Services\CustomerSessions;
 use App\Services\EmailVerificationCodes;
@@ -17,20 +18,33 @@ use Illuminate\Validation\Rules\Password;
 
 class AuthController extends Controller
 {
-    public function form(string $mode = 'login')
+    public function form(Request $r, string $mode = 'login')
     {
-        if ($mode === 'login' && request()->boolean('session_expired')) {
+        $workspace = $r->routeIs('admin.login', 'admin.login.submit');
+        $switchRequired = $r->user() !== null;
+        if ($switchRequired && AccountNavigation::workspace($r->user()) === $workspace) {
+            return redirect()->route(AccountNavigation::homeRoute($r->user()));
+        }
+        if ($mode === 'login' && ! $workspace && $r->boolean('session_expired')) {
             session()->now('notice', CustomerIdleTimeout::NOTICE);
         }
 
-        return view('auth', compact('mode'));
+        return response()->view('auth', compact('mode', 'workspace', 'switchRequired'))->header('Cache-Control', 'no-store, private');
     }
 
     public function login(Request $r)
     {
+        $workspace = $r->routeIs('admin.login.submit');
+        $portal = $workspace ? 'admin.login' : 'login';
+        if ($r->user()) {
+            return AccountNavigation::workspace($r->user()) === $workspace
+                ? redirect()->route(AccountNavigation::homeRoute($r->user()))
+                : redirect()->route($portal)->withErrors(['email' => 'Sign out of your current account before using another sign-in page.']);
+        }
         $data = $r->validate(['email' => 'required|email', 'password' => 'required|string']);
-        if (! Auth::attempt($data)) {
-            return back()->withErrors(['email' => 'The email or password is incorrect.'])->onlyInput('email');
+        // The portal chooses permitted roles on the server; submitted role fields are ignored.
+        if (! Auth::attempt($data + ['role' => $workspace ? ['staff', 'admin'] : 'customer'])) {
+            return redirect()->route($portal)->withErrors(['email' => 'The email or password is incorrect.'])->onlyInput('email');
         }
         $r->session()->regenerate();
         if ($r->user()->role === 'customer') {
@@ -41,11 +55,13 @@ class AuthController extends Controller
         if (app(InstallmentCredit::class)->alertsFor($r->user())->isNotEmpty()) {
             $r->session()->flash('payment_alert', true);
         }
+        $destination = AccountNavigation::destination($r, $r->session()->pull('url.intended')) ?? route(AccountNavigation::homeRoute($r->user()));
         if (config('auth.email_verification.required') === true && $r->user()->email_verified_at === null) {
+            $r->session()->put('email_verification.return_to', $destination);
             return redirect()->route('verification.notice');
         }
 
-        return redirect()->intended($r->user()->role === 'customer' ? route('store') : route('admin.dashboard'));
+        return redirect($destination);
     }
 
     public function register(Request $r)
@@ -85,6 +101,11 @@ class AuthController extends Controller
     public function logout(Request $r)
     {
         $user = $r->user();
+        $destination = match ($r->input('sign_in_portal')) {
+            'workspace' => 'admin.login',
+            'customer' => 'login',
+            default => AccountNavigation::workspace($user) ? 'admin.login' : 'store',
+        };
         if ($user?->role === 'customer') {
             try {
                 app(CustomerSessions::class)->end($r);
@@ -98,6 +119,6 @@ class AuthController extends Controller
         $r->session()->regenerateToken();
         ActivityRecorder::mark($r, 'auth.logout', $user);
 
-        return redirect()->route('store');
+        return redirect()->route($destination);
     }
 }

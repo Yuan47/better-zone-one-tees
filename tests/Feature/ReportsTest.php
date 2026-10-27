@@ -151,7 +151,7 @@ class ReportsTest extends TestCase
 
     public function test_report_access_requires_staff_or_admin_and_rejects_invalid_period(): void
     {
-        $this->get('/admin/forecast')->assertRedirect(route('login'));
+        $this->get('/admin/forecast')->assertRedirect(route('admin.login'));
         $this->actingAs($this->user())->get('/admin')->assertForbidden();
         $this->get('/admin/forecast')->assertForbidden();
         $this->actingAs($this->user('staff'))->getJson('/admin?period=hourly')->assertUnprocessable();
@@ -298,7 +298,7 @@ class ReportsTest extends TestCase
 
     public function test_inventory_attention_is_readable_by_staff_but_not_customers(): void
     {
-        $this->get('/admin/inventory-attention')->assertRedirect(route('login'));
+        $this->get('/admin/inventory-attention')->assertRedirect(route('admin.login'));
         $this->actingAs($this->user())->get('/admin/inventory-attention')->assertForbidden();
         $this->variant($this->product('Low Tee', '2026-01-01 09:00:00'));
         $this->actingAs($this->user('staff'))->get('/admin/inventory-attention')->assertOk()->assertDontSee('Edit inventory');

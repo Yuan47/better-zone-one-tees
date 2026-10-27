@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\AccountNavigation;
 use App\Services\EmailVerificationCodes;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -41,12 +42,7 @@ class EmailVerificationController extends Controller
         $request->user()->refresh();
         $request->session()->regenerate();
         $returnTo = $request->session()->pull('email_verification.return_to');
-        $fallback = $request->user()->role === 'customer' ? route('store') : route('admin.dashboard');
-        if (! is_string($returnTo) || ! str_starts_with($returnTo, '/') || str_starts_with($returnTo, '//')
-            || preg_match('/[\\\\\r\n]/', $returnTo) || parse_url($returnTo, PHP_URL_HOST) !== null
-            || preg_match('#^/(email(?:/|$)|login(?:/|$)|register(?:/|$)|logout(?:/|$))#i', rawurldecode($returnTo))) {
-            $returnTo = $fallback;
-        }
+        $returnTo = AccountNavigation::destination($request, $returnTo) ?? route(AccountNavigation::homeRoute($request->user()));
 
         return redirect($returnTo)->with('notice', 'Your email is verified. You can continue.');
     }

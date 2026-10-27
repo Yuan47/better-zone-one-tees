@@ -37,7 +37,7 @@ class ActivityLogTest extends TestCase
 
     public function test_activity_log_is_admin_only_and_has_no_delete_endpoint(): void
     {
-        $this->get('/admin/activity')->assertRedirect('/login');
+        $this->get('/admin/activity')->assertRedirect('/admin/login');
         foreach (['customer', 'staff'] as $role) {
             $this->actingAs($this->user($role))->get('/admin/activity')->assertForbidden();
         }
@@ -48,9 +48,9 @@ class ActivityLogTest extends TestCase
     public function test_successful_login_logout_and_registration_capture_the_right_actor(): void
     {
         $staff = $this->user('staff', 'Staff Member');
-        $this->post('/login', ['email' => $staff->email, 'password' => 'OriginalPassword!2026'])->assertRedirect('/admin');
+        $this->post('/admin/login', ['email' => $staff->email, 'password' => 'OriginalPassword!2026'])->assertRedirect('/admin');
         $this->assertDatabaseHas('activity_logs', ['action' => 'auth.login', 'actor_id' => $staff->id, 'actor_name' => 'Staff Member', 'actor_role' => 'staff']);
-        $this->post('/logout')->assertRedirect('/');
+        $this->post('/logout')->assertRedirect('/admin/login');
         $this->assertDatabaseHas('activity_logs', ['action' => 'auth.logout', 'actor_id' => $staff->id, 'actor_name' => 'Staff Member', 'actor_role' => 'staff']);
         $this->post('/register', ['name' => 'New Customer', 'username' => 'new_customer', 'email' => 'newcustomer@example.com', 'password' => 'RegisterPassword!2026', 'password_confirmation' => 'RegisterPassword!2026'])
             ->assertRedirect('/');

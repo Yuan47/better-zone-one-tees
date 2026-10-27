@@ -96,7 +96,7 @@ class DeliveryRecoveryTest extends TestCase
         $order = $this->uncertain();
         Http::fake();
         foreach (['refresh', 'recover'] as $operation) {
-            $this->post('/admin/orders/'.$order->id.'/delivery/'.$operation, ['delivery_id' => '107900701184'])->assertRedirect('/login');
+            $this->post('/admin/orders/'.$order->id.'/delivery/'.$operation, ['delivery_id' => '107900701184'])->assertRedirect('/admin/login');
         }
         $this->actingAs($this->user('customer'));
         foreach (['refresh', 'recover'] as $operation) {

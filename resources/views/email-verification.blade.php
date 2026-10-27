@@ -43,7 +43,7 @@
 </form>
 <script src="{{ asset('email-verification.js') }}?v={{ filemtime(public_path('email-verification.js')) }}" defer></script>
 @endif
-<div class="verification-help"><p class="muted">Signed in with the wrong email? Sign out and use the correct account. For an incorrect account email, contact the store.</p><form method="post" action="{{ route('logout') }}">@csrf<button class="text-button">Sign out</button></form></div>
+<div class="verification-help"><p class="muted">Signed in with the wrong email? Sign out and use the correct account. For an incorrect account email, contact the store.</p><form method="post" action="{{ route('logout') }}">@csrf<input type="hidden" name="sign_in_portal" value="{{ \App\Services\AccountNavigation::workspace($user)?'workspace':'customer' }}"><button class="text-button">Sign out and return to sign in</button></form></div>
 <a class="text-link" href="{{ route('store') }}">Continue browsing</a>
 @endif
 </section>

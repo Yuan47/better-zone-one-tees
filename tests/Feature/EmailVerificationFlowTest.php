@@ -271,7 +271,7 @@ class EmailVerificationFlowTest extends TestCase
     public function test_verified_accounts_keep_their_existing_login_destination(string $role): void
     {
         $user = $this->user($role, true);
-        $this->post('/login', ['email' => $user->email, 'password' => 'VerificationPassword!2026'])
+        $this->post($role === 'customer' ? '/login' : '/admin/login', ['email' => $user->email, 'password' => 'VerificationPassword!2026'])
             ->assertRedirect($role === 'customer' ? '/' : '/admin');
         Http::assertNothingSent();
     }
@@ -307,7 +307,7 @@ class EmailVerificationFlowTest extends TestCase
     public static function unsafeReturnPaths(): array
     {
         return [['https://untrusted.example/steal'], ['//untrusted.example/steal'], ['/\\untrusted.example'],
-            ["/orders\r\nLocation: https://untrusted.example"], ['/email/verify'], ['/login'], ['/logout']];
+            ["/orders\r\nLocation: https://untrusted.example"], ['/email/verify'], ['/login'], ['/admin/login'], ['/logout']];
     }
 
     #[DataProvider('unsafeReturnPaths')]

@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use App\Rules\AccountPasswordSize;
+use App\Services\AccountNavigation;
 use App\Services\PasswordRecovery;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -66,11 +68,14 @@ class PasswordRecoveryController extends Controller
             return $this->resetResponse($token, $email, $recovery->enabled(), new MessageBag(['email' => PasswordRecovery::INVALID_LINK]), 422);
         }
 
+        // Only a successfully validated reset can choose a destination from the saved account role.
+        $account = User::whereRaw('LOWER(email) = ?', [mb_strtolower(trim($validator->validated()['email']))])->first();
+        $signInRoute = AccountNavigation::loginRoute($account);
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return $this->protect(redirect()->route('login')->with('notice', 'Your password has been reset. Sign in with your new password.'));
+        return $this->protect(redirect()->route($signInRoute)->with('notice', 'Your password has been reset. Sign in with your new password.'));
     }
 
     private function resetResponse(#[\SensitiveParameter] string $token, string $email, bool $enabled, ?MessageBag $errors = null, int $status = 200)

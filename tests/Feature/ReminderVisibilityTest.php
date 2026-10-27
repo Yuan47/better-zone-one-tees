@@ -61,7 +61,7 @@ class ReminderVisibilityTest extends TestCase
     {
         $order = $this->invoice();
         $reminder = $this->reminder($order);
-        $this->get('/admin/settings')->assertRedirect('/login');
+        $this->get('/admin/settings')->assertRedirect('/admin/login');
         foreach (['staff', 'customer'] as $role) {
             $this->actingAs($this->actor($role))->get('/admin/settings')->assertForbidden()->assertDontSee($reminder->recipient)->assertDontSee($reminder->provider_message_id);
         }

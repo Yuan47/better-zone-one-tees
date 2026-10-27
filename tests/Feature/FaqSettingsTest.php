@@ -113,8 +113,8 @@ class FaqSettingsTest extends TestCase
     {
         $before = ChatbotFaq::count();
         $faq = ChatbotFaq::firstOrFail();
-        $this->get(route('admin.settings'))->assertRedirect(route('login'));
-        $this->post(route('admin.faqs.store'), $this->faqInput())->assertRedirect(route('login'));
+        $this->get(route('admin.settings'))->assertRedirect(route('admin.login'));
+        $this->post(route('admin.faqs.store'), $this->faqInput())->assertRedirect(route('admin.login'));
         foreach (['customer', 'staff'] as $role) {
             $this->login($role);
             $this->get(route('admin.settings'))->assertForbidden();

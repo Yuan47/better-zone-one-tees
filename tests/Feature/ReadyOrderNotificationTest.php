@@ -152,7 +152,7 @@ class ReadyOrderNotificationTest extends TestCase
     {
         $order = $this->order();
         $data = ['status' => 'ready', 'reason' => 'Order packed and checked by staff.'];
-        $this->patch(route('admin.orders.status', $order), $data)->assertRedirect('/login');
+        $this->patch(route('admin.orders.status', $order), $data)->assertRedirect('/admin/login');
         $this->actingAs($order->user)->patch(route('admin.orders.status', $order), $data)->assertForbidden();
         $staff = $this->actor();
         $this->actingAs($staff)->patch(route('admin.orders.status', $order), ['status' => 'ready'])->assertSessionHasErrors('reason');
@@ -327,7 +327,7 @@ class ReadyOrderNotificationTest extends TestCase
         Http::assertNothingSent();
         config(['services.brevo.delivery_notifications_enabled' => true]);
         auth()->logout();
-        $this->post(route('admin.orders.ready-email.retry', $order), ['reason' => 'Readiness email setup has now been enabled.'])->assertRedirect('/login');
+        $this->post(route('admin.orders.ready-email.retry', $order), ['reason' => 'Readiness email setup has now been enabled.'])->assertRedirect('/admin/login');
         $this->actingAs($order->user)->post(route('admin.orders.ready-email.retry', $order), ['reason' => 'Readiness email setup has now been enabled.'])->assertForbidden();
         $this->accepted();
         $this->actingAs($this->actor())->post(route('admin.orders.ready-email.retry', $order), ['reason' => 'Readiness email setup has now been enabled.'])->assertRedirect();

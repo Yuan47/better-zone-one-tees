@@ -17,7 +17,7 @@
 <p id="recovery-help" class="muted">The link expires after 60 minutes. Check your spam folder too.</p>
 <button class="button dark" @disabled(!$recoveryReady)>Send reset link →</button>
 </form>
-<p><a class="text-link" href="{{ route('login') }}">Back to sign in</a></p>
+<p>Back to <a class="text-link" href="{{ route('login') }}">Customer sign in</a> · <a class="text-link" href="{{ route('admin.login') }}">Staff & owner sign in</a></p>
 </section>
 </div>
 @endsection

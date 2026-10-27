@@ -66,7 +66,7 @@ class OperationsTest extends TestCase
 
     public function test_only_staff_and_admin_can_open_read_only_operations_dashboard(): void
     {
-        $this->get(route('admin.operations'))->assertRedirect(route('login'));
+        $this->get(route('admin.operations'))->assertRedirect(route('admin.login'));
         $this->login('customer');
         $this->get(route('admin.operations'))->assertForbidden();
         foreach (['staff', 'admin'] as $role) {

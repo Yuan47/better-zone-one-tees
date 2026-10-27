@@ -307,7 +307,7 @@ class InstallmentRefundTest extends TestCase
         $refund = $this->refund($order, $cash, 40000);
         $url = '/admin/refunds/'.$refund->id.'/cash';
         $data = ['payment_attempt_id' => $cash->id, 'cash_reason' => 'Approved cash returned to the invoice buyer.'];
-        $this->post($url, $data)->assertRedirect('/login');
+        $this->post($url, $data)->assertRedirect('/admin/login');
         foreach (['customer', 'staff'] as $role) {
             $this->actingAs($this->user($role))->post($url, $data)->assertForbidden();
         }

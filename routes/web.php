@@ -25,6 +25,7 @@ use App\Http\Controllers\StoreController;
 use App\Http\Controllers\WalkInController;
 use App\Http\Controllers\WebhookController;
 use App\Http\Middleware\GoogleCallbackPrivacy;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [StoreController::class, 'index'])->name('store');
@@ -32,10 +33,13 @@ Route::get('/products/{product:slug}', [StoreController::class, 'product'])->nam
 Route::get('/cart', [StoreController::class, 'cart'])->name('cart');
 Route::post('/cart', [StoreController::class, 'add'])->middleware('throttle:60,1')->name('cart.add');
 Route::patch('/cart/{variant}', [StoreController::class, 'update'])->name('cart.update');
+// These pages handle an existing session explicitly, including safe account-switch guidance.
+Route::get('/login', [AuthController::class, 'form'])->name('login');
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1')->name('login.submit');
+Route::get('/admin/login', [AuthController::class, 'form'])->name('admin.login');
+Route::post('/admin/login', [AuthController::class, 'login'])->middleware('throttle:5,1')->name('admin.login.submit');
 Route::middleware('guest')->group(function () {
-    Route::get('/login', fn () => app(AuthController::class)->form('login'))->name('login');
-    Route::get('/register', fn () => app(AuthController::class)->form('register'))->name('register');
-    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
+    Route::get('/register', fn (Request $request) => app(AuthController::class)->form($request, 'register'))->name('register');
     Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:5,1');
     Route::post('/auth/google', [GoogleSignInController::class, 'start'])->middleware('throttle:5,1,google-start')->block(30, 30)->name('google.start');
 });

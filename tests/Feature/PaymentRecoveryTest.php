@@ -387,7 +387,7 @@ class PaymentRecoveryTest extends TestCase
         $session = $this->checkoutSession($order, 'active', [$this->payment($order)], 'succeeded');
         $this->provider($session);
         $url = '/admin/orders/'.$order->id.'/payment/recover';
-        $this->post($url, ['checkout_session_id' => $session['id']])->assertRedirect(route('login'));
+        $this->post($url, ['checkout_session_id' => $session['id']])->assertRedirect(route('admin.login'));
         $this->actingAs($order->user)->post($url, ['checkout_session_id' => $session['id']])->assertForbidden();
         $this->actingAs($this->user('staff'))->post($url, ['checkout_session_id' => $session['id']])->assertForbidden();
         Http::assertNothingSent();

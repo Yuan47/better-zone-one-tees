@@ -24,7 +24,7 @@
 <button class="button dark" @disabled(!$recoveryEnabled || $resetToken === '')>Save new password →</button>
 </form>
 <p class="muted">This link works once. Resetting your password signs out your other sessions.</p>
-<p><a class="text-link" href="{{ route('password.request') }}">Request a new link</a> · <a class="text-link" href="{{ route('login') }}">Back to sign in</a></p>
+<p><a class="text-link" href="{{ route('password.request') }}">Request a new link</a></p><p>Back to <a class="text-link" href="{{ route('login') }}">Customer sign in</a> · <a class="text-link" href="{{ route('admin.login') }}">Staff & owner sign in</a></p>
 </section>
 </div>
 @endsection

@@ -58,8 +58,8 @@ class WalkInTest extends TestCase
     public function test_guests_and_customer_accounts_cannot_open_or_submit_walk_in_checkout(): void
     {
         $variant = $this->variant();
-        $this->get('/admin/walk-in')->assertRedirect('/login');
-        $this->post('/admin/walk-in', $this->payload($variant))->assertRedirect('/login');
+        $this->get('/admin/walk-in')->assertRedirect('/admin/login');
+        $this->post('/admin/walk-in', $this->payload($variant))->assertRedirect('/admin/login');
         $this->actingAs(User::factory()->create(['role' => 'customer']));
         $this->get('/admin/walk-in')->assertForbidden();
         $this->post('/admin/walk-in', $this->payload($variant))->assertForbidden();

@@ -6,9 +6,9 @@
 <link rel="stylesheet" href="{{ asset('password-visibility.css') }}?v={{ filemtime(public_path('password-visibility.css')) }}"><script src="{{ asset('password-visibility.js') }}?v={{ filemtime(public_path('password-visibility.js')) }}" defer></script>
 @if(auth()->check() && auth()->user()->role === 'customer')<link rel="stylesheet" href="{{ asset('customer-session.css') }}?v={{ filemtime(public_path('customer-session.css')) }}">@endif
 </head>
-<body class="{{ (request()->routeIs('admin.*') || ((request()->routeIs('account*') || request()->routeIs('orders.show')) && auth()->check() && auth()->user()->role!=='customer')) ? 'admin-body' : 'store-body' }}{{ request()->routeIs('verification.*', 'password.*', 'admin.staff.create', 'admin.staff.show') ? ' verification-page' : '' }}{{ request()->routeIs('admin.staff.*') ? ' staff-setup-page' : '' }}">
+@php($isAdmin=\App\Services\AccountNavigation::workspace(auth()->user()) && ((request()->routeIs('admin.*') && !request()->routeIs('admin.login','admin.login.submit')) || request()->routeIs('account*','orders.show')))
+<body class="{{ $isAdmin ? 'admin-body' : 'store-body' }}{{ request()->routeIs('verification.*', 'password.*', 'admin.staff.create', 'admin.staff.show') ? ' verification-page' : '' }}{{ request()->routeIs('admin.staff.*') ? ' staff-setup-page' : '' }}">
 <a class="skip-link" href="#main-content">Skip to content</a>
-@php($isAdmin=(request()->routeIs('admin.*') || ((request()->routeIs('account*') || request()->routeIs('orders.show')) && auth()->check() && auth()->user()->role!=='customer')))
 @if($isAdmin)
 <aside class="sidebar" id="workspace-menu"><div class="sidebar-heading"><a class="brand" href="{{ route('admin.dashboard') }}"><img class="brand-logo" src="{{ asset('brand/zone-one-tees-logo.png') }}" alt="Zone One Tee’s logo"><span>Zone One Tee’s<small>STORE WORKSPACE</small></span></a><button type="button" class="icon-btn admin-menu-close" id="workspace-menu-close" aria-label="Close workspace menu">×</button></div>
 <div class="workspace"><span class="dot"></span> Zone One Tee’s 2.0 <small>{{ config('shop.demo')?'Local demo':'Store workspace' }}</small></div>

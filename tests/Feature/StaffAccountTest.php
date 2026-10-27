@@ -95,7 +95,7 @@ class StaffAccountTest extends TestCase
         $this->assertArrayNotHasKey('password_hash', $invitation->toArray());
         $this->assertStringNotContainsString('InitialStaff!2026', json_encode(DB::table('staff_invitations')->first()));
         $this->assertSame('staff.invited', ActivityLog::sole()->action);
-        $this->post('/login', ['email' => $invitation->email, 'password' => 'InitialStaff!2026'])->assertSessionHasErrors('email');
+        $this->post('/admin/login', ['email' => $invitation->email, 'password' => 'InitialStaff!2026'])->assertSessionHasErrors('email');
         $this->assertGuest();
         Http::assertNothingSent();
     }
@@ -162,7 +162,7 @@ class StaffAccountTest extends TestCase
         $this->assertSame('activated', $service->send($admin, $invitation));
         $this->assertSame(1, User::where('role', 'staff')->count());
         $this->assertSame(1, ActivityLog::where('action', 'staff.activated')->count());
-        $this->post('/login', ['email' => $staff->email, 'password' => 'InitialStaff!2026'])->assertRedirect('/admin');
+        $this->post('/admin/login', ['email' => $staff->email, 'password' => 'InitialStaff!2026'])->assertRedirect('/admin');
         $this->assertAuthenticatedAs($staff);
         Http::assertSentCount(1);
     }
@@ -194,10 +194,10 @@ class StaffAccountTest extends TestCase
     {
         $pending = $this->invite($this->admin());
         foreach (['/admin/staff', '/admin/staff/create', '/admin/staff/'.$pending->id] as $url) {
-            $this->get($url)->assertRedirect('/login');
+            $this->get($url)->assertRedirect('/admin/login');
         }
         foreach (['/admin/staff', '/admin/staff/'.$pending->id.'/send', '/admin/staff/'.$pending->id.'/verify'] as $url) {
-            $this->post($url, $this->data())->assertRedirect('/login');
+            $this->post($url, $this->data())->assertRedirect('/admin/login');
         }
         Http::assertNothingSent();
     }

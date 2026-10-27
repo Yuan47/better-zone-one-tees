@@ -220,7 +220,7 @@ class PasswordRecoveryTest extends TestCase
         }
         app(PasswordRecovery::class)->request($user->email);
         $token = $this->links[0]['token'];
-        $this->post('/reset-password', $this->credentials($user, $token))->assertRedirect('/login')
+        $this->post('/reset-password', $this->credentials($user, $token))->assertRedirect($role === 'customer' ? '/login' : '/admin/login')
             ->assertSessionHas('notice', 'Your password has been reset. Sign in with your new password.');
         $after = $user->fresh();
         $this->assertTrue(Hash::check('RecoveredPassword!2026', $after->password));

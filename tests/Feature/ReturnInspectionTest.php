@@ -134,7 +134,7 @@ class ReturnInspectionTest extends TestCase
         $this->assertNull($refund->requested_by);
         $this->assertSame(7, $refund->policy_days);
         Storage::disk('local')->assertExists($refund->customer_photo_path);
-        $this->get('/admin/refunds/'.$refund->id.'/evidence/customer')->assertRedirect('/login');
+        $this->get('/admin/refunds/'.$refund->id.'/evidence/customer')->assertRedirect('/admin/login');
     }
 
     public function test_approval_cash_and_new_provider_attachment_are_blocked_without_inspection(): void
