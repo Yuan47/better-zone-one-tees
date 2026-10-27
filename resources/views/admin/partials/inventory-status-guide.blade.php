@@ -1,0 +1,1 @@
+<p class="muted inventory-status-guide"><span class="badge inventory-status inventory-status-critical">Critical low</span> Half the reorder threshold or lower, including zero stock. <span class="badge inventory-status inventory-status-alert">Alert</span> Above half, up to the threshold. Odd thresholds round down when halved. Uses available stock after reservations.</p>

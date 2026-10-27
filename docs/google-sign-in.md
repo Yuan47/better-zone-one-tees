@@ -1,5 +1,7 @@
 # Customer Google sign-in
 
+Current local acceptance is recorded in [Current integration checkpoint](integration-status.md). Real customer creation and admin-access rejection passed; remaining deployment and edge cases are tracked separately. The original preparation guidance below describes configuration requirements.
+
 Prepared on 19 October 2026. This feature stays disabled until the Google OAuth web application is configured. No real Google account or credentials are included in the repository.
 
 ## Customer behavior

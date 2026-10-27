@@ -96,27 +96,19 @@ class ChatAccuracyTest extends TestCase
         Http::assertNothingSent();
     }
 
-    public function test_groq_catalog_context_has_actual_scoped_variant_prices_and_stock(): void
+    public function test_named_product_help_uses_actual_scoped_variant_stock_without_generated_details(): void
     {
         $this->product()->variants()->where('size', 'S')->where('color', 'White')->update(['stock' => 15, 'reserved' => 4]);
-        $this->chat('Help me choose Dannon collar S White')->assertOk()->assertJsonPath('mode', 'groq');
-        Http::assertSent(function ($request) {
-            $system = $request['messages'][0]['content'];
-            $context = json_decode(substr($system, strpos($system, 'Context: ') + 9), true);
-            $catalog = $context['catalog'];
-
-            return count($catalog) === 1 && $catalog[0]['name'] === 'DANNON - WITH COLLAR'
-                && $catalog[0]['variants_complete'] === true && $catalog[0]['matching_variant_count'] === 1
-                && $catalog[0]['variants'] === [['size' => 'S', 'color' => 'White', 'color_group' => 'WHITE', 'available_pieces' => 11,
-                    'retail_price' => 20200, 'wholesale_price' => 19200, 'reseller_price' => 18700]]
-                && $catalog[0]['price_unit'] === 'integer centavos per piece'
-                && str_contains($context['policy'], 'Never infer availability or prices from another size/color');
-        });
+        $this->chat('Tell me about Dannon collar S White')->assertOk()->assertJsonPath('mode', 'store')
+            ->assertJsonPath('reply', fn ($reply) => str_contains($reply, 'DANNON - WITH COLLAR')
+                && str_contains($reply, 'S / White (11 pieces currently available)'))
+            ->assertDontSee('AI answer should not establish commerce facts.');
+        Http::assertNothingSent();
     }
 
     public function test_groq_context_is_bounded_and_does_not_treat_omitted_variants_as_unavailable(): void
     {
-        $this->chat('Recommend options for a uniform')->assertJsonPath('mode', 'groq');
+        $this->chat('Hello there, please introduce yourself.')->assertJsonPath('mode', 'groq');
         Http::assertSent(function ($request) {
             $system = $request['messages'][0]['content'];
             $context = json_decode(substr($system, strpos($system, 'Context: ') + 9), true);
@@ -133,14 +125,8 @@ class ChatAccuracyTest extends TestCase
     {
         $this->product()->update(['active' => false]);
         $this->chat('Is Dannon collar S White available?')->assertJsonPath('mode', 'store')->assertSee('specify one product name')->assertDontSee('₱202.00');
-        $this->chat('Recommend Thanos')->assertJsonPath('mode', 'groq');
-        Http::assertSent(function ($request) {
-            $system = $request['messages'][0]['content'];
-            $context = json_decode(substr($system, strpos($system, 'Context: ') + 9), true);
-
-            return count($context['catalog']) === 1 && $context['catalog'][0]['name'] === 'THANOS'
-                && ! str_contains(json_encode($context['catalog']), 'DANNON - WITH COLLAR');
-        });
+        $this->chat('Tell me about Thanos')->assertJsonPath('mode', 'store')->assertSee('THANOS')->assertDontSee('DANNON - WITH COLLAR');
+        Http::assertNothingSent();
     }
 
     public function test_explicit_order_and_payment_status_remain_private_and_authoritative_over_faqs(): void

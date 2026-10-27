@@ -22,4 +22,16 @@ class Variant extends Model
     {
         return max(0, $this->stock - $this->reserved);
     }
+
+    public function inventoryStatus(): string
+    {
+        $available = $this->available();
+        $threshold = max(0, (int) $this->reorder_level);
+
+        if ($available <= intdiv($threshold, 2)) {
+            return 'critical';
+        }
+
+        return $available <= $threshold ? 'alert' : 'healthy';
+    }
 }

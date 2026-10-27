@@ -4,6 +4,10 @@ The assistant includes 28 editable how-to guides: 12 for customers, 9 for staff 
 
 The chat panel offers three quick questions appropriate to the page and signed-in workspace role. Answers preserve line breaks so steps remain readable on mobile. The assistant explains actions; it cannot perform payments, refunds, stock changes, staff activation or other management actions.
 
+Product recommendations, named-product descriptions and fabric/comfort questions use current catalog facts directly. Answers show only offered size/color combinations and available stock after reservations. Fabric, softness and suitability claims that are not established by the catalog require staff confirmation. Approved FAQs and verified price, stock, payment and order rules retain priority. General assistance can still use GroqCloud; no prompt rule guarantees that every generative answer is correct.
+
+The default account-creation guide includes full name, unique username, email, matching passwords, email-code verification and customer-only Google sign-in. Its additive refresh changes only the exact old default answer and preserves owner edits.
+
 ## FAQ audiences
 
 Only the owner manages the FAQ library in Settings. Choose an audience when adding or editing an answer:
@@ -26,4 +30,4 @@ Do not store passwords, private verification codes, recovery links, API keys or 
 
 ## Verification limits
 
-Automated tests check role selection, context filtering, hidden/inactive guides, forged audience requests, private-order boundaries, FAQ routing, imports, quick-question visibility and offline help. AI tests use simulated responses; these checks do not establish the real provider's availability or answer quality. Real GroqCloud acceptance and participant usability measurements remain separate integration and defense tasks.
+Automated tests check role selection, context filtering, hidden/inactive guides, forged audience requests, private-order boundaries, FAQ routing, imports, quick-question visibility, grounded product guidance and offline help. Those tests use simulated provider responses. Separate actual Groq requests and browser checks are recorded in [Current integration checkpoint](integration-status.md); they do not establish future availability or universal answer accuracy. Participant usability measurements remain a separate defense task.

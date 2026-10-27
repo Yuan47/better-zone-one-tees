@@ -111,6 +111,9 @@ class ChatController extends Controller
         } elseif ($matched) {
             $reply = $matched->answer;
             $protectedReply = true;
+        } elseif ($knowledge->requiresCatalogAnswer($message, $productMatches)) {
+            $reply = $knowledge->recommendationAnswer($catalog);
+            $protectedReply = true;
         } elseif (preg_match('/size|sizing|fit|measure/i', $message)) {
             $reply = StoreKnowledge::SIZE_HELP;
         } elseif ($infoReply = $knowledge->basicStoreInfo($message, $storeInfo)) {

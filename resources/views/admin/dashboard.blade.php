@@ -1,31 +1,38 @@
 @extends('layout')
 @section('title', 'Store overview')
 @section('content')
-<div class="section-heading">
-    <div><span class="eyebrow">YOUR STORE, AT A GLANCE</span><h1>Welcome back, {{ explode(' ', auth()->user()->name)[0] }} <span class="hello-dot">✳</span></h1><p class="muted">Here’s what’s happening at Zone One Tee’s.</p></div>
+<div class="store-dashboard">
+<div class="section-heading dashboard-heading">
+    <div><span class="eyebrow">YOUR STORE, AT A GLANCE</span><h1>Dashboard</h1><p class="muted">Sales, payments and orders in one view.</p></div>
     <a class="button" href="{{ route('admin.reports.export', $salesChart['custom_range'] ? ['period' => $period, 'start_date' => $salesChart['start_date'], 'end_date' => $salesChart['end_date']] : []) }}">↓ Export sales</a>
 </div>
-<div class="stat-grid">
-    <article class="panel stat"><span>Confirmed Clothing sale <i>↗</i></span><h2>₱{{ number_format($revenue / 100, 2) }}</h2><small>{{ $salesScope }} · paid orders after discounts · excludes delivery</small></article>
-    <article class="panel stat"><span>Paid orders <i>▤</i></span><h2>{{ number_format($ordersCount) }}</h2><small>{{ $salesScope }} · Current packing queue: {{ $toPack }} orders</small></article>
-    <article class="panel stat"><span>Customers <i>♧</i></span><h2>{{ number_format($customers) }}</h2><small>All time · registered customer accounts</small></article>
+<div class="stat-grid dashboard-metrics" aria-label="Store summary">
+    <a class="panel stat dashboard-stat-link" href="#reports"><span>Confirmed Clothing sale <i aria-hidden="true">↗</i></span><h2>₱{{ number_format($revenue / 100, 2) }}</h2><small>{{ $salesScope }} · paid orders after discounts · excludes delivery</small></a>
+    <a class="panel stat dashboard-stat-link" href="#reports"><span>Paid orders <i aria-hidden="true">▤</i></span><h2>{{ number_format($ordersCount) }}</h2><small>{{ $salesScope }} · Current packing queue: {{ $toPack }} orders</small></a>
+    @if(auth()->user()->role === 'admin')
+        <a class="panel stat dashboard-stat-link" href="{{ route('admin.customers') }}"><span>Customers <i aria-hidden="true">♧</i></span><h2>{{ number_format($customers) }}</h2><small>All time · registered customer accounts</small></a>
+    @else
+        <article class="panel stat"><span>Customers <i aria-hidden="true">♧</i></span><h2>{{ number_format($customers) }}</h2><small>All time · registered customer accounts</small></article>
+    @endif
     <article class="panel stat"><span>Average order value <i>◇</i></span><h2>₱{{ number_format($ordersCount ? $revenue / $ordersCount / 100 : 0, 2) }}</h2><small>{{ $salesScope }} · confirmed clothing sale ÷ paid orders</small></article>
 </div>
+<div class="stat-grid dashboard-metrics dashboard-current-metrics" aria-label="Current delivery and payment summary">
+    <a class="panel stat dashboard-stat-link" href="{{ $widgetLinks['on_delivery'] }}"><span>On delivery <i aria-hidden="true">↗</i></span><h2>{{ number_format($widgetStats['on_delivery']) }}</h2><small>Currently with courier · all orders</small></a>
+    <a class="panel stat dashboard-stat-link" href="{{ $widgetLinks['outstanding'] }}"><span>Outstanding invoices <i aria-hidden="true">↗</i></span><h2>{{ number_format($widgetStats['outstanding_customers']) }}</h2><small>Registered customers with a balance
+        @if($widgetStats['guest_outstanding_invoices'])
+            · {{ number_format($widgetStats['guest_outstanding_invoices']) }} guest invoices tracked separately
+        @endif
+    </small></a>
+    <a class="panel stat dashboard-stat-link" href="{{ $widgetLinks['outstanding'] }}"><span>Outstanding payment <i aria-hidden="true">↗</i></span><h2>₱{{ number_format($widgetStats['outstanding_payment'] / 100, 2) }}</h2><small>Total still owed · includes guest invoices</small></a>
+    <a class="panel stat dashboard-stat-link" href="{{ $widgetLinks['month_sales'] }}"><span>Total sales this month <i aria-hidden="true">↗</i></span><h2>₱{{ number_format($widgetStats['month_sales'] / 100, 2) }}</h2><small>{{ $widgetStats['month_label'] }} · confirmed clothing sales</small></a>
+</div>
+<p class="muted dashboard-snapshot-note">Delivery and balances show the current position across all dates. This month’s sales use the current calendar month in Asia/Manila. The sales date filters below apply to the first sales cards and charts.</p>
+<details class="dashboard-help"><summary>How the summary figures are calculated</summary>
 <p class="muted">Confirmed clothing sales include fully paid online and walk-in invoices, after discounts and before refunds. Deposits are excluded. Average order value uses this same clothing amount before refunds. <a class="text-link" href="{{ route('admin.operations') }}">View outstanding invoices and deposits in Operations →</a></p>
-<section class="panel report-count-section" aria-labelledby="invoice-refund-heading">
-    <div class="section-heading"><div><h2 id="invoice-refund-heading">Paid invoices after refunds</h2><p class="muted">{{ $salesScope }} · invoices selected by payment completion date · includes delivery</p></div></div>
-    <div class="invoice-totals">
-        <div><span>Original invoice value</span><strong>₱{{ number_format($invoiceSummary['original_invoice'] / 100, 2) }}</strong><small>Clothing after discounts + delivery</small></div>
-        <div><span>Confirmed refunds</span><strong>₱{{ number_format($invoiceSummary['confirmed_refunds'] / 100, 2) }}</strong><small>Verified online refunds + recorded cash returns</small></div>
-        <div><span>Net invoice value</span><strong>₱{{ number_format($invoiceSummary['net_invoice'] / 100, 2) }}</strong><small>Original invoice value − confirmed refunds</small></div>
-    </div>
-    <p class="muted">Refunds known as of {{ \Carbon\CarbonImmutable::parse($invoiceSummary['as_of'])->format('M j, Y, g:i A') }} (Asia/Manila). A later refund updates the original paid invoice’s net value, including when viewing an earlier payment period. Requested, approved and processing refunds are excluded.</p>
-    <p class="muted">New return inspections record returned quantities and clothing/delivery allocations. Historical refunds may have no clothing/delivery allocation. The clothing chart, average order value and original units sold deliberately show paid sales before refunds or returns; net invoice value above shows confirmed refunds separately and is not profit. <a class="text-link" href="{{ route('admin.operations') }}">Operations shows refunds by confirmation date →</a></p>
-</section>
-<div class="dashboard-grid" id="reports">
-    <section class="panel">
-        <div class="section-heading"><h3>Sales over time</h3><span class="badge">{{ $salesChart['history'] }}</span></div>
-        <form action="{{ route('admin.dashboard') }}#reports" method="get" class="filters sales-range-form" aria-label="Sales chart period and date range">
+</details>
+<section class="dashboard-report-overview" id="reports" aria-label="Sales and payment charts">
+    <div class="panel dashboard-filter-panel">
+        <form action="{{ route('admin.dashboard') }}#reports" method="get" class="filters sales-range-form dashboard-date-filters" aria-label="Sales chart period and date range">
             <label for="sales-period">Group sales by<select name="period" id="sales-period">
                 @foreach(['daily' => 'Daily', 'weekly' => 'Weekly', 'monthly' => 'Monthly', 'yearly' => 'Yearly'] as $value => $label)
                     <option value="{{ $value }}" @selected($period === $value)>{{ $label }}</option>
@@ -36,9 +43,12 @@
             <button class="button small" type="submit">View sales</button>
             <a class="text-link" href="{{ route('admin.dashboard', ['period' => $period]) }}#reports">Clear dates</a>
         </form>
-        <p class="muted">{{ $salesChart['custom_range'] ? 'Selected dates: '.$salesChart['history'].' (inclusive).' : 'Showing '.$salesChart['history'].'. Cards and best sellers use all-time paid sales until dates are selected.' }} Paid clothing sales after discounts, before refunds, excluding delivery · Asia/Manila. {{ $period === 'weekly' ? 'Weeks start Monday. ' : '' }}@if(collect($chart)->contains('current', true))The current {{ ['daily' => 'day', 'weekly' => 'week', 'monthly' => 'month', 'yearly' => 'year'][$period] }} is still in progress.@endif</p>
-        <p class="muted sales-range-hint">Enter both dates or leave both blank. Daily: up to 120 days; weekly: up to 366 days; monthly/yearly: up to 10 years and 120 periods.</p>
-        <div class="sales-chart-scroll revenue-chart">
+    </div>
+    <div class="dashboard-overview-charts">
+    <section class="panel dashboard-sales-panel" aria-labelledby="dashboard-sales-heading">
+        <div class="section-heading"><h2 id="dashboard-sales-heading">Sales over time</h2><span class="badge">{{ $salesChart['history'] }}</span></div>
+
+        <div class="sales-chart-scroll revenue-chart" tabindex="0" role="region" aria-label="Sales chart: swipe or use arrow keys to see all dates">
             @php($plot = $salesChart['plot'])
             <svg class="sales-line-chart {{ count($chart) <= 12 ? 'compact-chart' : '' }}" width="{{ $plot['width'] }}" height="{{ $plot['height'] }}" viewBox="0 0 {{ $plot['width'] }} {{ $plot['height'] }}" role="img" aria-labelledby="sales-chart-title sales-chart-description">
                 <title id="sales-chart-title">{{ ucfirst($period) }} confirmed clothing sales · {{ $salesChart['history'] }}</title>
@@ -56,38 +66,48 @@
         </div>
         <p class="muted chart-scroll-note">Swipe ↔ to see earlier periods.</p>
         @if(!$salesChart['orders'])<p class="empty-note">No verified paid orders in this period yet.</p>@endif
+        <details class="dashboard-help"><summary>About these sales dates and totals</summary>
+        <p class="muted">{{ $salesChart['custom_range'] ? 'Selected dates: '.$salesChart['history'].' (inclusive).' : 'Showing '.$salesChart['history'].'. Cards and best sellers use all-time paid sales until dates are selected.' }} Paid clothing sales after discounts, before refunds, excluding delivery · Asia/Manila. {{ $period === 'weekly' ? 'Weeks start Monday. ' : '' }}@if(collect($chart)->contains('current', true))The current {{ ['daily' => 'day', 'weekly' => 'week', 'monthly' => 'month', 'yearly' => 'year'][$period] }} is still in progress.@endif</p>
+        <p class="muted sales-range-hint">Enter both dates or leave both blank. Daily: up to 120 days; weekly: up to 366 days; monthly/yearly: up to 10 years and 120 periods.</p>
+        </details>
         <details class="forecast-details"><summary>View exact sales amounts</summary><div class="table-scroll"><table><thead><tr><th>Period</th><th>Paid orders</th><th>Confirmed clothing sale</th></tr></thead><tbody>
             @foreach($chart as $point)<tr><td>{{ $point['range'] }}{{ $point['current'] ? ' (in progress)' : '' }}</td><td>{{ $point['orders'] }}</td><td>₱{{ number_format($point['amount'] / 100, 2) }}</td></tr>@endforeach
         </tbody><tfoot><tr><th>Total shown</th><th>{{ $salesChart['orders'] }}</th><th>₱{{ number_format($salesChart['total'] / 100, 2) }}</th></tr></tfoot></table></div></details>
     </section>
-    <section class="panel">
-        <div class="section-heading"><h3>Best sellers</h3><span class="muted">{{ $salesChart['custom_range'] ? 'Selected dates · units sold' : 'All-time units sold' }}</span></div>
-        <p class="muted">Original paid quantities before returns. Refunded money is not converted into returned pieces.</p>
-        @forelse($best as $seller)<div class="rank-row"><span class="rank">{{ $loop->iteration }}</span><b>{{ $seller->name }}</b><span>{{ $seller->units }} pcs</span></div>
-        @empty<div class="small-empty"><span>◇</span><h3>{{ $salesChart['custom_range'] ? 'No sales in selected dates' : 'Ready for your first sale' }}</h3><p>Best sellers appear after verified payments{{ $salesChart['custom_range'] ? ' within the selected dates' : '' }}.</p></div>@endforelse
-    </section>
-</div>
-<section class="report-count-section" aria-labelledby="invoice-status-heading" id="invoice-status">
-    <div class="section-heading"><div><h2 id="invoice-status-heading">Invoice payments &amp; delivery methods</h2><p class="muted">{{ $invoiceScope }} · current payment status of orders placed in these dates · Asia/Manila. Uses the date selection above; leave dates blank for all time.</p></div></div>
-    <p class="muted">These order counts exclude cancelled and released invoices. Sales cards above use the date payment was completed; this comparison uses the date the order was placed.</p>
-    <div class="report-count-grid">
-        <section class="panel report-count-panel" aria-labelledby="invoice-payment-heading">
-            <div class="section-heading"><div><h3 id="invoice-payment-heading">Fully paid vs outstanding invoices</h3><p class="muted">{{ number_format($paymentTotal) }} invoices · outstanding means partially paid or unpaid</p></div></div>
-            <ul class="report-count-chart" aria-label="Invoice payment status counts and order links">
+        <section class="panel dashboard-payment-panel" aria-labelledby="invoice-payment-heading">
+            <div class="section-heading"><div><h2 id="invoice-payment-heading">Fully paid vs outstanding invoices</h2><p class="muted">{{ $invoiceScope }} · order placement dates</p></div></div>
+            <svg class="dashboard-payment-donut" viewBox="0 0 180 180" role="img" aria-labelledby="payment-chart-title payment-chart-description">
+                <title id="payment-chart-title">Invoice payment status</title>
+                <desc id="payment-chart-description">{{ number_format($paymentTotal) }} invoices. @foreach($paymentRows as $row){{ $row['label'] }}: {{ number_format($row['count']) }}. @endforeach Outstanding means partially paid or unpaid. Exact counts and links are below.</desc>
+                <circle cx="90" cy="90" r="65" fill="none" stroke="#f1e8e1" stroke-width="23" />
+                @php($paymentOffset = 0)
                 @foreach($paymentRows as $row)
-                    <li class="report-count-row">
-                        <div class="report-count-label"><a class="text-link" href="{{ $row['url'] }}"><i class="report-count-key" style="background:{{ $row['color'] }}" aria-hidden="true"></i>{{ $row['label'] }} →</a><strong>{{ number_format($row['count']) }} <small>{{ $row['count'] === 1 ? 'invoice' : 'invoices' }}</small></strong></div>
-                        <div class="report-count-track" aria-hidden="true"><span style="width:{{ $row['percentage'] }}%;background:{{ $row['color'] }}"></span></div>
-                        <p class="report-count-share">{{ number_format($row['percentage'], 1) }}% of invoices shown</p>
-                    </li>
+                    @if($row['count'] > 0)
+                        <circle cx="90" cy="90" r="65" fill="none" stroke="{{ $row['color'] }}" stroke-width="23" pathLength="100" stroke-dasharray="{{ $row['percentage'] }} 100" stroke-dashoffset="{{ -$paymentOffset }}" transform="rotate(-90 90 90)" />
+                    @endif
+                    @php($paymentOffset += $row['percentage'])
+                @endforeach
+                <text x="90" y="91" text-anchor="middle" class="dashboard-donut-total">{{ number_format($paymentTotal) }}</text>
+                <text x="90" y="111" text-anchor="middle" class="dashboard-donut-caption">invoices</text>
+            </svg>
+            <ul class="dashboard-payment-legend" aria-label="Invoice payment status counts and order links">
+                @foreach($paymentRows as $row)
+                    <li><a href="{{ $row['url'] }}"><i class="report-count-key" style="background:{{ $row['color'] }}" aria-hidden="true"></i><span>{{ $row['label'] }}</span><strong>{{ number_format($row['count']) }}</strong><small>{{ number_format($row['percentage'], 1) }}%</small><span aria-hidden="true">↗</span></a></li>
                 @endforeach
             </ul>
             @if(!$paymentTotal)<p class="empty-note">No paid, partially paid or unpaid invoices in these placed dates.</p>@endif
             @if($otherPaymentCount)<p class="muted">{{ number_format($otherPaymentCount) }} invoices with other unconfirmed payment statuses are excluded from this comparison.</p>@endif
-            <p class="muted">Deposits remain outstanding until full settlement. They are excluded from confirmed clothing sales and delivery counts.</p>
+            <details class="dashboard-help"><summary>What counts as outstanding?</summary>
+                <p class="muted">{{ $invoiceScope }} · current payment status of orders placed in these dates · Asia/Manila. Uses the date selection above; leave dates blank for all time.</p>
+                <p class="muted">These order counts exclude cancelled and released invoices. Sales cards use the date payment was completed; this comparison uses the date the order was placed.</p>
+                <p class="muted">Deposits remain outstanding until full settlement. They are excluded from confirmed clothing sales and delivery counts.</p>
+            </details>
         </section>
-        <section class="panel report-count-panel" aria-labelledby="invoice-method-heading">
-            <div class="section-heading"><div><h3 id="invoice-method-heading">Confirmed paid orders by delivery method</h3><p class="muted">{{ number_format($methodTotal) }} fully paid pickup / Lalamove orders</p></div></div>
+    </div>
+</section>
+<div class="dashboard-grid dashboard-secondary-charts" id="invoice-status">
+        <section class="panel report-count-panel dashboard-method-panel" aria-labelledby="invoice-method-heading">
+            <div class="section-heading"><div><h3 id="invoice-method-heading">Confirmed paid orders by delivery method</h3><p class="muted">{{ $invoiceScope }} · {{ number_format($methodTotal) }} fully paid pickup / Lalamove orders · order placement dates</p></div></div>
             <ul class="report-count-chart" aria-label="Fully paid order delivery method counts and order links">
                 @foreach($methodRows as $row)
                     <li class="report-count-row">
@@ -101,8 +121,13 @@
             @if($otherMethodCount)<p class="muted">{{ number_format($otherMethodCount) }} fully paid orders use another delivery method and are excluded from this comparison.</p>@endif
             <p class="muted">Includes paid online and walk-in orders at every fulfillment stage. Pending and partial payments are excluded.</p>
         </section>
-    </div>
-</section>
+    <section class="panel">
+        <div class="section-heading"><h3>Best sellers</h3><span class="muted">{{ $salesChart['custom_range'] ? 'Selected dates · units sold' : 'All-time units sold' }}</span></div>
+        <p class="muted">Original paid quantities before returns. Refunded money is not converted into returned pieces.</p>
+        @forelse($best as $seller)<div class="rank-row"><span class="rank">{{ $loop->iteration }}</span><b>{{ $seller->name }}</b><span>{{ $seller->units }} pcs</span></div>
+        @empty<div class="small-empty"><span>◇</span><h3>{{ $salesChart['custom_range'] ? 'No sales in selected dates' : 'Ready for your first sale' }}</h3><p>Best sellers appear after verified payments{{ $salesChart['custom_range'] ? ' within the selected dates' : '' }}.</p></div>@endforelse
+    </section>
+</div>
 <div class="dashboard-grid">
     <section class="panel">
         <div class="section-heading"><h3>Recent orders</h3><a class="text-link" href="{{ route('admin.orders') }}">View all →</a></div>
@@ -114,10 +139,22 @@
     <section class="panel">
         <div class="section-heading"><h3>Inventory attention</h3><span class="badge">Available stock</span></div>
         <p class="muted">Out-of-stock variants first, then lowest available quantities. {{ number_format($lowStockCount) }} variants at or below their reorder threshold.</p>
-        @forelse($lowStock as $v)<div class="rank-row"><b>{{ $v->product->name }}<small>{{ $v->size }} / {{ $v->color }}</small></b><span class="badge warning">{{ $v->available() }} left</span></div>
+        @include('admin.partials.inventory-status-guide')
+        @forelse($lowStock as $v)<div class="rank-row inventory-attention-row"><b>{{ $v->product->name }}<small>{{ $v->size }} / {{ $v->color }}</small></b>@include('admin.partials.inventory-status', ['variant' => $v])</div>
         @empty<div class="small-empty"><span>✓</span><h3>All stocked up</h3><p>No variants are below their reorder threshold.</p></div>@endforelse
         <a class="text-link" href="{{ route('admin.inventory-attention') }}">View all {{ number_format($lowStockCount) }} shortages →</a>
     </section>
 </div>
 <section class="panel"><div class="section-heading"><div><h3>Sales &amp; Growth Forecast</h3><p class="muted">Explore historical demand, growth estimates, and suggested reorder quantities.</p></div><a class="button small" href="{{ route('admin.forecast') }}">Open forecast →</a></div></section>
+<section class="panel report-count-section dashboard-refunds" aria-labelledby="invoice-refund-heading">
+    <div class="section-heading"><div><h2 id="invoice-refund-heading">Paid invoices after refunds</h2><p class="muted">{{ $salesScope }} · invoices selected by payment completion date · includes delivery</p></div></div>
+    <div class="invoice-totals">
+        <div><span>Original invoice value</span><strong>₱{{ number_format($invoiceSummary['original_invoice'] / 100, 2) }}</strong><small>Clothing after discounts + delivery</small></div>
+        <div><span>Confirmed refunds</span><strong>₱{{ number_format($invoiceSummary['confirmed_refunds'] / 100, 2) }}</strong><small>Verified online refunds + recorded cash returns</small></div>
+        <div><span>Net invoice value</span><strong>₱{{ number_format($invoiceSummary['net_invoice'] / 100, 2) }}</strong><small>Original invoice value − confirmed refunds</small></div>
+    </div>
+    <p class="muted">Refunds known as of {{ \Carbon\CarbonImmutable::parse($invoiceSummary['as_of'])->format('M j, Y, g:i A') }} (Asia/Manila). A later refund updates the original paid invoice’s net value, including when viewing an earlier payment period. Requested, approved and processing refunds are excluded.</p>
+    <p class="muted">New return inspections record returned quantities and clothing/delivery allocations. Historical refunds may have no clothing/delivery allocation. The clothing chart, average order value and original units sold deliberately show paid sales before refunds or returns; net invoice value above shows confirmed refunds separately and is not profit. <a class="text-link" href="{{ route('admin.operations') }}">Operations shows refunds by confirmation date →</a></p>
+</section>
+</div>
 @endsection

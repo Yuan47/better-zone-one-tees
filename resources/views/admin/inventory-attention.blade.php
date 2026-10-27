@@ -10,9 +10,10 @@
     <button class="button small" type="submit">Apply filters</button><a class="text-link" href="{{ route('admin.inventory-attention') }}">Clear filters</a>
 </form>
 <p class="muted">{{ number_format($shortages->total()) }} matching {{ $shortages->total() === 1 ? 'variant' : 'variants' }}. Available quantities exclude stock held for pending orders.</p>
-<div class="panel table-scroll"><table><thead><tr><th>Product</th><th>SKU</th><th>Size</th><th>Color</th><th>Available</th><th>Reorder threshold</th><th>Below threshold</th>@if(auth()->user()->role === 'admin')<th>Manage</th>@endif</tr></thead><tbody>
-    @forelse($shortages as $variant)<tr><td>{{ $variant->product->name }}</td><td>{{ $variant->sku }}</td><td>{{ $variant->size }}</td><td>{{ $variant->color }}</td><td><span class="badge warning">{{ $variant->available() === 0 ? 'Out of stock' : $variant->available().' pcs' }}</span></td><td>{{ $variant->reorder_level }}</td><td>{{ max(0, $variant->reorder_level - $variant->available()) }}</td>@if(auth()->user()->role === 'admin')<td><a class="text-link" href="{{ route('admin.products.edit', $variant->product) }}">Edit inventory →</a></td>@endif</tr>
-    @empty<tr><td colspan="{{ auth()->user()->role === 'admin' ? 8 : 7 }}">No shortages match these filters.</td></tr>@endforelse
+@include('admin.partials.inventory-status-guide')
+<div class="panel table-scroll"><table><thead><tr><th>Product</th><th>SKU</th><th>Size</th><th>Color</th><th>Available</th><th>Inventory status</th><th>Reorder threshold</th><th>Below threshold</th>@if(auth()->user()->role === 'admin')<th>Manage</th>@endif</tr></thead><tbody>
+    @forelse($shortages as $variant)<tr><td>{{ $variant->product->name }}</td><td>{{ $variant->sku }}</td><td>{{ $variant->size }}</td><td>{{ $variant->color }}</td><td>{{ $variant->available() === 0 ? 'Out of stock' : $variant->available().' pcs' }}</td><td>@include('admin.partials.inventory-status', ['showQuantity' => false])</td><td>{{ $variant->reorder_level }}</td><td>{{ max(0, $variant->reorder_level - $variant->available()) }}</td>@if(auth()->user()->role === 'admin')<td><a class="text-link" href="{{ route('admin.products.edit', $variant->product) }}">Edit inventory →</a></td>@endif</tr>
+    @empty<tr><td colspan="{{ auth()->user()->role === 'admin' ? 9 : 8 }}">No shortages match these filters.</td></tr>@endforelse
 </tbody></table></div>
 {{ $shortages->links('pagination') }}
 @endsection

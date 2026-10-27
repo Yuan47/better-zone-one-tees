@@ -5,12 +5,15 @@ namespace App\Services;
 use App\Exceptions\DeliveryBookingNotStarted;
 use App\Models\Order;
 use Carbon\CarbonImmutable;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class Lalamove
 {
+    private const MAX_QUOTATION_CENTS = 4_294_967_295;
+
     public function ready(): bool
     {
         foreach (['key', 'secret', 'address', 'lat', 'lng', 'phone'] as $key) {
@@ -37,12 +40,12 @@ class Lalamove
         $base = config('shop.lalamove.mode') === 'sandbox' ? 'https://rest.sandbox.lalamove.com' : 'https://rest.lalamove.com';
 
         return Http::withHeaders(['Authorization' => 'hmac '.config('shop.lalamove.key').':'.$timestamp.':'.$signature, 'Market' => 'PH', 'Request-ID' => (string) Str::uuid()])
-            ->connectTimeout(5)->timeout(25)->withBody($body, 'application/json')->send($method, $base.$path)->throw()->json('data');
+            ->withoutRedirecting()->connectTimeout(5)->timeout(25)->withBody($body, 'application/json')->send($method, $base.$path)->throw()->json('data');
     }
 
     public function quote(string $address, string $lat, string $lng): array
     {
-        return $this->call('POST', '/v3/quotations', [
+        $quote = $this->call('POST', '/v3/quotations', [
             'serviceType' => config('shop.lalamove.service'), 'language' => 'en_PH',
             'stops' => [
                 ['coordinates' => ['lat' => (string) config('shop.lalamove.lat'), 'lng' => (string) config('shop.lalamove.lng')], 'address' => config('shop.lalamove.address')],
@@ -50,6 +53,49 @@ class Lalamove
             ],
             'isRouteOptimized' => false,
         ]);
+        self::quotationCost($quote);
+
+        return $quote;
+    }
+
+    /** Validate provider and cached quotation data before converting its PHP amount to centavos. */
+    public static function quotationCost(array $quote): int
+    {
+        $id = $quote['quotationId'] ?? null;
+        $stops = $quote['stops'] ?? null;
+        $expires = $quote['expiresAt'] ?? null;
+        $validStops = is_array($stops) && count($stops) === 2;
+        foreach ([0, 1] as $index) {
+            $stopId = $stops[$index]['stopId'] ?? null;
+            $validStops = $validStops && (is_string($stopId) || is_int($stopId)) && preg_match('/^[A-Za-z0-9_-]{1,100}$/D', (string) $stopId);
+        }
+        $validExpiry = is_string($expires) && preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})$/D', $expires);
+        if ($validExpiry) {
+            try {
+                $parsed = CarbonImmutable::parse($expires);
+                $errors = CarbonImmutable::getLastErrors();
+                $validExpiry = ($errors === false || ($errors['warning_count'] === 0 && $errors['error_count'] === 0)) && $parsed->isFuture();
+            } catch (\Throwable $exception) {
+                $validExpiry = false;
+            }
+        }
+        if (! is_string($id) || ! preg_match('/^[A-Za-z0-9_-]{1,100}$/D', $id) || ! $validStops || ! $validExpiry
+            || (string) $stops[0]['stopId'] === (string) $stops[1]['stopId']) {
+            throw new \UnexpectedValueException('The delivery quotation is incomplete or expired.');
+        }
+        if (data_get($quote, 'priceBreakdown.currency') !== 'PHP' || ! is_numeric(data_get($quote, 'priceBreakdown.total'))) {
+            throw new \UnexpectedValueException('The delivery quotation currency or amount is invalid.');
+        }
+        $total = (float) data_get($quote, 'priceBreakdown.total');
+        if (! is_finite($total) || $total < 0 || $total > self::MAX_QUOTATION_CENTS / 100) {
+            throw new \UnexpectedValueException('The delivery quotation amount is outside the supported range.');
+        }
+        $cost = (int) round($total * 100);
+        if ($cost < 0 || $cost > self::MAX_QUOTATION_CENTS) {
+            throw new \UnexpectedValueException('The delivery quotation amount is outside the supported range.');
+        }
+
+        return $cost;
     }
 
     public function book(Order $order): array
@@ -63,47 +109,62 @@ class Lalamove
         // Quotes expire quickly; re-quote when packing is complete.
         try {
             $quote = $this->quote($order->address, $order->lat, $order->lng);
+            $cost = self::quotationCost($quote);
         } catch (\Throwable $exception) {
             throw new DeliveryBookingNotStarted('Lalamove could not prepare the delivery quotation. No delivery was booked; this order remains ready.', 0, $exception);
         }
-        $id = $quote['quotationId'] ?? null;
-        $stops = $quote['stops'] ?? null;
-        $expires = $quote['expiresAt'] ?? null;
-        $validStops = is_array($stops) && count($stops) === 2;
-        foreach ([0, 1] as $index) {
-            $stopId = $stops[$index]['stopId'] ?? null;
-            $validStops = $validStops && (is_string($stopId) || is_int($stopId)) && preg_match('/^[A-Za-z0-9_-]{1,100}$/D', (string) $stopId);
-        }
-        $validExpiry = is_string($expires) && preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})$/D', $expires);
-        if ($validExpiry) {
-            try {
-                $validExpiry = CarbonImmutable::parse($expires)->isFuture();
-            } catch (\Throwable $exception) {
-                $validExpiry = false;
-            }
-        }
-        if (! is_string($id) || ! preg_match('/^[A-Za-z0-9_-]{1,100}$/D', $id) || ! $validStops || ! $validExpiry
-            || (string) $stops[0]['stopId'] === (string) $stops[1]['stopId']) {
-            throw ValidationException::withMessages(['delivery' => 'The delivery quotation is incomplete or expired. No delivery was booked; this order remains ready. Request a fresh quote before trying again.']);
-        }
-        if (data_get($quote, 'priceBreakdown.currency') !== 'PHP' || ! is_numeric(data_get($quote, 'priceBreakdown.total'))) {
-            throw ValidationException::withMessages(['delivery' => 'The delivery quote is invalid.']);
-        }
-        $total = (float) data_get($quote, 'priceBreakdown.total');
-        if (! is_finite($total) || $total < 0 || $total > PHP_INT_MAX / 100) {
-            throw ValidationException::withMessages(['delivery' => 'The delivery quote amount is invalid. No delivery was booked; this order remains ready.']);
-        }
-        $cost = (int) round($total * 100);
         if ($cost > $order->shipping) {
             throw ValidationException::withMessages(['delivery' => 'The current delivery quote is higher than the delivery fee paid. No delivery was booked; this order remains ready. Review the delivery cost before trying again.']);
         }
 
-        return $this->call('POST', '/v3/orders', [
-            'quotationId' => $quote['quotationId'],
-            'sender' => ['stopId' => $quote['stops'][0]['stopId'], 'name' => 'Zone One Tee’s', 'phone' => $senderPhone],
-            'recipients' => [['stopId' => $quote['stops'][1]['stopId'], 'name' => $order->recipient, 'phone' => $recipientPhone]],
-            'isPODEnabled' => true, 'metadata' => ['order_number' => $order->number],
-        ]);
+        try {
+            return $this->call('POST', '/v3/orders', [
+                'quotationId' => $quote['quotationId'],
+                'sender' => ['stopId' => $quote['stops'][0]['stopId'], 'name' => 'Zone One Tee’s', 'phone' => $senderPhone],
+                'recipients' => [['stopId' => $quote['stops'][1]['stopId'], 'name' => $order->recipient, 'phone' => $recipientPhone]],
+                'isPODEnabled' => true, 'metadata' => ['order_number' => $order->number],
+            ]);
+        } catch (RequestException $exception) {
+            if ($this->insufficientCreditRejection($exception)) {
+                throw new DeliveryBookingNotStarted('Lalamove rejected the booking because its account has insufficient credit. No delivery was booked; this order remains ready. Ask the store owner to check the Lalamove account credit before trying again.', 0, $exception);
+            }
+            throw $exception;
+        }
+    }
+
+    private function insufficientCreditRejection(RequestException $exception): bool
+    {
+        if ($exception->response->status() !== 402) {
+            return false;
+        }
+        $body = $exception->response->json();
+        // Accept only the documented code or the observed structured error envelope.
+        // Any success data, delivery ID, conflicting code or unfamiliar shape stays uncertain.
+        if (! is_array($body) || array_diff(array_keys($body), ['message', 'errors']) !== []) {
+            return false;
+        }
+        $matched = false;
+        if (array_key_exists('message', $body)) {
+            if ($body['message'] !== 'ERR_INSUFFICIENT_CREDIT') {
+                return false;
+            }
+            $matched = true;
+        }
+        if (array_key_exists('errors', $body)) {
+            if (! is_array($body['errors']) || ! array_is_list($body['errors']) || $body['errors'] === []) {
+                return false;
+            }
+            foreach ($body['errors'] as $error) {
+                if (! is_array($error) || ($error['id'] ?? null) !== 'ERR_INSUFFICIENT_CREDIT'
+                    || array_diff(array_keys($error), ['id', 'message']) !== []
+                    || (array_key_exists('message', $error) && ! is_string($error['message']))) {
+                    return false;
+                }
+            }
+            $matched = true;
+        }
+
+        return $matched;
     }
 
     public static function internationalPhone(string $phone): ?string

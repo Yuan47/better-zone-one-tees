@@ -270,7 +270,8 @@ class CommerceTest extends TestCase
     {
         config(['shop.lalamove.mode' => 'sandbox', 'shop.lalamove.key' => 'pk_test_x', 'shop.lalamove.secret' => 'sk_test_x',
             'shop.lalamove.address' => 'Store', 'shop.lalamove.lat' => '14.1', 'shop.lalamove.lng' => '121.1', 'shop.lalamove.phone' => '09123456789']);
-        Http::fake(['rest.sandbox.lalamove.com/*' => Http::response(['data' => ['quotationId' => 'q_test', 'expiresAt' => now()->addMinutes(5)->toIso8601String(), 'priceBreakdown' => ['currency' => 'PHP', 'total' => '100.00']]])]);
+        Http::fake(['rest.sandbox.lalamove.com/*' => Http::response(['data' => ['quotationId' => 'q_test', 'expiresAt' => now()->addMinutes(5)->toIso8601String(),
+            'priceBreakdown' => ['currency' => 'PHP', 'total' => '100.00'], 'stops' => [['stopId' => 'pickup'], ['stopId' => 'recipient']]]])]);
         app(Lalamove::class)->quote('Customer', '14.2', '121.2');
         Http::assertSent(function ($req) {
             $header = $req->header('Authorization')[0];

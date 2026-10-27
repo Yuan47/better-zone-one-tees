@@ -14,7 +14,6 @@ use App\Services\OrderFlow;
 use App\Services\PayMongo;
 use App\Services\Pricing;
 use App\Services\StructuredAddress;
-use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -174,15 +173,14 @@ class StoreController extends Controller
         if (strcasecmp($data['country'], 'Philippines') !== 0) {
             throw ValidationException::withMessages(['country' => 'Lalamove delivery is available in the Philippines only.']);
         }
+        $r->session()->forget('delivery_quote');
         try {
             $quote = $delivery->quote($data['address'], (string) $data['lat'], (string) $data['lng']);
-            if (data_get($quote, 'priceBreakdown.currency') !== 'PHP' || ! is_numeric(data_get($quote, 'priceBreakdown.total')) || empty($quote['quotationId'])) {
-                throw new \RuntimeException('Invalid quote');
-            }
+            $cost = Lalamove::quotationCost($quote);
             $saved = ['quote' => $quote, 'address' => $data['address'], 'lat' => (string) $data['lat'], 'lng' => (string) $data['lng']];
             $r->session()->put('delivery_quote', $saved);
 
-            return response()->json(['amount' => (int) round((float) $quote['priceBreakdown']['total'] * 100), 'expires_at' => $quote['expiresAt']]);
+            return response()->json(['amount' => $cost, 'expires_at' => $quote['expiresAt']]);
         } catch (ValidationException $e) {
             throw $e;
         } catch (\Throwable $e) {
@@ -227,10 +225,16 @@ class StoreController extends Controller
         $data['shipping'] = 0;
         if ($data['delivery_method'] === 'lalamove') {
             $saved = $r->session()->get('delivery_quote');
-            if (! $saved || $saved['address'] !== $data['address'] || $saved['lat'] !== (string) ($data['lat'] ?? '') || $saved['lng'] !== (string) ($data['lng'] ?? '') || now()->gte(Carbon::parse($saved['quote']['expiresAt']))) {
+            try {
+                if (! is_array($saved) || ! is_array($saved['quote'] ?? null) || ($saved['address'] ?? null) !== $data['address']
+                    || ($saved['lat'] ?? null) !== (string) ($data['lat'] ?? '') || ($saved['lng'] ?? null) !== (string) ($data['lng'] ?? '')) {
+                    throw new \UnexpectedValueException('The saved delivery address or quotation is missing.');
+                }
+                $data['shipping'] = Lalamove::quotationCost($saved['quote']);
+            } catch (\Throwable $exception) {
+                $r->session()->forget('delivery_quote');
                 throw ValidationException::withMessages(['delivery' => 'Get a fresh quotation for this exact delivery address first.']);
             }
-            $data['shipping'] = (int) round((float) $saved['quote']['priceBreakdown']['total'] * 100);
             $data['delivery_quote'] = $saved['quote'];
         }
         $partial = ($data['payment_option'] ?? 'full') === 'partial';

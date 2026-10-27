@@ -42,7 +42,7 @@ class GroqAssistantTest extends TestCase
             && ! array_key_exists('max_tokens', $request->data())
             && $request['messages'][0]['role'] === 'system'
             && str_contains($request['messages'][0]['content'], 'customer assistant')
-            && $request['messages'][1] === ['role' => 'user', 'content' => 'Help me choose something comfortable.']);
+            && $request['messages'][1] === ['role' => 'user', 'content' => 'Hello there, please introduce yourself.']);
         $this->assertSame(5, $options['connect_timeout']);
         $this->assertSame(30, $options['timeout']);
         $this->assertFalse($options['allow_redirects']);
@@ -132,7 +132,7 @@ class GroqAssistantTest extends TestCase
         Http::assertNothingSent();
     }
 
-    private function chat(string $message = 'Help me choose something comfortable.')
+    private function chat(string $message = 'Hello there, please introduce yourself.')
     {
         return $this->postJson(route('chat'), ['message' => $message, 'side' => 'customer']);
     }

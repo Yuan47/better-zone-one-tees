@@ -1,5 +1,7 @@
 # Step 3: provider setup and acceptance
 
+For the latest observed service results, see [Current integration checkpoint](integration-status.md). The original preparation record below describes the setup process, not the current activation state.
+
 Prepared 19 October 2026 (Asia/Manila). Steps 1 and 2 are implemented. **Real provider acceptance remains pending credentials.** A private settings worksheet is outside this repository. It contains the authorized test recipient; the address and eventual keys must stay out of GitHub and shared evidence.
 
 ## Setup order and required values

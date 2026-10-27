@@ -12,6 +12,7 @@ use App\Services\SalesReport;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class ReportsController extends Controller
@@ -42,6 +43,33 @@ class ReportsController extends Controller
             ->groupBy('products.id')->groupByRaw('COALESCE(products.name, order_items.name)')
             ->orderByDesc('units')->orderBy('name')->orderBy('product_id')->limit(5)->get();
         $recent = Order::with('user')->latest()->limit(5)->get();
+
+        // Operational cards show the current store position, independently of
+        // the selected sales-chart period. Monthly sales retain paid-date scope.
+        $now = CarbonImmutable::now('Asia/Manila');
+        $activeInvoices = Order::where('status', '!=', 'cancelled')->where('inventory_released', false)
+            ->where('created_at', '<=', $now->toDateTimeString());
+        $openInvoices = (clone $activeInvoices)->whereIn('payment_status', ['pending', 'partially_paid'])
+            ->where('total', '>', 0)->whereColumn('total', '>', 'amount_paid');
+        $monthStart = $now->startOfMonth()->toDateString();
+        $widgetStats = [
+            'on_delivery' => (clone $activeInvoices)->whereDeliveryStage('courier')->count(),
+            'outstanding_customers' => (clone $openInvoices)->whereHas('user', fn ($query) => $query->where('role', 'customer'))
+                ->distinct()->count('user_id'),
+            'guest_outstanding_invoices' => (clone $openInvoices)->whereNull('user_id')->count(),
+            'outstanding_invoices' => (clone $openInvoices)->count(),
+            'outstanding_payment' => (int) (clone $openInvoices)->sum(DB::raw('CASE WHEN amount_paid < 0 THEN total ELSE total - amount_paid END')),
+            'month_sales' => (int) $report->paidOrders($monthStart, $now->toDateString())->sum('subtotal'),
+            'month_label' => $now->format('F Y'),
+            'as_of' => $now->toIso8601String(),
+        ];
+        $widgetLinks = [
+            'on_delivery' => route('admin.orders', ['fulfillment' => 'courier', 'exclude_cancelled' => 1]),
+            'outstanding' => route('admin.orders', ['outstanding' => 1, 'exclude_cancelled' => 1]),
+            'outstanding_customers' => route('admin.orders', ['outstanding' => 1, 'exclude_cancelled' => 1]),
+            'outstanding_payment' => route('admin.orders', ['outstanding' => 1, 'exclude_cancelled' => 1]),
+            'month_sales' => route('admin.dashboard', ['period' => 'daily', 'start_date' => $monthStart, 'end_date' => $now->toDateString()]).'#reports',
+        ];
 
         // Unpaid invoices have no paid_at. These two count charts use the
         // placed-order cohort, while the sales cards above retain paid_at.
@@ -81,7 +109,7 @@ class ReportsController extends Controller
         $otherMethodCount = (int) $invoiceCounts->where('payment_status', 'paid')->whereNotIn('delivery_method', ['pickup', 'lalamove'])->sum('invoice_count');
 
         return view('admin.dashboard', compact('revenue', 'ordersCount', 'invoiceSummary', 'customers', 'toPack', 'lowStock', 'lowStockCount', 'chart', 'best', 'recent', 'period', 'salesChart', 'salesScope',
-            'invoiceFilters', 'invoiceScope', 'paymentRows', 'paymentTotal', 'otherPaymentCount', 'methodRows', 'methodTotal', 'otherMethodCount'));
+            'invoiceFilters', 'invoiceScope', 'paymentRows', 'paymentTotal', 'otherPaymentCount', 'methodRows', 'methodTotal', 'otherMethodCount', 'widgetStats', 'widgetLinks'));
     }
 
     public function forecast(Forecast $forecast)

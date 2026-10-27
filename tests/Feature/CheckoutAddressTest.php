@@ -57,7 +57,7 @@ class CheckoutAddressTest extends TestCase
     private function quote(): array
     {
         return ['quotationId' => 'quote_address_test', 'priceBreakdown' => ['currency' => 'PHP', 'total' => '125.50'],
-            'expiresAt' => now()->addMinutes(5)->toIso8601String()];
+            'expiresAt' => now()->addMinutes(5)->toIso8601String(), 'stops' => [['stopId' => 'pickup'], ['stopId' => 'recipient']]];
     }
 
     public function test_saved_customer_address_prefills_checkout(): void
@@ -134,7 +134,7 @@ class CheckoutAddressTest extends TestCase
         $variant = $this->variant();
         $quote = $this->quote();
         $this->mock(Lalamove::class, function (MockInterface $mock) use ($quote) {
-            $mock->shouldReceive('quote')->once()->with($this->canonicalAddress(), '14.676', '121.0437')->andReturn($quote);
+            $mock->shouldReceive('quote')->twice()->with($this->canonicalAddress(), '14.676', '121.0437')->andReturn($quote);
         });
         $this->payment(function (Order $order) use ($quote) {
             $this->assertSame($this->canonicalAddress(), $order->address);
@@ -146,9 +146,11 @@ class CheckoutAddressTest extends TestCase
             ->postJson('/checkout/quote', $this->address() + ['address' => 'Injected destination'])
             ->assertOk()->assertJsonPath('amount', 12550)->assertSessionHas('delivery_quote.address', $this->canonicalAddress());
         $changed = array_replace($this->address(), ['street_address' => '99 Different Street']);
-        $this->post('/checkout', $this->details('lalamove') + $changed)->assertSessionHasErrors('delivery');
+        $this->post('/checkout', $this->details('lalamove') + $changed)
+            ->assertSessionHasErrors('delivery')->assertSessionMissing('delivery_quote');
         $this->assertDatabaseCount('orders', 0);
         $this->assertSame(0, $variant->fresh()->reserved);
+        $this->postJson('/checkout/quote', $this->address())->assertOk()->assertJsonPath('amount', 12550);
         $this->post('/checkout', $this->details('lalamove') + $this->address() + ['address' => 'Another injected destination'])
             ->assertRedirect('https://checkout.paymongo.com/address-test');
         $this->assertDatabaseCount('orders', 1);

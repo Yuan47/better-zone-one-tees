@@ -181,4 +181,35 @@ class FaqAudienceSettingsTest extends TestCase
         $this->assertStringContainsString('never', mb_strtolower($guides->firstWhere('question', 'How do I enter my email verification code?')->answer));
         $this->assertStringContainsString('only for this setup', $guides->firstWhere('question', 'How does the owner activate a staff account with its setup code?')->answer);
     }
+
+    public function test_registration_guide_refresh_only_updates_the_exact_old_default_and_keeps_its_other_settings(): void
+    {
+        $previous = "1. Open Sign in, then choose Create an account.\n2. Enter your name, email, and a password of at least 10 characters; enter the same password again.\n3. Choose Create account. If email verification is required, enter the latest code on the verification page.\n4. Keep your password and personal verification code private. The assistant never needs them.";
+        $faq = ChatbotFaq::where('question', 'How do I create a customer account?')->firstOrFail();
+        $faq->update(['answer' => $previous, 'active' => false, 'audience' => 'staff', 'keywords' => 'custom words', 'sort_order' => 77]);
+        $before = $faq->fresh()->getAttributes();
+        $migration = require database_path('migrations/2026_10_27_000018_refresh_default_customer_registration_guide.php');
+        $migration->up();
+        $updated = $faq->fresh();
+        $this->assertStringContainsString('full name, a unique username, email', $updated->answer);
+        $this->assertStringContainsString('at least 10 characters', $updated->answer);
+        $this->assertStringContainsString('same password again', $updated->answer);
+        $this->assertStringContainsString('latest emailed code only on the verification page', $updated->answer);
+        $this->assertStringContainsString('verified Google email', $updated->answer);
+        $this->assertStringContainsString('creates a customer account', $updated->answer);
+        $this->assertSame(array_replace($before, ['answer' => $updated->answer]), $updated->getAttributes());
+        $migration->up();
+        $migration->down();
+        $this->assertSame($updated->getAttributes(), $faq->fresh()->getAttributes());
+
+        foreach (['Owner-edited custom account steps.', str_replace('your name', 'your NAME', $previous)] as $edited) {
+            $faq->update(['answer' => $edited]);
+            $beforeEdit = $faq->fresh()->getAttributes();
+            $migration->up();
+            $this->assertSame($beforeEdit, $faq->fresh()->getAttributes());
+        }
+        $faq->delete();
+        $migration->up();
+        $this->assertDatabaseMissing('chatbot_faqs', ['question' => 'How do I create a customer account?']);
+    }
 }

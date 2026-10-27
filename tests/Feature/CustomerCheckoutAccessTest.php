@@ -95,7 +95,7 @@ class CustomerCheckoutAccessTest extends TestCase
         $variant = $this->variant();
         $customer = User::factory()->create();
         $quote = ['quotationId' => 'quote_checkout_access', 'priceBreakdown' => ['currency' => 'PHP', 'total' => '100.00'],
-            'expiresAt' => now()->addMinutes(5)->toIso8601String()];
+            'expiresAt' => now()->addMinutes(5)->toIso8601String(), 'stops' => [['stopId' => 'pickup'], ['stopId' => 'recipient']]];
         Http::fake(['*/v3/quotations' => Http::response(['data' => $quote]),
             'https://api.paymongo.com/v2/checkout_sessions' => Http::response(['data' => ['id' => 'cs_checkout_access',
                 'attributes' => ['checkout_url' => 'https://checkout.paymongo.com/checkout-access']]])]);

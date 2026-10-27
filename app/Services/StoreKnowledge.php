@@ -106,6 +106,37 @@ class StoreKnowledge
         return $this->normalize($message) === $this->normalize($faq->question);
     }
 
+    public function requiresCatalogAnswer(string $message, Collection $productMatches): bool
+    {
+        $choosing = preg_match('/\b(?:recommend(?:ations?)?|suggest(?:ions?)?|choose|choosing|pick|picking|looking\s+for|best|better|suitable|ideal|good)\b/iu', $message);
+        $clothing = preg_match('/\b(?:shirts?|t[ -]?shirts?|tees?|polos?|clothes|clothing|garments?|uniforms?|outfits?|comfortable|comfy)\b/iu', $message);
+        $describing = preg_match('/\btell\s+me\s+about\b|\b(?:describe|description|details?|information)\b/iu', $message);
+        $attributes = preg_match('/\b(?:fabrics?|materials?|cotton|polyester|blends?|soft|softness|breathable|breathability|comfortable|comfort|comfy|feel|feels|texture|thickness|durable|durability)\b/iu', $message);
+
+        return (bool) $attributes || (($choosing || $describing) && ($clothing || $productMatches->isNotEmpty()))
+            || (bool) preg_match('/\bwhat\s+should\s+i\s+wear\b/iu', $message);
+    }
+
+    public function recommendationAnswer(Collection $catalog): string
+    {
+        if ($catalog->isEmpty()) {
+            return 'There are no active products in the catalog right now. Store staff can help with availability.';
+        }
+        $options = $catalog->map(function ($product) {
+            $variant = collect($product['variants'])->first(fn ($variant) => $variant['available_pieces'] > 0);
+
+            return $variant ? $product['name'].' — example listed option: '.$variant['size'].' / '.$variant['color']
+                .' ('.$variant['available_pieces'].' pieces currently available).' : null;
+        })->filter()->values();
+        if ($options->isEmpty()) {
+            return 'These catalog choices have no currently available matching size/color: '.$catalog->pluck('name')->join(', ')
+                .'. Choose another listed size and color or ask store staff.';
+        }
+
+        return "Catalog options to compare:\n".$options->map(fn ($option, $index) => ($index + 1).'. '.$option)->join("\n")
+            ."\nOpen each product’s size chart and choose its listed size and color. For fabric and comfort advice, ask store staff. Availability is checked again at checkout.";
+    }
+
     public function matchingProducts(string $message, Collection $products): Collection
     {
         $message = $this->normalize($message);

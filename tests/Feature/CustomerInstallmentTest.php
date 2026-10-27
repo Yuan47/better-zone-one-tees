@@ -338,7 +338,7 @@ class CustomerInstallmentTest extends TestCase
         $address = ['street_address' => '12 Example Street', 'city' => 'Quezon City', 'province' => 'Metro Manila', 'postal_code' => '1100',
             'country' => 'Philippines', 'lat' => '14.676', 'lng' => '121.0437'];
         $this->withSession(['delivery_quote' => ['quote' => ['quotationId' => 'quote_checkout_replay', 'expiresAt' => now()->addMinutes(5)->toIso8601String(),
-            'priceBreakdown' => ['currency' => 'PHP', 'total' => '125.50']],
+            'priceBreakdown' => ['currency' => 'PHP', 'total' => '125.50'], 'stops' => [['stopId' => 'pickup'], ['stopId' => 'recipient']]],
             'address' => '12 Example Street, Quezon City, Metro Manila, 1100, Philippines', 'lat' => $address['lat'], 'lng' => $address['lng']]]);
         $details = $this->details(['checkout_key' => $key, 'payment_option' => 'full', 'delivery_method' => 'lalamove']) + $address;
         $this->post('/checkout', $details)->assertSessionHasNoErrors()->assertSessionMissing('delivery_quote');
@@ -433,7 +433,8 @@ class CustomerInstallmentTest extends TestCase
         $this->buyer($variant, 1);
         $address = ['street_address' => '12 Example Street', 'city' => 'Quezon City', 'province' => 'Metro Manila', 'postal_code' => '1100',
             'country' => 'Philippines', 'lat' => '14.676', 'lng' => '121.0437'];
-        $quote = ['quotationId' => 'quote_customer_installment', 'priceBreakdown' => ['currency' => 'PHP', 'total' => '2000.00'], 'expiresAt' => now()->addMinutes(5)->toIso8601String()];
+        $quote = ['quotationId' => 'quote_customer_installment', 'priceBreakdown' => ['currency' => 'PHP', 'total' => '2000.00'],
+            'expiresAt' => now()->addMinutes(5)->toIso8601String(), 'stops' => [['stopId' => 'pickup'], ['stopId' => 'recipient']]];
         $this->withSession(['delivery_quote' => ['quote' => $quote, 'address' => '12 Example Street, Quezon City, Metro Manila, 1100, Philippines',
             'lat' => $address['lat'], 'lng' => $address['lng']]])
             ->post('/checkout', $this->details(['delivery_method' => 'lalamove', 'payment_amount' => '500']) + $address)->assertSessionHasErrors();
