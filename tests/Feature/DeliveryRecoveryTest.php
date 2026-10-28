@@ -76,6 +76,62 @@ class DeliveryRecoveryTest extends TestCase
             'priceBreakdown' => ['currency' => 'PHP', 'total' => $total], 'stops' => [['stopId' => 'pickup'], ['stopId' => 'buyer']]];
     }
 
+    public static function nonSuccessStatuses(): array
+    {
+        return [[300], [301], [302], [303], [304], [307], [308]];
+    }
+
+    #[DataProvider('nonSuccessStatuses')]
+    public function test_non_success_booking_response_cannot_attach_its_plausible_delivery_id_or_allow_a_second_booking(int $status): void
+    {
+        $order = $this->order();
+        Http::fake([
+            '*/v3/quotations' => Http::response(['data' => $this->quotation()], 201),
+            '*/v3/orders' => Http::response(['data' => ['orderId' => '107900701184', 'status' => 'ASSIGNING_DRIVER']], $status,
+                ['Location' => 'https://redirect.example.test/booking']),
+        ]);
+        $this->actingAs($this->user())->post('/admin/orders/'.$order->id.'/delivery')->assertSessionHasErrors('delivery');
+        $order->refresh();
+        $this->assertSame('delivery_booking', $order->status);
+        $this->assertNull($order->delivery_id);
+        $this->assertNotNull($order->delivery_booking_context);
+        $this->assertSame('paid', $order->payment_status);
+        $this->assertSame(40000, $order->total);
+        $this->assertTrue($order->inventory_committed);
+        $this->assertDatabaseCount('delivery_attempts', 0);
+        $this->assertDatabaseHas('activity_logs', ['action' => 'order.delivery_reconciliation_required', 'target_id' => $order->id]);
+        $this->post('/admin/orders/'.$order->id.'/delivery')->assertSessionHasErrors('delivery');
+        Http::assertSentCount(2);
+    }
+
+    public static function nonSuccessTrackingResponses(): array
+    {
+        $cases = [];
+        foreach (self::nonSuccessStatuses() as [$status]) {
+            foreach (['refresh', 'recover'] as $operation) {
+                $cases[] = [$status, $operation];
+            }
+        }
+
+        return $cases;
+    }
+
+    #[DataProvider('nonSuccessTrackingResponses')]
+    public function test_non_success_tracking_cannot_confirm_courier_completion_or_recover_a_delivery(int $status, string $operation): void
+    {
+        $order = $operation === 'refresh' ? $this->attached() : $this->uncertain();
+        $before = $order->getRawOriginal();
+        $attempts = DB::table('delivery_attempts')->get()->toArray();
+        Http::fake(['*/v3/orders/*' => Http::response(['data' => $this->provider($order, 'COMPLETED')], $status,
+            ['Location' => 'https://redirect.example.test/tracking'])]);
+        $this->actingAs($this->user())->post('/admin/orders/'.$order->id.'/delivery/'.$operation, ['delivery_id' => '107900701184'])
+            ->assertSessionHasErrors('delivery');
+        $this->assertSame($before, $order->fresh()->getRawOriginal());
+        $this->assertEquals($attempts, DB::table('delivery_attempts')->get()->toArray());
+        $this->assertDatabaseCount('activity_logs', 0);
+        Http::assertSentCount(1);
+    }
+
     public function test_invalid_delivery_contact_returns_order_to_ready_without_provider_or_financial_changes(): void
     {
         $order = $this->order(['phone' => '123']);

@@ -24,4 +24,9 @@ class PaymentAttempt extends Model
     {
         return $this->belongsTo(User::class, 'recorded_by');
     }
+
+    public function receiptNotification()
+    {
+        return $this->hasOne(PaymentReceiptNotification::class);
+    }
 }

@@ -132,6 +132,24 @@ class LalamoveQuotationValidationTest extends TestCase
         Http::assertSent(fn ($request) => $request['data']['language'] === 'en_PH' && $request['data']['serviceType'] === 'MOTORCYCLE');
     }
 
+    public static function nonSuccessStatuses(): array
+    {
+        return [[300], [301], [302], [303], [304], [307], [308]];
+    }
+
+    #[DataProvider('nonSuccessStatuses')]
+    public function test_non_success_http_cannot_supply_a_plausible_quotation(int $status): void
+    {
+        Http::fake(['*/v3/quotations' => Http::response(['data' => $this->quotation()], $status,
+            ['Location' => 'https://redirect.example.test/quotation'])]);
+        $this->withSession(['delivery_quote' => ['quote' => $this->quotation()]])
+            ->postJson('/checkout/quote', $this->address())->assertStatus(503)
+            ->assertSessionMissing('delivery_quote');
+        $this->assertDatabaseCount('orders', 0);
+        $this->assertDatabaseCount('payment_attempts', 0);
+        Http::assertSentCount(1);
+    }
+
     public function test_transport_failure_clears_previous_quote_and_preserves_pickup_option(): void
     {
         Http::fake(fn () => throw new ConnectionException('Private provider diagnostic'));

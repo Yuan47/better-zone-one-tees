@@ -292,6 +292,7 @@ class InvoiceReminderTest extends TestCase
             [422, [], 'failed'], [429, [], 'failed'], [408, [], 'unknown'], [409, [], 'unknown'], [500, [], 'unknown'], [503, [], 'unknown'],
             [302, [], 'unknown'], [201, [], 'unknown'], [201, ['messageId' => ''], 'unknown'], [201, ['messageId' => 123], 'unknown'],
             [200, ['messageId' => '<unexpected-code@brevo.example>'], 'unknown'],
+            [400, ['code' => 'duplicate_parameter', 'message' => 'The idempotency key has already been used.'], 'unknown'],
         ];
     }
 

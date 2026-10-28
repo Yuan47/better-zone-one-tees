@@ -46,6 +46,11 @@ class BrevoTransactions
             // Acceptance may be uncertain. Never retry or log payloads containing codes or reset links.
             return ['status' => 'unknown', 'provider_status' => null, 'message_id' => null];
         }
+        // Brevo's duplicate idempotency response can mean the first request was accepted.
+        // It is not proof that no email was sent and must not authorize a resend.
+        if ($response->status() === 400 && $response->json('code') === 'duplicate_parameter') {
+            return ['status' => 'unknown', 'provider_status' => 400, 'message_id' => null];
+        }
         $message = $response->json('messageId');
         if ($response->status() === 201 && is_string($message) && trim($message) !== '' && strlen($message) <= 255) {
             return ['status' => 'sent', 'provider_status' => 201, 'message_id' => $message];

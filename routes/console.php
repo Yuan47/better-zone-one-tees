@@ -49,6 +49,7 @@ Artisan::command('shop:sync-payments', function () {
 });
 Schedule::command('shop:sync-payments')->everyFiveMinutes()->withoutOverlapping();
 Schedule::command('invoices:send-reminders')->hourly()->timezone('Asia/Manila')->withoutOverlapping();
+Schedule::command('payments:send-receipts')->everyMinute()->withoutOverlapping();
 
 Artisan::command('shop:release-reservation {number} {--confirmed-no-payment}', function () {
     if (! $this->option('confirmed-no-payment')) {

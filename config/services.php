@@ -30,6 +30,8 @@ return [
     ],
 
     'brevo' => [
+        'payment_receipts_enabled' => (bool) env('BREVO_PAYMENT_RECEIPTS_ENABLED', false),
+        'payment_receipts_from' => env('BREVO_PAYMENT_RECEIPTS_FROM'),
         'payment_reminders_enabled' => (bool) env('BREVO_PAYMENT_REMINDERS_ENABLED', false),
         'delivery_notifications_enabled' => (bool) env('BREVO_DELIVERY_NOTIFICATIONS_ENABLED', false),
         'api_key' => env('BREVO_API_KEY'),

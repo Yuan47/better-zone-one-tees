@@ -96,7 +96,8 @@ class ReadyOrderNotifications
                 }
                 $result = app(BrevoTransactions::class)->send($claim['payload']);
                 // A request timeout (including HTTP 408), server error or malformed acceptance is uncertain.
-                $rejected = in_array($result['provider_status'], [400, 401, 402, 403, 404, 405, 406, 410, 413, 415, 422, 429], true);
+                $rejected = $result['status'] === 'failed'
+                    && in_array($result['provider_status'], [400, 401, 402, 403, 404, 405, 406, 410, 413, 415, 422, 429], true);
                 $status = $result['status'] === 'sent' ? 'sent' : ($rejected ? 'failed' : 'unknown');
                 if ($status === 'sent' && OrderReadyNotification::where('provider_message_id', $result['message_id'])->whereKeyNot($notification->id)->exists()) {
                     $status = 'unknown';

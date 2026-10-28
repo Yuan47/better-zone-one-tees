@@ -1,6 +1,6 @@
 # Customer and workspace assistance
 
-The assistant includes 28 editable how-to guides: 12 for customers, 9 for staff and owners, and 7 for owners. They explain account creation, verification, recovery, shopping, invoices, installments, receipt/review, returns, counter sales, fulfillment, reporting, forecasts and owner tools in short numbered steps. Matched approved guides work without GroqCloud credentials.
+The assistant includes 29 editable how-to guides: 13 for customers, 9 for staff and owners, and 7 for owners. They explain account creation, verification, recovery, shopping, invoices, installments, receipt/review, returns, counter sales, fulfillment, reporting, forecasts and owner tools in short numbered steps. The missing-receipt guide directs customers to the original invoice and warns against paying again to obtain an email. Matched approved guides work without GroqCloud credentials.
 
 The chat panel offers three quick questions appropriate to the page and signed-in workspace role. Answers preserve line breaks so steps remain readable on mobile. The assistant explains actions; it cannot perform payments, refunds, stock changes, staff activation or other management actions.
 

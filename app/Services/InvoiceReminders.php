@@ -143,7 +143,9 @@ class InvoiceReminders
 
                 return 'sent';
             }
-            $failed = in_array($response->status(), [400, 401, 402, 403, 404, 405, 406, 410, 413, 415, 422, 429], true);
+            // A duplicate idempotency key may refer to an earlier accepted send.
+            $duplicate = $response->status() === 400 && $response->json('code') === 'duplicate_parameter';
+            $failed = ! $duplicate && in_array($response->status(), [400, 401, 402, 403, 404, 405, 406, 410, 413, 415, 422, 429], true);
             $locked->update(['status' => $failed ? 'failed' : 'unknown', 'provider_status' => $response->status(),
                 'failure_reason' => $failed ? 'provider_rejected_request' : 'provider_acceptance_not_verified']);
 

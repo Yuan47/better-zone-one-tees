@@ -39,8 +39,14 @@ class Lalamove
         $signature = hash_hmac('sha256', $timestamp."\r\n".$method."\r\n".$path."\r\n\r\n".$body, config('shop.lalamove.secret'));
         $base = config('shop.lalamove.mode') === 'sandbox' ? 'https://rest.sandbox.lalamove.com' : 'https://rest.lalamove.com';
 
-        return Http::withHeaders(['Authorization' => 'hmac '.config('shop.lalamove.key').':'.$timestamp.':'.$signature, 'Market' => 'PH', 'Request-ID' => (string) Str::uuid()])
-            ->withoutRedirecting()->connectTimeout(5)->timeout(25)->withBody($body, 'application/json')->send($method, $base.$path)->throw()->json('data');
+        $response = Http::withHeaders(['Authorization' => 'hmac '.config('shop.lalamove.key').':'.$timestamp.':'.$signature, 'Market' => 'PH', 'Request-ID' => (string) Str::uuid()])
+            ->withoutRedirecting()->connectTimeout(5)->timeout(25)->withBody($body, 'application/json')->send($method, $base.$path)->throw();
+        // throw() preserves HTTP4xx/5xx details, but does not reject redirects.
+        if (! $response->successful()) {
+            throw new \UnexpectedValueException('Lalamove returned an unsuccessful response.');
+        }
+
+        return $response->json('data');
     }
 
     public function quote(string $address, string $lat, string $lng): array

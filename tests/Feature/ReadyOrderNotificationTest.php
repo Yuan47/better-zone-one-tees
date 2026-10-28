@@ -177,7 +177,8 @@ class ReadyOrderNotificationTest extends TestCase
 
     public static function uncertainResponses(): array
     {
-        return [[201, []], [200, ['messageId' => '<not-created@test>']], [408, []], [500, []], [302, []]];
+        return [[201, []], [200, ['messageId' => '<not-created@test>']], [408, []], [500, []], [302, []],
+            [400, ['code' => 'duplicate_parameter', 'message' => 'The idempotency key has already been used.']]];
     }
 
     #[DataProvider('uncertainResponses')]
