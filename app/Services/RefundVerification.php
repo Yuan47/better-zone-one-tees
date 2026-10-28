@@ -26,8 +26,12 @@ class RefundVerification
         if (! app(PayMongo::class)->ready() || ! is_string($id) || ! preg_match('/^ref_[A-Za-z0-9_]{1,120}$/D', $id)) {
             $this->fail('Configure PayMongo and supply a valid refund reference before verification.');
         }
-        $data = Http::withBasicAuth(config('shop.paymongo.secret'), '')->connectTimeout(5)->timeout(20)
-            ->get('https://api.paymongo.com/refunds/'.$id)->throw()->json('data');
+        $response = Http::withBasicAuth(config('shop.paymongo.secret'), '')->withoutRedirecting()->connectTimeout(5)->timeout(20)
+            ->get('https://api.paymongo.com/refunds/'.$id)->throw();
+        if (! $response->successful()) {
+            throw new \RuntimeException('PayMongo refund lookup did not return a successful response.');
+        }
+        $data = $response->json('data');
 
         return DB::transaction(function () use ($refund, $id, $data, $paymentAttemptId) {
             // All refund requests for an order serialize against the same order lock.

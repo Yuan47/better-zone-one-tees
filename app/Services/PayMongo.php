@@ -37,20 +37,24 @@ class PayMongo
         }
         $billing = array_filter(['name' => $order->recipient, 'email' => $order->user?->email, 'phone' => $order->phone], fn ($value) => filled($value));
         $returnUrl = $order->user_id ? route('orders.show', $order) : URL::temporarySignedRoute('guest.orders.show', now()->addDays(30), ['order' => $order->id]);
-        $response = Http::withBasicAuth(config('shop.paymongo.secret'), '')->connectTimeout(5)->timeout(25)
+        $response = Http::withBasicAuth(config('shop.paymongo.secret'), '')->withoutRedirecting()->connectTimeout(5)->timeout(25)
             ->post('https://api.paymongo.com/v2/checkout_sessions', ['data' => ['attributes' => [
                 'line_items' => $lines, 'payment_method_types' => array_values(config('shop.paymongo.methods')),
                 'reference_number' => $order->number, 'description' => 'Zone One Tee’s '.$order->number,
                 'billing' => $billing,
                 'success_url' => $returnUrl, 'cancel_url' => $returnUrl,
                 'send_email_receipt' => filled($order->user?->email), 'pass_on_fees' => false, 'metadata' => array_filter(['order_number' => $order->number, 'invoice_payment_reference' => $attempt?->reference]),
-            ]]])->throw()->json('data');
-        $url = data_get($response, 'attributes.checkout_url');
-        if (! is_string($url) || ! str_starts_with($url, 'https://checkout.paymongo.com/') || empty($response['id'])) {
+            ]]])->throw();
+        if (! $response->successful()) {
+            throw new \RuntimeException('PayMongo checkout did not return a successful response.');
+        }
+        $data = $response->json('data');
+        $url = data_get($data, 'attributes.checkout_url');
+        if (! is_string($url) || ! str_starts_with($url, 'https://checkout.paymongo.com/') || empty($data['id'])) {
             throw new \RuntimeException('Invalid PayMongo checkout response');
         }
 
-        return ['checkout_session_id' => $response['id'], 'checkout_url' => $url];
+        return ['checkout_session_id' => $data['id'], 'checkout_url' => $url];
     }
 
     public function verify(string $body, string $header): bool
@@ -77,8 +81,12 @@ class PayMongo
     public function retrieve(string $id): array
     {
         $this->assertSession($id);
-        $data = Http::withBasicAuth(config('shop.paymongo.secret'), '')->connectTimeout(5)->timeout(20)
-            ->get('https://api.paymongo.com/v1/checkout_sessions/'.$id)->throw()->json('data');
+        $response = Http::withBasicAuth(config('shop.paymongo.secret'), '')->withoutRedirecting()->connectTimeout(5)->timeout(20)
+            ->get('https://api.paymongo.com/v1/checkout_sessions/'.$id)->throw();
+        if (! $response->successful()) {
+            throw new \RuntimeException('PayMongo payment lookup did not return a successful response.');
+        }
+        $data = $response->json('data');
         if (! is_array($data)) {
             throw new \RuntimeException('Invalid payment response');
         }
@@ -89,8 +97,11 @@ class PayMongo
     public function expire(string $id): void
     {
         $this->assertSession($id);
-        Http::withBasicAuth(config('shop.paymongo.secret'), '')->connectTimeout(5)->timeout(20)
+        $response = Http::withBasicAuth(config('shop.paymongo.secret'), '')->withoutRedirecting()->connectTimeout(5)->timeout(20)
             ->post('https://api.paymongo.com/v1/checkout_sessions/'.$id.'/expire')->throw();
+        if (! $response->successful()) {
+            throw new \RuntimeException('PayMongo checkout expiry did not return a successful response.');
+        }
     }
 
     private function assertSession(string $id): void
