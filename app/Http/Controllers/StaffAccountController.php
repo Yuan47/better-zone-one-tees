@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\StaffInvitation;
 use App\Models\User;
 use App\Services\StaffAccounts;
+use App\Support\WorkspaceTableSort;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
@@ -14,9 +15,15 @@ class StaffAccountController extends Controller
     {
         $this->authorizeAdmin($request);
 
+        $staff = WorkspaceTableSort::apply(User::where('role', 'staff'), $request, [
+            'name' => 'users.name', 'email' => 'users.email', 'verified' => "CASE WHEN users.email_verified_at IS NULL THEN 'Not yet verified' ELSE 'Verified' END", 'created' => 'users.created_at',
+        ], fn ($query) => $query->orderBy('name'), 'staff_')->paginate(15, ['*'], 'staff_page')->withQueryString();
+        $invitations = WorkspaceTableSort::apply(StaffInvitation::whereNull('consumed_at'), $request, [
+            'name' => 'staff_invitations.name', 'email' => 'staff_invitations.email', 'created' => 'staff_invitations.created_at',
+        ], fn ($query) => $query->latest(), 'setup_')->paginate(15, ['*'], 'setup_page')->withQueryString();
+
         return $this->privateView('admin.staff.index', [
-            'staff' => User::where('role', 'staff')->orderBy('name')->paginate(15, ['*'], 'staff_page')->withQueryString(),
-            'invitations' => StaffInvitation::whereNull('consumed_at')->latest()->paginate(15, ['*'], 'setup_page')->withQueryString(),
+            'staff' => $staff, 'invitations' => $invitations,
             'activeCount' => User::where('role', 'staff')->count(),
             'pendingCount' => StaffInvitation::whereNull('consumed_at')->count(),
             'setupReady' => $accounts->ready(),

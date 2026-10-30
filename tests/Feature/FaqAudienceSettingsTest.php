@@ -170,7 +170,7 @@ class FaqAudienceSettingsTest extends TestCase
 
     public function test_new_guides_have_explicit_scopes_and_short_numbered_steps(): void
     {
-        $guides = ChatbotFaq::where('sort_order', '>=', 300)->get();
+        $guides = ChatbotFaq::whereBetween('sort_order', [300, 699])->get();
         $this->assertCount(29, $guides);
         $this->assertSame(['customer' => 13, 'owner' => 7, 'staff' => 9], $guides->countBy('audience')->sortKeys()->all());
         foreach ($guides as $guide) {

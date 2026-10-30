@@ -20,6 +20,7 @@ use App\Services\ReadyOrderNotifications;
 use App\Services\SalesReport;
 use App\Services\Sku;
 use App\Services\StoreKnowledge;
+use App\Support\WorkspaceTableSort;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -212,8 +213,20 @@ class AdminController extends Controller
             ->when($filters['q'] ?? null, fn ($q, $v) => $q->where(fn ($query) => $query->where('number', 'like', '%'.$v.'%')
                 ->orWhere('recipient', 'like', '%'.$v.'%')->orWhereHas('user', fn ($user) => $user->where('name', 'like', '%'.$v.'%'))))
             ->when($filters['start_date'] ?? null, fn ($q, $v) => $q->where('created_at', '>=', $v.' 00:00:00'))
-            ->when($filters['end_date'] ?? null, fn ($q, $v) => $q->where('created_at', '<', CarbonImmutable::parse($v)->addDay()->toDateTimeString()))
-            ->latest()->paginate(20)->withQueryString();
+            ->when($filters['end_date'] ?? null, fn ($q, $v) => $q->where('created_at', '<', CarbonImmutable::parse($v)->addDay()->toDateTimeString()));
+        $received = "CASE WHEN orders.payment_status = 'paid' THEN orders.total ELSE orders.amount_paid END";
+        $balance = "CASE WHEN orders.status = 'cancelled' OR orders.inventory_released = 1 THEN 0 WHEN orders.total > ($received) THEN orders.total - ($received) ELSE 0 END";
+        $fulfillment = "CASE WHEN orders.status = 'cancelled' OR orders.inventory_released = 1 THEN 'Closed invoice'
+            WHEN orders.payment_status != 'paid' THEN 'Awaiting full payment'
+            WHEN orders.status = 'completed' AND (orders.customer_confirmed_at IS NOT NULL OR (orders.sales_channel = 'walk_in' AND orders.walk_in_received_at IS NOT NULL)) THEN 'Delivered'
+            WHEN orders.status IN ('to_pack', 'packing') THEN 'Packing'
+            WHEN orders.status = 'out_for_delivery' OR (orders.status = 'completed' AND orders.delivery_method = 'lalamove') THEN 'With courier'
+            ELSE 'Ready for delivery' END";
+        $orders = WorkspaceTableSort::apply($orders, $r, [
+            'number' => 'orders.number', 'customer' => 'COALESCE((SELECT users.name FROM users WHERE users.id = orders.user_id), orders.recipient)',
+            'quantity' => 'orders.quantity', 'total' => 'orders.total', 'received' => $received, 'outstanding' => $balance,
+            'payment' => "REPLACE(orders.payment_status, '_', ' ')", 'fulfillment' => $fulfillment,
+        ], fn ($query) => $query->latest())->paginate(20)->withQueryString();
 
         return view('admin.orders', compact('orders'));
     }
@@ -285,9 +298,11 @@ class AdminController extends Controller
         return back()->with('notice', $settled['status'] === 'ready' ? 'The delivery ended at Lalamove. Its history was saved and this order is ready for another booking.' : 'Delivery booked.');
     }
 
-    public function customers()
+    public function customers(Request $r)
     {
-        $customers = User::where('role', 'customer')->latest()->paginate(20);
+        $customers = WorkspaceTableSort::apply(User::where('role', 'customer'), $r, [
+            'name' => 'users.name', 'email' => 'users.email', 'joined' => 'users.created_at',
+        ], fn ($query) => $query->latest())->paginate(20)->withQueryString();
 
         return view('admin.customers', compact('customers'));
     }

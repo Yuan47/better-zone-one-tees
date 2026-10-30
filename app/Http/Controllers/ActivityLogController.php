@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ActivityLog;
+use App\Support\WorkspaceTableSort;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -45,7 +46,22 @@ class ActivityLogController extends Controller
         if ($request->filled('to')) {
             $query->where('occurred_at', '<=', CarbonImmutable::parse($filters['to'], 'Asia/Manila')->endOfDay());
         }
-        $logs = $query->orderByDesc('occurred_at')->orderByDesc('id')->paginate(25)->withQueryString();
+        $quote = static fn ($value) => "'".str_replace("'", "''", $value)."'";
+        $actionLabel = 'CASE activity_logs.action';
+        foreach (ActivityLog::ACTIONS as $action => $label) {
+            $actionLabel .= ' WHEN '.$quote($action).' THEN '.$quote($label);
+        }
+        $actionLabel .= " ELSE 'Store activity' END";
+        $targetLabel = "CASE activity_logs.target_type WHEN 'account' THEN 'Account' WHEN 'product' THEN 'Product' WHEN 'variant' THEN 'Variant'
+            WHEN 'order' THEN 'Order' WHEN 'faq' THEN 'FAQ' WHEN 'faq_collection' THEN 'FAQ collection' WHEN 'store' THEN 'Store information'
+            WHEN 'report' THEN 'Sales report' WHEN 'refund' THEN 'Refund request' WHEN 'staff_invitation' THEN 'Staff setup' ELSE '—' END";
+        $targetWithId = $query->getConnection()->getDriverName() === 'sqlite'
+            ? "(($targetLabel) || ' #' || activity_logs.target_id)"
+            : "CONCAT(($targetLabel), ' #', activity_logs.target_id)";
+        $target = "CASE WHEN activity_logs.target_id IS NULL OR activity_logs.target_id = 0 THEN ($targetLabel) ELSE $targetWithId END";
+        $logs = WorkspaceTableSort::apply($query, $request, [
+            'when' => 'activity_logs.occurred_at', 'actor' => 'activity_logs.actor_name', 'action' => $actionLabel, 'target' => $target,
+        ], fn ($query) => $query->orderByDesc('occurred_at')->orderByDesc('id'))->paginate(25)->withQueryString();
 
         return view('admin.activity', ['logs' => $logs, 'filters' => $filters, 'events' => ActivityLog::ACTIONS]);
     }

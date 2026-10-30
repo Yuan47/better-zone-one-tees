@@ -8,6 +8,7 @@ use App\Models\Refund;
 use App\Services\ActivityRecorder;
 use App\Services\RefundVerification;
 use App\Services\ReturnInspections;
+use App\Support\WorkspaceTableSort;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -20,9 +21,18 @@ class RefundController extends Controller
     {
         $filters = $request->validate(['status' => ['nullable', Rule::in(Refund::STATUSES)], 'q' => 'nullable|string|max:100']);
         $refunds = Refund::with('order.user', 'paymentAttempt')->when($filters['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
-            ->when($filters['q'] ?? null, fn ($query, $search) => $query->whereHas('order', fn ($query) => $query->where('number', 'like', '%'.$search.'%')))
-            ->orderByRaw("CASE WHEN status = 'requested' THEN 0 WHEN status = 'approved' THEN 1 WHEN status IN ('pending', 'processing') THEN 2 ELSE 3 END")
-            ->latest()->paginate(20)->withQueryString();
+            ->when($filters['q'] ?? null, fn ($query, $search) => $query->whereHas('order', fn ($query) => $query->where('number', 'like', '%'.$search.'%')));
+        $cash = "EXISTS (SELECT 1 FROM payment_attempts WHERE payment_attempts.id = refunds.payment_attempt_id AND payment_attempts.method = 'cash')";
+        $label = "CASE refunds.status WHEN 'requested' THEN 'Awaiting review'
+            WHEN 'approved' THEN CASE WHEN $cash THEN 'Approved · awaiting cash return' ELSE 'Approved · awaiting provider refund' END
+            WHEN 'rejected' THEN 'Request declined' WHEN 'pending' THEN 'PayMongo processing' WHEN 'processing' THEN 'PayMongo processing'
+            WHEN 'succeeded' THEN CASE WHEN $cash THEN 'Recorded cash refund' ELSE 'PayMongo confirmed refund' END
+            WHEN 'failed' THEN 'Provider refund failed' ELSE 'Needs review' END";
+        $refunds = WorkspaceTableSort::apply($refunds, $request, [
+            'request' => 'refunds.id', 'order' => '(SELECT orders.number FROM orders WHERE orders.id = refunds.order_id)',
+            'requested' => 'refunds.requested_amount', 'amount' => 'refunds.amount', 'status' => $label,
+        ], fn ($query) => $query->orderByRaw("CASE WHEN status = 'requested' THEN 0 WHEN status = 'approved' THEN 1 WHEN status IN ('pending', 'processing') THEN 2 ELSE 3 END")
+            ->latest())->paginate(20)->withQueryString();
 
         return view('admin.refunds', ['refunds' => $refunds, 'returnPolicy' => app(ReturnInspections::class)->policy()]);
     }

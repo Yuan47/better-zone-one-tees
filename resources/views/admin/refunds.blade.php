@@ -3,8 +3,14 @@
 @section('crumb','Refunds')
 @section('content')
 <div class="section-heading"><div><span class="eyebrow">CUSTOMER CARE</span><h1>Refund requests</h1><p class="muted">Review requests and follow returned payments. Completed refunds are confirmed by PayMongo or recorded by the owner for returned cash.</p></div><a class="button" href="{{ route('admin.operations') }}">Order & delivery overview</a></div>
-<form class="filters"><label>Order number<input name="q" value="{{ request('q') }}" maxlength="100" placeholder="ZOT-…"></label><label>Refund status<select name="status"><option value="">All statuses</option>@foreach(\App\Models\Refund::STATUSES as $status)<option value="{{ $status }}" @selected(request('status')===$status)>{{ ucfirst(str_replace('_',' ',$status)) }}</option>@endforeach</select></label><button class="button small">Filter</button><a class="text-link" href="{{ route('admin.refunds.index') }}">Clear filters</a></form>
-<div class="panel table-scroll"><table><thead><tr><th>Request</th><th>Order / customer</th><th>Requested</th><th>Refund amount</th><th>Status</th><th></th></tr></thead><tbody>
+<form class="filters">
+@foreach(['sort','direction'] as $sortField)
+    @if(request()->filled($sortField))
+        <input type="hidden" name="{{ $sortField }}" value="{{ request($sortField) }}">
+    @endif
+@endforeach
+<label>Order number<input name="q" value="{{ request('q') }}" maxlength="100" placeholder="ZOT-…"></label><label>Refund status<select name="status"><option value="">All statuses</option>@foreach(\App\Models\Refund::STATUSES as $status)<option value="{{ $status }}" @selected(request('status')===$status)>{{ ucfirst(str_replace('_',' ',$status)) }}</option>@endforeach</select></label><button class="button small">Filter</button><a class="text-link" href="{{ route('admin.refunds.index') }}">Clear filters</a></form>
+<div class="panel table-scroll"><table data-server-sort><thead><tr><x-sort-header column="request" type="number">Request</x-sort-header><x-sort-header column="order">Order / customer</x-sort-header><x-sort-header column="requested" type="number">Requested</x-sort-header><x-sort-header column="amount" type="number">Refund amount</x-sort-header><x-sort-header column="status">Status</x-sort-header><th></th></tr></thead><tbody>
 @forelse($refunds as $refund)<tr><td>#{{ $refund->id }}<small>{{ $refund->created_at->format('M d, Y') }}</small></td><td>{{ $refund->order->number }}<small>{{ $refund->order->user?->name ?? $refund->order->recipient ?? 'Walk-in customer' }}</small></td><td>₱{{ number_format($refund->requested_amount/100,2) }}</td><td>{{ $refund->amount===null?'Not verified or recorded':'₱'.number_format($refund->amount/100,2) }}</td><td><span class="badge">{{ $refund->label() }}</span></td><td><a class="text-link" href="{{ route('admin.refunds.show',$refund) }}">Review →</a></td></tr>
 @empty<tr><td colspan="6" class="empty-note">No refund requests match these filters.</td></tr>@endforelse
 </tbody></table></div>{{ $refunds->links('pagination') }}

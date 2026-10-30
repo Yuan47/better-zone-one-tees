@@ -1,0 +1,3 @@
+@props(['column', 'type' => 'text', 'prefix' => ''])
+@php($sortHeader = \App\Support\WorkspaceTableSort::header(request(), $column, $type, $prefix))
+<th scope="col" aria-sort="{{ $sortHeader['aria'] }}"><a class="table-sort-button" href="{{ $sortHeader['url'] }}" aria-label="{{ trim($slot) }}: {{ $sortHeader['current'] }}. Sort {{ $sortHeader['next'] }}" title="Next: {{ $sortHeader['next'] }}">{{ $slot }} <span aria-hidden="true">{{ $sortHeader['aria'] === 'ascending' ? '↑' : ($sortHeader['aria'] === 'descending' ? '↓' : '↕') }}</span>@if($sortHeader['aria'] !== 'none')<small>{{ $sortHeader['current'] }}</small>@endif</a></th>

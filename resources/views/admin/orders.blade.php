@@ -5,6 +5,11 @@
 <div class="page-heading"><span class="eyebrow">FROM CHECKOUT TO EVERYDAY</span><h1>Orders</h1><p class="muted">Online and walk-in invoices. Packing and delivery require full payment; deposits are shown separately.</p></div>
 <p><a class="button dark" href="{{ route('admin.walk-in.create') }}">New walk-in invoice →</a></p>
 <form class="filters">
+@foreach(['sort','direction'] as $sortField)
+    @if(request()->filled($sortField))
+        <input type="hidden" name="{{ $sortField }}" value="{{ request($sortField) }}">
+    @endif
+@endforeach
     <label>Order or customer<input name="q" maxlength="100" value="{{ request('q') }}" placeholder="ZOT-… or recipient name"></label>
     <label>Delivery status<select name="fulfillment"><option value="">All stages</option>@foreach(\App\Models\Order::DELIVERY_STAGES as $stage=>$label)<option value="{{ $stage }}" @selected(request('fulfillment')===$stage)>{{ $label }}</option>@endforeach</select></label>
     <label>Payment<select name="payment_status"><option value="">All payments</option><option value="paid" @selected(request('payment_status')==='paid')>Confirmed paid</option><option value="partially_paid" @selected(request('payment_status')==='partially_paid')>Partially paid</option><option value="pending" @selected(request('payment_status')==='pending')>Unconfirmed</option></select></label>
@@ -15,7 +20,7 @@
     <label>Placed from<input name="start_date" type="date" value="{{ request('start_date') }}"></label><label>Placed through<input name="end_date" type="date" value="{{ request('end_date') }}"></label>
     <button class="button small">Filter</button><a class="text-link" href="{{ route('admin.orders') }}">Clear filters</a>
 </form>
-<div class="panel table-scroll"><table><thead><tr><th>Order</th><th>Customer / recipient</th><th>Quantity / tier</th><th>Total</th><th>Received</th><th>Outstanding</th><th>Payment</th><th>Fulfillment</th><th></th></tr></thead><tbody>
+<div class="panel table-scroll"><table data-server-sort><thead><tr><x-sort-header column="number">Order</x-sort-header><x-sort-header column="customer">Customer / recipient</x-sort-header><x-sort-header column="quantity" type="number">Quantity / tier</x-sort-header><x-sort-header column="total" type="number">Total</x-sort-header><x-sort-header column="received" type="number">Received</x-sort-header><x-sort-header column="outstanding" type="number">Outstanding</x-sort-header><x-sort-header column="payment">Payment</x-sort-header><x-sort-header column="fulfillment">Fulfillment</x-sort-header><th></th></tr></thead><tbody>
 @forelse($orders as $order)
     @php($received = $order->paidAmount())
     @php($balance = $order->outstandingBalance())

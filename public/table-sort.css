@@ -1,0 +1,7 @@
+.table-sort-button{display:inline-flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-height:36px;margin:-6px 0;padding:6px 0;border:0;border-radius:3px;background:transparent;color:inherit;font:inherit;font-weight:inherit;line-height:inherit;text-align:left;cursor:pointer;white-space:normal}
+.table-sort-button:hover{color:#941b0c;background:#fff5ec}
+.table-sort-button:focus-visible{outline:2px solid #941b0c;outline-offset:4px}
+.table-sort-indicator{flex-shrink:0;font-size:15px;color:#946c5d}
+th[aria-sort=descending] .table-sort-indicator,th[aria-sort=ascending] .table-sort-indicator{color:#941b0c;font-weight:700}
+.table-sort-status{margin:10px 0 0;font-size:12px;line-height:1.6;color:#735b52}
+@media(max-width:600px){.table-sort-button{min-height:44px}.table-sort-status{font-size:13px}}
