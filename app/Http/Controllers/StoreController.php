@@ -247,7 +247,7 @@ class StoreController extends Controller
         $order = DB::transaction(function () use ($flow, $r, $data, $partial, $amount) {
             $invoice = $flow->reserve($r->session()->get('cart', []), $data, $r->user()->id);
             if ($partial) {
-                app(InvoiceTerms::class)->validatePartial($invoice);
+                app(InvoiceTerms::class)->validatePartialPayment($invoice, $amount, 'payment_amount');
                 if ($amount >= $invoice->total) {
                     throw ValidationException::withMessages(['payment_amount' => 'A partial payment must be less than the original invoice total. Choose full payment to settle it now.']);
                 }

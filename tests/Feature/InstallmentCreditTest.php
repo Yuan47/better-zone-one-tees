@@ -71,7 +71,7 @@ class InstallmentCreditTest extends TestCase
     private function checkout(array $extra = []): array
     {
         return $extra + ['recipient' => 'Credit Customer', 'phone' => '09123456789', 'delivery_method' => 'pickup',
-            'payment_option' => 'partial', 'payment_amount' => '100.00', 'payment_days' => 7];
+            'payment_option' => 'partial', 'payment_amount' => '600.00', 'payment_days' => 7];
     }
 
     private function provider(): void
@@ -267,7 +267,7 @@ class InstallmentCreditTest extends TestCase
         $new = Order::whereKeyNot($old->id)->sole();
         $this->assertSame('partial', $new->payment_plan);
         $this->assertSame(InstallmentCredit::phoneHash('09123456789'), $new->credit_phone_hash);
-        $this->assertSame(10000, $new->payments()->sole()->amount);
+        $this->assertSame(60000, $new->payments()->sole()->amount);
         Http::assertSentCount(1);
     }
 
@@ -282,7 +282,7 @@ class InstallmentCreditTest extends TestCase
         $this->assertSame(35000, $old->fresh()->amount_paid);
         $other = $this->invoice($customer, ['payment_plan' => 'full', 'payment_status' => 'pending', 'amount_paid' => 0]);
         try {
-            app(InvoicePayments::class)->start($other, 10000, $customer, (string) Str::uuid());
+            app(InvoicePayments::class)->start($other, 60000, $customer, (string) Str::uuid());
             $this->fail('A second invoice cannot be converted to partial while the first is open.');
         } catch (ValidationException $exception) {
             $this->assertArrayHasKey('payment_option', $exception->errors());
@@ -299,7 +299,7 @@ class InstallmentCreditTest extends TestCase
         $this->actingAs(User::factory()->create(['role' => 'staff']));
         $payload = ['request_key' => (string) Str::uuid(), 'customer_type' => 'guest', 'recipient' => 'Walk-in Customer',
             'phone' => '+639123456789', 'lines' => [['variant_id' => $variant->id, 'quantity' => 2]],
-            'payment_option' => 'partial_cash', 'amount' => '100.00', 'due_at' => now()->addDays(7)->toDateString(),
+            'payment_option' => 'partial_cash', 'amount' => '600.00', 'due_at' => now()->addDays(7)->toDateString(),
             'reason' => 'Cash payment counted and received in store.', 'payment_received' => '1'];
         $this->post('/admin/walk-in', $payload)->assertSessionHasErrors('payment_option');
         $this->assertSame([$old->id], Order::pluck('id')->all());
@@ -325,7 +325,7 @@ class InstallmentCreditTest extends TestCase
         $deadline = $old->getRawOriginal('due_at');
         $original = $old->getRawOriginal('original_due_at');
         $this->provider();
-        $attempt = app(InvoicePayments::class)->start($old, 10000, $customer, (string) Str::uuid());
+        $attempt = app(InvoicePayments::class)->start($old, 60000, $customer, (string) Str::uuid());
         $this->assertSame('pending', $attempt->status);
         $this->assertSame('partial', $old->fresh()->payment_plan);
         $this->assertSame($deadline, $old->fresh()->getRawOriginal('due_at'));

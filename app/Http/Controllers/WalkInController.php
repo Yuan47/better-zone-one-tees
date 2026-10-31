@@ -83,10 +83,10 @@ class WalkInController extends Controller
                     'payment_plan' => $partial ? 'partial' : 'full', 'due_at' => $partial ? CarbonImmutable::parse($data['due_at'])->endOfDay() : null,
                     'recipient' => $customer?->name ?? $data['recipient'], 'phone' => $phone, 'contact_email' => $customer?->email ?? ($data['contact_email'] ?? null),
                     'address' => 'Store pickup', 'delivery_method' => 'pickup', 'shipping' => 0], $customer?->id);
-                if ($partial) {
-                    app(InvoiceTerms::class)->validatePartial($order);
-                }
                 $amount = $partial ? InvoiceTerms::amount($data['amount']) : (int) $order->total;
+                if ($partial) {
+                    app(InvoiceTerms::class)->validatePartialPayment($order, $amount);
+                }
                 if ($partial && $amount >= $order->total) {
                     throw ValidationException::withMessages(['amount' => 'A partial payment must be less than the invoice total. Choose full payment to pay the whole invoice.']);
                 }

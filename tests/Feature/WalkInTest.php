@@ -45,7 +45,7 @@ class WalkInTest extends TestCase
     {
         return $extra + ['request_key' => (string) Str::uuid(), 'customer_type' => 'guest', 'recipient' => 'Walk-in Guest',
             'phone' => '09123456789', 'lines' => [['variant_id' => $variant->id, 'quantity' => 2]],
-            'payment_option' => $option, 'amount' => '100.50', 'due_at' => now()->addDays(14)->toDateString(),
+            'payment_option' => $option, 'amount' => '700.50', 'due_at' => now()->addDays(14)->toDateString(),
             'reason' => 'Cash was counted and received at the store.', 'payment_received' => '1'];
     }
 
@@ -199,8 +199,8 @@ class WalkInTest extends TestCase
         $this->assertSame('partial', $order->payment_plan);
         $this->assertSame('partially_paid', $order->payment_status);
         $this->assertSame(120000, $order->total);
-        $this->assertSame(10050, $order->paidAmount());
-        $this->assertSame(109950, $order->outstandingBalance());
+        $this->assertSame(70050, $order->paidAmount());
+        $this->assertSame(49950, $order->outstandingBalance());
         $this->assertSame($due, $order->due_at->toDateString());
         $this->assertSame('23:59:59', $order->due_at->format('H:i:s'));
         $this->assertSame($order->getRawOriginal('due_at'), $order->getRawOriginal('original_due_at'));
@@ -209,13 +209,13 @@ class WalkInTest extends TestCase
         $this->assertFalse($order->inventory_committed);
         $this->assertSame(500, $variant->fresh()->stock);
         $this->assertSame(2, $variant->fresh()->reserved);
-        $this->assertSame(10050, PaymentAttempt::sole()->amount);
+        $this->assertSame(70050, PaymentAttempt::sole()->amount);
         Http::assertNothingSent();
     }
 
     public static function onlineOptions(): array
     {
-        return [['full_paymongo', 120000], ['partial_paymongo', 10050]];
+        return [['full_paymongo', 120000], ['partial_paymongo', 70050]];
     }
 
     public static function onlinePaymentModes(): array

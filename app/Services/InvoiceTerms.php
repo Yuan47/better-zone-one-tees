@@ -25,10 +25,37 @@ class InvoiceTerms
         return $order->subtotal > $this->minimumSubtotal();
     }
 
-    public function validatePartial(Order $order): void
+    public function validatePartial(Order $order, string $field = 'amount'): void
     {
         if (! $this->eligible($order)) {
-            throw ValidationException::withMessages(['amount' => 'Partial payments are available only when the discounted clothing subtotal is more than ₱1,000.00. Delivery fees do not count.']);
+            throw ValidationException::withMessages([$field => 'Partial payments are available only when the discounted clothing subtotal is more than ₱1,000.00. Delivery fees do not count.']);
+        }
+    }
+
+    public static function initialMinimum(int $invoiceTotal): int
+    {
+        // Invoice amounts are integer centavos. Round an odd centavo upward.
+        return intdiv($invoiceTotal + 1, 2);
+    }
+
+    public function minimumPayment(Order $order): int
+    {
+        if (! $this->eligible($order)) {
+            return $order->outstandingBalance();
+        }
+
+        return $order->paidAmount() > 0 ? 100 : self::initialMinimum((int) $order->total);
+    }
+
+    public function validatePartialPayment(Order $order, int $amount, string $field = 'amount'): void
+    {
+        $this->validatePartial($order, $field);
+        if ($order->paidAmount() === 0 && $amount < self::initialMinimum((int) $order->total)) {
+            throw ValidationException::withMessages([$field => 'The first payment must be at least 50% of the original invoice total, including delivery (₱'.number_format(self::initialMinimum((int) $order->total) / 100, 2).'). Later payments may be at least ₱1.00, up to the remaining balance.']);
+        }
+        $remaining = $order->outstandingBalance() - $amount;
+        if ($remaining > 0 && $remaining < 100) {
+            throw ValidationException::withMessages([$field => 'Pay the remaining balance in full or leave at least ₱1.00 outstanding. A new payment cannot leave a balance below ₱1.00.']);
         }
     }
 

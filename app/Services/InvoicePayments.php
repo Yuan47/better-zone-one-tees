@@ -122,7 +122,7 @@ class InvoicePayments
             $this->fail('Check or close the existing online checkout before recording another payment. An uncertain checkout cannot be replaced.');
         }
         if ($amount < $order->outstandingBalance()) {
-            app(InvoiceTerms::class)->validatePartial($order);
+            app(InvoiceTerms::class)->validatePartialPayment($order, $amount);
             $order->update(['payment_plan' => 'partial']);
             if (! $order->due_at) {
                 $due = $order->created_at->copy()->addDays(app(InvoiceTerms::class)->days());

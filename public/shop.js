@@ -100,7 +100,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     locate.addEventListener('click',function(){if(!navigator.geolocation){pinStatus.textContent='Location is unavailable. Tap the map or enter coordinates below.';return;}locate.disabled=true;pinStatus.textContent='Finding your current location…';navigator.geolocation.getCurrentPosition(function(position){setPin({lat:position.coords.latitude,lng:position.coords.longitude});if(map)map.setView([Number(lat.value),Number(lng.value)],17);locate.disabled=false;},function(){locate.disabled=false;pinStatus.textContent='Location was unavailable or permission was declined. Tap the map or enter coordinates below.';},{enableHighAccuracy:true,timeout:10000,maximumAge:60000});});
     [lat,lng].forEach(function(el){el.addEventListener('change',function(){if(hasPin()){setPin({lat:Number(lat.value),lng:Number(lng.value)});if(map)map.panTo([Number(lat.value),Number(lng.value)]);}else pinMessage();});});
-    function resetQuote(){quoteRevision++;quoteFresh=false;clearTimeout(expiryTimer);payButton.disabled=!payConfigured||method.value==='lalamove';result.textContent='';shipping.textContent=method.value==='pickup'?'Free pickup':'Get a quote';total.textContent=money(Number(total.dataset.subtotal));}
+    function resetQuote(){quoteRevision++;quoteFresh=false;clearTimeout(expiryTimer);payButton.disabled=!payConfigured||method.value==='lalamove';result.textContent='';shipping.textContent=method.value==='pickup'?'Free pickup':'Get a quote';total.dataset.invoiceTotal=total.dataset.subtotal;total.textContent=money(Number(total.dataset.subtotal));}
     function updateDelivery(){fields.hidden=method.value!=='lalamove';lat.required=lng.required=method.value==='lalamove';Object.values(addressFields).forEach(function(el){el.required=method.value==='lalamove';});resetQuote();if(method.value==='lalamove')showMap();}
     method.addEventListener('change',updateDelivery);[...Object.values(addressFields),lat,lng].forEach(function(el){el.addEventListener('input',resetQuote);});updateDelivery();
     quote.addEventListener('click',async function(){
@@ -108,7 +108,7 @@ document.addEventListener('DOMContentLoaded', function () {
       if(Object.values(body).some(function(value){return !value.trim();})){result.textContent='Complete your address and choose a delivery pin first.';return;}
       var requestedRevision=quoteRevision;
       quote.disabled=true;result.textContent='Getting your delivery quote…';
-      try{var res=await fetch(quote.dataset.url,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':token},body:JSON.stringify(body)});var data=await res.json();if(requestedRevision!==quoteRevision)return;if(!res.ok)throw new Error(Object.values(data.errors||{}).flat().join(' ')||data.message||'Quote is unavailable.');result.textContent='Delivery: '+money(data.amount)+' · Valid until '+new Date(data.expires_at).toLocaleTimeString();shipping.textContent=money(data.amount);total.textContent=money(Number(total.dataset.subtotal)+data.amount);var remaining=new Date(data.expires_at).getTime()-Date.now();if(remaining<=0)throw new Error('This quote has expired. Request another quote.');quoteFresh=true;payButton.disabled=!payConfigured;expiryTimer=setTimeout(function(){resetQuote();result.textContent='The delivery quote expired. Request a fresh quote before payment.';},Math.min(remaining,2147483647));}catch(error){if(requestedRevision===quoteRevision)result.textContent=error.message;}finally{quote.disabled=false;}
+      try{var res=await fetch(quote.dataset.url,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':token},body:JSON.stringify(body)});var data=await res.json();if(requestedRevision!==quoteRevision)return;if(!res.ok)throw new Error(Object.values(data.errors||{}).flat().join(' ')||data.message||'Quote is unavailable.');result.textContent='Delivery: '+money(data.amount)+' · Valid until '+new Date(data.expires_at).toLocaleTimeString();shipping.textContent=money(data.amount);total.dataset.invoiceTotal=Number(total.dataset.subtotal)+data.amount;total.textContent=money(Number(total.dataset.invoiceTotal));var remaining=new Date(data.expires_at).getTime()-Date.now();if(remaining<=0)throw new Error('This quote has expired. Request another quote.');quoteFresh=true;payButton.disabled=!payConfigured;expiryTimer=setTimeout(function(){resetQuote();result.textContent='The delivery quote expired. Request a fresh quote before payment.';},Math.min(remaining,2147483647));}catch(error){if(requestedRevision===quoteRevision)result.textContent=error.message;}finally{quote.disabled=false;}
     });
     document.getElementById('checkout-form').addEventListener('submit',function(e){if(method.value==='lalamove'&&!quoteFresh){e.preventDefault();result.textContent='Request a fresh delivery quote before payment.';return;}var button=document.getElementById('pay-button');button.disabled=true;button.textContent='Preparing checkout…';});
   }
@@ -120,6 +120,8 @@ document.addEventListener('DOMContentLoaded', function () {
   const amount = document.getElementById('payment-amount');
   const summary = document.getElementById('partial-payment-summary');
   const total = document.getElementById('checkout-total');
+  const minimumNote = document.getElementById('first-payment-minimum');
+  let automaticAmount = amount.dataset.autoAmount === '1';
   const money = n => new Intl.NumberFormat('en-PH', {style:'currency',currency:'PHP'}).format(n);
   const update = () => {
     const partial = choice.value === 'partial';
@@ -127,13 +129,24 @@ document.addEventListener('DOMContentLoaded', function () {
     amount.required = partial;
     amount.disabled = !partial;
     if (summary && total) {
-      const invoice = Number(total.textContent.replace(/[^0-9.]/g,''));
+      const invoiceCentavos = Number(total.dataset.invoiceTotal);
+      const minimum = Math.ceil(invoiceCentavos / 2);
+      const invoice = invoiceCentavos / 100;
+      amount.min = (minimum / 100).toFixed(2);
+      amount.max = ((invoiceCentavos - 100) / 100).toFixed(2);
+      if (automaticAmount) amount.value = (minimum / 100).toFixed(2);
+      if (minimumNote) minimumNote.textContent = 'First payment minimum: '+money(minimum / 100)+' (50% of the invoice including delivery, rounded up).';
       const now = Number(amount.value);
-      summary.textContent = partial && now > 0 && now < invoice ? 'Pay '+money(now)+' now. Remaining balance: '+money(invoice-now)+'.' : (partial ? 'Enter a first payment below the full invoice total.' : '');
+      const payment = Math.round(now * 100);
+      summary.textContent = !partial ? '' : payment < minimum
+        ? 'Enter at least '+money(minimum / 100)+' for the first payment.'
+        : payment > invoiceCentavos - 100
+          ? 'Choose full payment, or leave at least ₱1.00 outstanding.'
+          : 'Pay '+money(now)+' now. Remaining balance: '+money(invoice-now)+'.';
     }
   };
   choice.addEventListener('change', update);
-  amount.addEventListener('input', update);
-  if (total) new MutationObserver(update).observe(total,{childList:true,characterData:true,subtree:true});
+  amount.addEventListener('input', () => { automaticAmount = false; update(); });
+  if (total) new MutationObserver(update).observe(total,{attributes:true,attributeFilter:['data-invoice-total'],childList:true,characterData:true,subtree:true});
   update();
 })();

@@ -7,6 +7,7 @@
     const option = document.getElementById('walk-in-payment-option');
     const customerType = document.getElementById('walk-in-customer-type');
     const amount = document.getElementById('walk-in-amount');
+    let automaticAmount = amount.dataset.autoAmount === '1';
     const partialMinimum = Number(form.dataset.partialMinimum);
     const currency = new Intl.NumberFormat('en-PH', {style: 'currency', currency: 'PHP'});
     let nextIndex = [...lines.querySelectorAll('[data-variant]')].reduce((next, input) => Math.max(next, Number(input.name.match(/lines\[(\d+)\]/)?.[1] ?? -1) + 1), 0);
@@ -52,6 +53,10 @@
         quantities.forEach((count, id) => { if (count > variants.get(String(id)).available || count > 10000) stockIssue = true; });
         const discount = tier === 'bulk' ? Math.round(base * 0.05) : 0;
         const total = base - discount;
+        const initialMinimum = Math.ceil(total / 2);
+        amount.min = (Math.max(100, initialMinimum) / 100).toFixed(2);
+        amount.max = (Math.max(0, total - 100) / 100).toFixed(2);
+        if (automaticAmount && total > 0) amount.value = (initialMinimum / 100).toFixed(2);
         const partialAmount = Number(amount.value);
         const payment = partial ? (Number.isFinite(partialAmount) && partialAmount > 0 ? Math.round(partialAmount * 100) : 0) : total;
         write('[data-summary-quantity]', quantity);
@@ -67,6 +72,10 @@
                 ? `Partial payment is available for clothing totals above ${money(partialMinimum)}.`
             : partial && payment >= total && total > 0
                 ? 'A partial payment must be below the invoice total. Choose full payment to pay the whole invoice.'
+            : partial && payment < initialMinimum
+                ? `The first payment must be at least ${money(initialMinimum)} (50% of the invoice total, rounded up).`
+            : partial && total - payment > 0 && total - payment < 100
+                ? 'Choose full payment, or leave at least ₱1.00 outstanding.'
                 : 'Final prices and stock are checked when the invoice is saved.';
         entries.forEach(({row}) => { row.querySelector('[data-remove-line]').disabled = entries.length === 1; });
     };
@@ -85,7 +94,7 @@
         const button = event.target.closest('[data-remove-line]');
         if (button && lines.children.length > 1) { button.closest('[data-walk-in-line]').remove(); update(); }
     });
-    form.addEventListener('input', update);
+    form.addEventListener('input', event => { if (event.target === amount) automaticAmount = false; update(); });
     form.addEventListener('change', update);
     update();
 })();

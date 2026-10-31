@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\BrowserResponseHeaders;
 use App\Http\Middleware\CustomerIdleTimeout;
 use App\Http\Middleware\GoogleCallbackPrivacy;
 use App\Http\Middleware\RecordActivity;
@@ -18,6 +19,7 @@ use Symfony\Component\HttpFoundation\Response;
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(web: __DIR__.'/../routes/web.php', commands: __DIR__.'/../routes/console.php', health: '/up')
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->append(BrowserResponseHeaders::class);
         $middleware->redirectGuestsTo(fn (Request $request) => route($request->is('admin', 'admin/*') ? 'admin.login' : 'login'));
         $middleware->redirectUsersTo(fn (Request $request) => route(AccountNavigation::homeRoute($request->user())));
         $middleware->trustProxies(headers: Request::HEADER_X_FORWARDED_FOR | Request::HEADER_X_FORWARDED_HOST
@@ -41,6 +43,6 @@ return Application::configure(basePath: dirname(__DIR__))
                 $response->headers->set('Referrer-Policy', 'no-referrer');
             }
 
-            return $response;
+            return BrowserResponseHeaders::apply($response);
         });
     })->create();

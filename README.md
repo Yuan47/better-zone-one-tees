@@ -92,7 +92,7 @@ Follow [Staff setup and recovery](docs/staff-accounts-and-recovery.md) for confi
 
 ## Invoices, installments, and walk-in sales
 
-Customers may choose partial payment only when the discounted clothing subtotal is **more than ₱1,000.00**, excluding delivery. Exactly ₱1,000.00 does not qualify. Each payment must be at least ₱1.00 and cannot exceed the outstanding invoice balance; an initial partial payment must be less than the full invoice total. Deposits remain separate from confirmed clothing sales and do not make an order eligible for packing or delivery.
+Customers may choose partial payment only when the discounted clothing subtotal is **more than ₱1,000.00**, excluding delivery. Exactly ₱1,000.00 does not qualify. The first payment must cover at least **50% of the original invoice total, including delivery**, rounded upward to the next centavo. Later payments must be at least ₱1.00 and cannot exceed the outstanding balance. A new payment must either settle the invoice or leave at least ₱1.00 outstanding; an initial partial payment must remain below the full invoice total. Existing received deposits and previously created valid payment attempts remain valid under their original amounts. Deposits remain separate from confirmed clothing sales and do not make an order eligible for packing or delivery.
 
 Only one open installment invoice is allowed per identified customer. Both pending installment invoices with no money received yet and partially paid invoices block another installment purchase. Customer account IDs and normalized Philippine mobile numbers are checked under database locks before reserving stock. A new purchase paid in full remains available. Payments toward the existing installment remain on that invoice; they do not create a second order or refresh its credit allowance.
 
@@ -249,6 +249,8 @@ Evidence is retained in the workspace: work/installments-final-junit.xml, work/i
 GitHub hosts source; the web store needs a PHP/MySQL host. Commit source/composer.lock; never .env, vendor, customer data, database dumps. Included GitHub Actions runs tests and compiles templates.
 
 Production requires APP_ENV=production, APP_DEBUG=false, SHOP_DEMO=false, a secure APP_KEY preserved across upgrades, restricted database credentials, HTTPS/session cookie security, public document root, and verified provider live accounts. Remove/rotate demo users and replace sample inventory. PayMongo live keys require demo mode off plus HTTPS APP_URL. Lalamove production is blocked in demo mode. Configure trusted proxies and shared infrastructure for the host.
+
+The application uses Asia/Manila time. For MySQL/MariaDB hosts whose database session defaults to UTC, set `DB_TIMEZONE=+08:00` in the private environment and rebuild Laravel's configuration cache. This sets the connection's session timezone so `TIMESTAMP` values retain the intended local date in sales and forecast reports; it does not change the server's global timezone or rewrite stored records. Leaving `DB_TIMEZONE` unset retains the database's existing session default. Before importing historical data, verify the source and destination session timezones and compare timestamps around month boundaries; changing this setting does not repair data previously imported with the wrong timezone.
 
 Deploy via Git, install dependencies, run reviewed migrations with php artisan migrate --force, and cache configuration/views. Public hosting/domain cutover has not been performed.
 

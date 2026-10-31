@@ -143,11 +143,12 @@ class PayMongoTransportTest extends TestCase
             return Http::response(['data' => ['id' => 'cs_forged_redirect', 'attributes' => ['checkout_url' => 'https://checkout.paymongo.com/forged']]], $status,
                 ['Location' => 'https://other.example.test/collect-credentials']);
         }]);
-        $error = $this->runCatching(fn () => app(InvoicePayments::class)->start($order, 30000, $order->user, (string) Str::uuid()));
+        $error = $this->runCatching(fn () => app(InvoicePayments::class)->start($order, 60000, $order->user, (string) Str::uuid()));
         $this->assertSame($before['invoice'], $order->fresh()->getAttributes());
         $this->assertSame($before['variants'], Variant::orderBy('id')->get()->map->getAttributes()->all());
         $attempt = $order->payments()->sole();
         $this->assertSame('unknown', $attempt->status);
+        $this->assertSame(60000, $attempt->amount);
         $this->assertNull($attempt->checkout_session_id);
         $this->assertNull($attempt->payment_id);
         $this->assertInstanceOf(\RuntimeException::class, $error);

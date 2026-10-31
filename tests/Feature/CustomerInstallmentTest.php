@@ -57,7 +57,7 @@ class CustomerInstallmentTest extends TestCase
     private function details(array $extra = []): array
     {
         return $extra + ['recipient' => 'Installment Customer', 'phone' => '09123456789', 'delivery_method' => 'pickup',
-            'payment_option' => 'partial', 'payment_amount' => '250.25', 'payment_days' => 14];
+            'payment_option' => 'partial', 'payment_amount' => '650.25', 'payment_days' => 14];
     }
 
     private function provider(): void
@@ -104,7 +104,7 @@ class CustomerInstallmentTest extends TestCase
         $this->assertSame(120000, $order->total);
         $this->assertSame(120000, $order->subtotal);
         $this->assertSame(60000, $order->items()->sole()->unit_price);
-        $this->assertSame(25025, $attempt->amount);
+        $this->assertSame(65025, $attempt->amount);
         $this->assertSame('pending', $attempt->status);
         $this->assertSame(0, $order->paidAmount());
         $this->assertSame(120000, $order->outstandingBalance());
@@ -115,9 +115,9 @@ class CustomerInstallmentTest extends TestCase
         $this->assertTrue($order->due_at->equalTo(now()->addDays(14)));
         $this->assertSame($order->getRawOriginal('due_at'), $order->getRawOriginal('original_due_at'));
         $this->get('/orders')->assertOk()->assertSee($order->number)->assertSee('Outstanding');
-        $this->get('/orders/'.$order->id)->assertOk()->assertSee($order->number)->assertSee('250.25');
+        $this->get('/orders/'.$order->id)->assertOk()->assertSee($order->number)->assertSee('650.25');
         Http::assertSentCount(1);
-        Http::assertSent(fn ($request) => array_sum(array_map(fn ($line) => $line['amount'] * $line['quantity'], $request['data']['attributes']['line_items'])) === 25025
+        Http::assertSent(fn ($request) => array_sum(array_map(fn ($line) => $line['amount'] * $line['quantity'], $request['data']['attributes']['line_items'])) === 65025
             && $request['data']['attributes']['reference_number'] === $order->number
             && $request['data']['attributes']['metadata']['invoice_payment_reference'] === $attempt->reference);
     }

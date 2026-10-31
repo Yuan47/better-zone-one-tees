@@ -18,7 +18,7 @@
 </div>
 <div class="stat-grid dashboard-metrics dashboard-current-metrics" aria-label="Current delivery and payment summary">
     <a class="panel stat dashboard-stat-link" href="{{ $widgetLinks['on_delivery'] }}"><span>On delivery <i aria-hidden="true">↗</i></span><h2>{{ number_format($widgetStats['on_delivery']) }}</h2><small>Currently with courier · all orders</small></a>
-    <a class="panel stat dashboard-stat-link" href="{{ $widgetLinks['outstanding'] }}"><span>Outstanding invoices <i aria-hidden="true">↗</i></span><h2>{{ number_format($widgetStats['outstanding_customers']) }}</h2><small>Registered customers with a balance
+    <a class="panel stat dashboard-stat-link" href="{{ $widgetLinks['outstanding'] }}"><span>Customers with balances <i aria-hidden="true">↗</i></span><h2>{{ number_format($widgetStats['outstanding_customers']) }}</h2><small>Registered customers with a balance
         @if($widgetStats['guest_outstanding_invoices'])
             · {{ number_format($widgetStats['guest_outstanding_invoices']) }} guest invoices tracked separately
         @endif

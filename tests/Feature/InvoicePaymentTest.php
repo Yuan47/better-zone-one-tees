@@ -65,11 +65,11 @@ class InvoicePaymentTest extends TestCase
         $order = $this->invoice();
         $original = $order->only(['number', 'total', 'subtotal', 'discount', 'due_at', 'original_due_at']);
         $this->checkout();
-        $first = app(InvoicePayments::class)->start($order, 50000, $order->user, (string) Str::uuid());
+        $first = app(InvoicePayments::class)->start($order, 75000, $order->user, (string) Str::uuid());
         $this->webhook($first, 'evt_deposit', 'pay_deposit')->assertOk()->assertJsonPath('outcome', 'partially_paid');
         $order->refresh();
-        $this->assertSame(50000, $order->amount_paid);
-        $this->assertSame(75000, $order->outstandingBalance());
+        $this->assertSame(75000, $order->amount_paid);
+        $this->assertSame(50000, $order->outstandingBalance());
         $this->assertSame('awaiting_payment', $order->status);
         $this->assertFalse($order->inventory_committed);
         $this->assertSame(1000, Variant::sole()->stock);
@@ -77,8 +77,8 @@ class InvoicePaymentTest extends TestCase
         $this->assertNull($order->paid_at);
         $this->webhook($first, 'evt_deposit', 'pay_deposit')->assertOk();
         $this->webhook($first, 'evt_deposit_repeat', 'pay_deposit')->assertOk();
-        $this->assertSame(50000, $order->fresh()->amount_paid);
-        $second = app(InvoicePayments::class)->start($order, 75000, $order->user, (string) Str::uuid());
+        $this->assertSame(75000, $order->fresh()->amount_paid);
+        $second = app(InvoicePayments::class)->start($order, 50000, $order->user, (string) Str::uuid());
         $this->webhook($second, 'evt_balance', 'pay_balance')->assertOk()->assertJsonPath('outcome', 'paid');
         $order->refresh();
         $this->assertSame('packing', $order->status);
@@ -94,7 +94,7 @@ class InvoicePaymentTest extends TestCase
         $this->assertDatabaseCount('orders', 1);
         $this->assertDatabaseCount('payment_attempts', 2);
         Http::assertSentCount(2);
-        Http::assertSent(fn ($r) => $r['data']['attributes']['reference_number'] === $order->number && $r['data']['attributes']['line_items'][0]['amount'] === 75000);
+        Http::assertSent(fn ($r) => $r['data']['attributes']['reference_number'] === $order->number && $r['data']['attributes']['line_items'][0]['amount'] === 50000);
     }
 
     public function test_mixed_cash_and_online_expiry_keeps_deposit_stock_and_deadline_then_full_cash_closes_walk_in(): void
@@ -103,16 +103,16 @@ class InvoicePaymentTest extends TestCase
         $staff = User::factory()->create(['role' => 'staff']);
         $deadline = $order->getRawOriginal('due_at');
         $key = (string) Str::uuid();
-        $cash = ['amount' => '300', 'reason' => 'Cash deposit counted and received at the counter.', 'request_key' => $key, 'payment_received' => '1'];
+        $cash = ['amount' => '750', 'reason' => 'Cash deposit counted and received at the counter.', 'request_key' => $key, 'payment_received' => '1'];
         $this->actingAs($staff)->post('/admin/orders/'.$order->id.'/payments/cash', $cash)->assertSessionHasNoErrors();
         $this->post('/admin/orders/'.$order->id.'/payments/cash', $cash)->assertSessionHasNoErrors();
-        $this->assertSame(30000, $order->fresh()->amount_paid);
+        $this->assertSame(75000, $order->fresh()->amount_paid);
         $this->assertDatabaseCount('payment_attempts', 1);
         $this->checkout();
-        $attempt = app(InvoicePayments::class)->start($order, 95000, $staff, (string) Str::uuid());
+        $attempt = app(InvoicePayments::class)->start($order, 50000, $staff, (string) Str::uuid());
         $this->postJson('/admin/orders/'.$order->id.'/payments/cash', array_replace($cash, ['request_key' => (string) Str::uuid()]))->assertUnprocessable();
         Http::fake(['https://api.paymongo.com/v1/checkout_sessions/'.$attempt->checkout_session_id => Http::response(['data' => [
-            'id' => $attempt->checkout_session_id, 'attributes' => ['reference_number' => $order->number, 'livemode' => false, 'line_items' => [['amount' => 95000, 'quantity' => 1, 'currency' => 'PHP']],
+            'id' => $attempt->checkout_session_id, 'attributes' => ['reference_number' => $order->number, 'livemode' => false, 'line_items' => [['amount' => 50000, 'quantity' => 1, 'currency' => 'PHP']],
                 'status' => 'expired', 'payments' => [], 'payment_intent' => null],
         ]])]);
         $this->post('/orders/'.$order->id.'/payment/close')->assertSessionHasNoErrors();
@@ -121,7 +121,7 @@ class InvoicePaymentTest extends TestCase
         $this->assertSame('expired', $attempt->fresh()->status);
         $this->assertSame(5, Variant::sole()->reserved);
         $this->assertSame($deadline, $order->fresh()->getRawOriginal('due_at'));
-        $this->post('/admin/orders/'.$order->id.'/payments/cash', array_replace($cash, ['amount' => '950', 'request_key' => (string) Str::uuid()]))->assertSessionHasNoErrors();
+        $this->post('/admin/orders/'.$order->id.'/payments/cash', array_replace($cash, ['amount' => '500', 'request_key' => (string) Str::uuid()]))->assertSessionHasNoErrors();
         $order->refresh();
         $this->assertSame('paid', $order->payment_status);
         $this->assertSame('Delivered', $order->customerDeliveryLabel());
@@ -153,7 +153,7 @@ class InvoicePaymentTest extends TestCase
     public function test_cash_requires_actual_receipt_confirmation_and_customer_cannot_record_it(): void
     {
         $order = $this->invoice();
-        $payload = ['amount' => '500', 'reason' => 'Cash was received at the counter.', 'request_key' => (string) Str::uuid()];
+        $payload = ['amount' => '750', 'reason' => 'Cash was received at the counter.', 'request_key' => (string) Str::uuid()];
         $this->actingAs($order->user)->postJson('/admin/orders/'.$order->id.'/payments/cash', $payload + ['payment_received' => '1'])->assertForbidden();
         $this->actingAs(User::factory()->create(['role' => 'staff']))->postJson('/admin/orders/'.$order->id.'/payments/cash', $payload)->assertUnprocessable()->assertJsonValidationErrors('payment_received');
         $this->assertDatabaseCount('payment_attempts', 0);
@@ -162,7 +162,7 @@ class InvoicePaymentTest extends TestCase
     public function test_another_customer_cannot_pay_or_close_someone_elses_invoice(): void
     {
         $order = $this->invoice();
-        $this->actingAs(User::factory()->create(['role' => 'customer']))->postJson('/orders/'.$order->id.'/payments', ['amount' => '500', 'request_key' => (string) Str::uuid(), 'user_id' => $order->user_id])->assertForbidden();
+        $this->actingAs(User::factory()->create(['role' => 'customer']))->postJson('/orders/'.$order->id.'/payments', ['amount' => '750', 'request_key' => (string) Str::uuid(), 'user_id' => $order->user_id])->assertForbidden();
         $this->assertDatabaseCount('payment_attempts', 0);
         Http::assertNothingSent();
     }
@@ -171,9 +171,9 @@ class InvoicePaymentTest extends TestCase
     {
         $order = $this->invoice();
         Http::fake(fn () => throw new ConnectionException('Simulated timeout'));
-        $this->actingAs($order->user)->post('/orders/'.$order->id.'/payments', ['amount' => '500', 'request_key' => (string) Str::uuid()])->assertSessionHasErrors('payment');
+        $this->actingAs($order->user)->post('/orders/'.$order->id.'/payments', ['amount' => '750', 'request_key' => (string) Str::uuid()])->assertSessionHasErrors('payment');
         $this->assertSame('unknown', $order->payments()->sole()->status);
-        $this->postJson('/orders/'.$order->id.'/payments', ['amount' => '500', 'request_key' => (string) Str::uuid()])->assertUnprocessable();
+        $this->postJson('/orders/'.$order->id.'/payments', ['amount' => '750', 'request_key' => (string) Str::uuid()])->assertUnprocessable();
         $this->assertDatabaseCount('payment_attempts', 1);
         $this->assertSame(0, $order->fresh()->amount_paid);
         $this->assertFalse($order->fresh()->inventory_released);
@@ -183,7 +183,7 @@ class InvoicePaymentTest extends TestCase
     {
         $order = $this->invoice();
         $this->checkout();
-        $attempt = app(InvoicePayments::class)->start($order, 50000, $order->user, (string) Str::uuid());
+        $attempt = app(InvoicePayments::class)->start($order, 75000, $order->user, (string) Str::uuid());
         $this->webhook($attempt, 'evt_wrong', 'pay_wrong', 125000)->assertConflict();
         $this->assertSame(0, $order->fresh()->amount_paid);
         $this->assertSame('pending', $attempt->fresh()->status);
@@ -226,7 +226,7 @@ class InvoicePaymentTest extends TestCase
         $this->get(URL::temporarySignedRoute('guest.orders.show', now()->subMinute(), ['order' => $order->id]))->assertForbidden();
         $this->get(URL::temporarySignedRoute('guest.orders.show', now()->addHour(), ['order' => $foreign->id]))->assertNotFound();
         $this->checkout();
-        $this->post(URL::temporarySignedRoute('guest.orders.pay', now()->addHour(), ['order' => $order->id]), ['amount' => '500', 'request_key' => (string) Str::uuid()])->assertRedirect();
+        $this->post(URL::temporarySignedRoute('guest.orders.pay', now()->addHour(), ['order' => $order->id]), ['amount' => '750', 'request_key' => (string) Str::uuid()])->assertRedirect()->assertSessionHasNoErrors();
         $this->assertNull($order->payments()->sole()->recorded_by);
         $this->assertNull($order->user_id);
         $this->assertDatabaseCount('users', 1);
@@ -243,10 +243,10 @@ class InvoicePaymentTest extends TestCase
         $order = $this->invoice();
         $staff = User::factory()->create(['role' => 'staff']);
         if ($deposit) {
-            app(InvoicePayments::class)->recordCash($order, 30000, $staff, 'Cash deposit counted and received.', (string) Str::uuid());
+            app(InvoicePayments::class)->recordCash($order, 75000, $staff, 'Cash deposit counted and received.', (string) Str::uuid());
         }
         Http::fake(['https://api.paymongo.com/v2/checkout_sessions' => Http::response(['errors' => [['code' => 'invalid_request', 'detail' => 'Controlled rejection without a session.']]], $status)]);
-        $this->actingAs($order->user)->post('/orders/'.$order->id.'/payments', ['amount' => '500', 'request_key' => (string) Str::uuid()])->assertRedirect()->assertSessionHasErrors('payment');
+        $this->actingAs($order->user)->post('/orders/'.$order->id.'/payments', ['amount' => $deposit ? '500' : '750', 'request_key' => (string) Str::uuid()])->assertRedirect()->assertSessionHasErrors('payment');
         $this->assertSame('failed', $order->payments()->where('method', 'paymongo')->sole()->status);
         $page = $this->get('/orders/'.$order->id)->assertOk();
         if ($deposit) {
@@ -262,9 +262,9 @@ class InvoicePaymentTest extends TestCase
             $this->assertSame(0, $order->fresh()->amount_paid);
         } else {
             $this->assertFalse($order->fresh()->inventory_released);
-            $this->assertSame(30000, $order->fresh()->amount_paid);
+            $this->assertSame(75000, $order->fresh()->amount_paid);
             $this->assertSame(5, Variant::sole()->reserved);
-            $this->actingAs($staff)->post('/admin/orders/'.$order->id.'/payments/cash', ['amount' => '950', 'request_key' => (string) Str::uuid(), 'reason' => 'Remaining cash balance counted and received.', 'payment_received' => '1'])->assertRedirect()->assertSessionHasNoErrors();
+            $this->actingAs($staff)->post('/admin/orders/'.$order->id.'/payments/cash', ['amount' => '500', 'request_key' => (string) Str::uuid(), 'reason' => 'Remaining cash balance counted and received.', 'payment_received' => '1'])->assertRedirect()->assertSessionHasNoErrors();
             $this->assertSame('paid', $order->fresh()->payment_status);
             $this->assertSame(125000, $order->fresh()->amount_paid);
         }

@@ -140,15 +140,15 @@ class PartialPaymentRefundFlowTest extends TestCase
         $staff = $this->actor('staff');
         $owner = $this->actor('admin');
         $original = $order->only(['number', 'total', 'due_at', 'original_due_at']);
-        $deposit = $this->cash($order, $staff, 40000);
+        $deposit = $this->cash($order, $staff, 70000);
         $this->assertSame('partially_paid', $order->fresh()->payment_status);
-        $this->assertSame(80000, $order->fresh()->outstandingBalance());
+        $this->assertSame(50000, $order->fresh()->outstandingBalance());
         $this->assertFalse($order->fresh()->deliveryConfirmed());
         $this->assertSame(20, Variant::sole()->stock);
         $this->assertSame(2, Variant::sole()->reserved);
 
         $this->checkout();
-        $balance = $this->online($order, $staff, 80000);
+        $balance = $this->online($order, $staff, 50000);
         $this->webhook($balance, 'evt_guest_balance', 'pay_guest_balance')->assertOk()->assertJsonPath('outcome', 'paid');
         $order->refresh();
         $this->assertSame('paid', $order->payment_status);
@@ -174,19 +174,19 @@ class PartialPaymentRefundFlowTest extends TestCase
         $reason = 'The owner handed the approved cash deposit back to the buyer.';
         $this->post('/admin/refunds/'.$cashRefund->id.'/cash', ['payment_attempt_id' => $deposit->id, 'cash_reason' => $reason])
             ->assertRedirect()->assertSessionHasNoErrors();
-        $this->assertDatabaseHas('refunds', ['id' => $cashRefund->id, 'status' => 'succeeded', 'amount' => 40000, 'cash_recorded_by' => $owner->id,
+        $this->assertDatabaseHas('refunds', ['id' => $cashRefund->id, 'status' => 'succeeded', 'amount' => 70000, 'cash_recorded_by' => $owner->id,
             'payment_attempt_id' => $deposit->id, 'provider_refund_id' => null, 'cash_reason' => $reason]);
         $this->assertSame(0, Refund::remainingForPayment($order->fresh(), $deposit));
-        $this->assertSame(80000, Refund::remainingForOrder($order->fresh()));
+        $this->assertSame(50000, Refund::remainingForOrder($order->fresh()));
         $this->assertSame(1, ActivityLog::where('action', 'refund.cash_recorded')->count());
 
         $onlineRefund = $this->requestGuestRefund($order);
-        $this->assertSame(80000, $onlineRefund->requested_amount);
+        $this->assertSame(50000, $onlineRefund->requested_amount);
         $this->approve($onlineRefund, $balance->fresh(), $owner);
         Http::fake(['https://api.paymongo.com/refunds/ref_guest_balance' => Http::response($this->providerRefund($balance->fresh(), 'ref_guest_balance'))]);
         $this->post('/admin/refunds/'.$onlineRefund->id.'/recover', ['provider_refund_id' => 'ref_guest_balance', 'payment_attempt_id' => $balance->id])
             ->assertRedirect()->assertSessionHasNoErrors();
-        $this->assertDatabaseHas('refunds', ['id' => $onlineRefund->id, 'status' => 'succeeded', 'amount' => 80000,
+        $this->assertDatabaseHas('refunds', ['id' => $onlineRefund->id, 'status' => 'succeeded', 'amount' => 50000,
             'payment_attempt_id' => $balance->id, 'provider_refund_id' => 'ref_guest_balance']);
         $this->assertSame(0, Refund::remainingForOrder($order->fresh()));
         $this->assertSame(0, Refund::remainingForPayment($order->fresh(), $balance->fresh()));
@@ -210,14 +210,14 @@ class PartialPaymentRefundFlowTest extends TestCase
         $owner = $this->actor('admin');
         $originalDue = $order->getRawOriginal('due_at');
         $this->checkout();
-        $deposit = $this->online($order, $customer, 40000);
+        $deposit = $this->online($order, $customer, 70000);
         $this->webhook($deposit, 'evt_online_deposit', 'pay_online_deposit')->assertOk()->assertJsonPath('outcome', 'partially_paid');
         $this->webhook($deposit, 'evt_online_deposit', 'pay_online_deposit')->assertOk()->assertJsonPath('outcome', 'duplicate');
         $this->webhook($deposit, 'evt_online_deposit_replay', 'pay_online_deposit')->assertOk();
-        $this->assertSame(40000, $order->fresh()->amount_paid);
+        $this->assertSame(70000, $order->fresh()->amount_paid);
         $this->assertSame(20, Variant::sole()->stock);
         $this->assertSame(2, Variant::sole()->reserved);
-        $balance = $this->online($order, $customer, 80000);
+        $balance = $this->online($order, $customer, 50000);
         $this->webhook($balance, 'evt_online_balance', 'pay_online_balance')->assertOk()->assertJsonPath('outcome', 'paid');
         $this->assertSame($originalDue, $order->fresh()->getRawOriginal('due_at'));
         $this->assertSame(18, Variant::sole()->stock);
@@ -235,7 +235,7 @@ class PartialPaymentRefundFlowTest extends TestCase
         $this->post('/orders/'.$order->id.'/refunds', ['reason' => 'Returned clothing because the chosen size does not fit.'])
             ->assertRedirect()->assertSessionHasNoErrors();
         $refund = $order->refunds()->sole();
-        $this->actingAs($owner)->patch('/admin/refunds/'.$refund->id, ['decision' => 'approved', 'approved_amount' => '400.00',
+        $this->actingAs($owner)->patch('/admin/refunds/'.$refund->id, ['decision' => 'approved', 'approved_amount' => '700.00',
             'payment_attempt_id' => $deposit->id, 'decision_note' => ''])->assertSessionHasErrors('decision_note');
         $this->assertSame('requested', $refund->fresh()->status);
         $this->approve($refund, $deposit->fresh(), $owner);
@@ -259,11 +259,11 @@ class PartialPaymentRefundFlowTest extends TestCase
             ->assertRedirect()->assertSessionHasNoErrors();
         $this->assertSame('pending', $refund->fresh()->status);
         $this->assertNull($refund->fresh()->confirmed_at);
-        $this->assertSame(80000, Refund::remainingForOrder($order->fresh()));
+        $this->assertSame(50000, Refund::remainingForOrder($order->fresh()));
         $this->actingAs($customer)->get('/orders/'.$order->id)->assertOk()
-            ->assertSeeInOrder(['Payments received', '₱1,200.00', 'Confirmed refunds', '₱0.00', 'Remaining paid amount for review', '₱800.00'])
-            ->assertSee('₱400.00 is being processed by PayMongo.')
-            ->assertDontSee('PayMongo confirmed ₱400.00');
+            ->assertSeeInOrder(['Payments received', '₱1,200.00', 'Confirmed refunds', '₱0.00', 'Remaining paid amount for review', '₱500.00'])
+            ->assertSee('₱700.00 is being processed by PayMongo.')
+            ->assertDontSee('PayMongo confirmed ₱700.00');
         $this->actingAs($staff)->post('/admin/refunds/'.$refund->id.'/check')->assertSessionHasNoErrors();
         $this->assertSame('processing', $refund->fresh()->status);
         $beforeFailure = $refund->fresh()->getRawOriginal();
@@ -275,9 +275,9 @@ class PartialPaymentRefundFlowTest extends TestCase
         $this->assertNotNull($confirmed['confirmed_at']);
         $this->post('/admin/refunds/'.$refund->id.'/check')->assertSessionHasNoErrors();
         $this->assertSame($confirmed, $refund->fresh()->getRawOriginal());
-        $this->assertSame(40000, (int) $order->refunds()->where('status', 'succeeded')->sum('amount'));
+        $this->assertSame(70000, (int) $order->refunds()->where('status', 'succeeded')->sum('amount'));
         $this->assertSame(0, Refund::remainingForPayment($order->fresh(), $deposit->fresh()));
-        $this->assertSame(80000, Refund::remainingForPayment($order->fresh(), $balance->fresh()));
+        $this->assertSame(50000, Refund::remainingForPayment($order->fresh(), $balance->fresh()));
         $this->assertSame($beforeRefund, $this->commerce($order));
         $this->assertDatabaseCount('orders', 1);
         $this->assertDatabaseCount('payment_attempts', 2);
@@ -289,15 +289,15 @@ class PartialPaymentRefundFlowTest extends TestCase
     public function test_a_real_customer_deposit_does_not_unlock_delivery_or_refunds_while_the_invoice_is_partially_paid(): void
     {
         $order = $this->invoice();
-        $deposit = $this->cash($order, $this->actor('staff'), 40000);
+        $deposit = $this->cash($order, $this->actor('staff'), 70000);
         $before = $this->commerce($order);
         $this->assertSame('partially_paid', $order->fresh()->payment_status);
         $this->actingAs($order->user)->post('/orders/'.$order->id.'/refunds', ['reason' => 'Requesting a return while the remaining balance is unpaid.'])->assertSessionHasErrors('refund');
         $this->post('/orders/'.$order->id.'/receipt', ['received' => '1', 'rating' => 4, 'comment' => 'Trying to confirm receipt before paying the full balance.'])->assertSessionHasErrors('receipt');
         $this->assertDatabaseCount('refunds', 0);
         $this->assertSame('paid', $deposit->fresh()->status);
-        $this->assertSame(40000, $order->fresh()->amount_paid);
-        $this->assertSame(80000, $order->fresh()->outstandingBalance());
+        $this->assertSame(70000, $order->fresh()->amount_paid);
+        $this->assertSame(50000, $order->fresh()->outstandingBalance());
         $this->assertSame($before, $this->commerce($order));
         Http::assertNothingSent();
     }
@@ -312,7 +312,7 @@ class PartialPaymentRefundFlowTest extends TestCase
     {
         $order = $this->invoice(true, true);
         if ($state !== 'pending') {
-            $this->cash($order, $this->actor('staff'), $state === 'partially_paid' ? 40000 : 120000);
+            $this->cash($order, $this->actor('staff'), $state === 'partially_paid' ? 70000 : 120000);
         }
         if ($state === 'missing_handover') {
             $order->refresh()->update(['walk_in_received_at' => null]);
