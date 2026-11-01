@@ -12,7 +12,7 @@
 <details class="courier-details"><summary>Lalamove delivery details</summary>
 <p><strong>Last confirmed courier status:</strong> {{ $courierState }}.</p>
 @if($order->delivery_last_status==='COMPLETED' && !$order->deliveryConfirmed())
-<p>Confirm receipt and submit your review to close this order. The courier's update alone does not mark it Delivered.</p>
+<p>Confirm receipt and choose a rating to close this order. A written review is optional. The courier's update alone does not mark it Delivered.</p>
 @elseif(in_array($order->delivery_last_status,['CANCELED','REJECTED','EXPIRED']))
 <p>The store must arrange another courier. Your payment stays on the same invoice.</p>
 @else

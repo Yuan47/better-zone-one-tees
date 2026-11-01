@@ -88,7 +88,7 @@ class DeliveryRecoveryTest extends TestCase
         Http::assertNothingSent();
     }
 
-    public function test_courier_completion_details_still_require_the_customer_to_confirm_and_review(): void
+    public function test_courier_completion_details_still_require_the_customer_to_confirm_and_rate(): void
     {
         $order = $this->attached();
         $order->forceFill(['amount_paid' => $order->total, 'paid_at' => now()])->save();
@@ -96,7 +96,7 @@ class DeliveryRecoveryTest extends TestCase
         app(DeliveryRecovery::class)->refresh($order);
         $this->actingAs($order->user)->get('/orders/'.$order->id)->assertOk()
             ->assertSeeText('Courier marked delivery complete')
-            ->assertSeeText('Confirm receipt and submit your review to close this order.');
+            ->assertSeeText('Confirm receipt and choose a rating to close this order. A written review is optional.');
         $this->assertSame('out_for_delivery', $order->fresh()->status);
         $this->assertNull($order->fresh()->customer_confirmed_at);
         Http::assertSentCount(1);

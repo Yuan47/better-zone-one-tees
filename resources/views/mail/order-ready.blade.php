@@ -7,10 +7,10 @@
 <p>Hello {{ $name }},</p>
 <p>Your fully paid order <strong>{{ $order->number }}</strong> has been packed and checked.</p>
 @if($pickup)
-<p>Your clothing is ready for collection at the store. Open your order for pickup details.@if($order->sales_channel!=='walk_in') Please confirm receipt and submit your review after collecting your order.@endif</p>
+<p>Your clothing is ready for collection at the store. Open your order for pickup details.@if($order->sales_channel!=='walk_in') Please confirm receipt and choose a star rating after collecting your order. A written review is optional.@endif</p>
 @else
 <p>The store will arrange a courier next. This email does not mean a courier has collected your order. Open your order to see the latest delivery status and tracking details when available.</p>
-@if($order->sales_channel!=='walk_in')<p>Please confirm receipt and submit your review after your order arrives.</p>@endif
+@if($order->sales_channel!=='walk_in')<p>Please confirm receipt and choose a star rating after your order arrives. A written review is optional.</p>@endif
 @endif
 <p><a href="{{ $orderUrl }}" style="display:inline-block;background:#941B0C;color:#ffffff;padding:12px 20px;border-radius:6px;text-decoration:none">View your order</a></p>
 <p>Thank you,<br>Zone One Tees</p>

@@ -5,7 +5,7 @@
     </div>
     <div class="delivery-summary" aria-label="Delivery summary">
         <div><span>Delivery orders</span><strong>{{ number_format($deliveryTotals['total']) }}</strong><small>Paid, non-cancelled orders in this date range</small></div>
-        <div class="delivery-stage-delivered"><span>Delivered</span><strong>{{ number_format($deliveryTotals['completed']) }}</strong><small>Customer confirmed receipt and submitted a review</small></div>
+        <div class="delivery-stage-delivered"><span>Delivered</span><strong>{{ number_format($deliveryTotals['completed']) }}</strong><small>Customer confirmed receipt and submitted a rating</small></div>
         <div><span>Still open</span><strong>{{ number_format($deliveryTotals['active']) }}</strong><small>Includes preparation and courier handover</small></div>
         <div class="delivery-stage-ready"><span>Ready for delivery</span><strong>{{ number_format($deliveryTotals['ready']) }}</strong><small>Includes orders whose booking needs checking</small></div>
     </div>
@@ -52,5 +52,5 @@
             </div>
         </section>
     </div>
-    <p class="delivery-snapshot-note">These charts show the current stage of orders placed in the selected dates, as of {{ $now->format('M j, Y · g:i A') }}. They do not show when a delivery changed stage. Canceled bookings return to “Ready for delivery” only after provider verification. A courier completion stays With courier until the customer confirms receipt and submits the required review.</p>
+    <p class="delivery-snapshot-note">These charts show the current stage of orders placed in the selected dates, as of {{ $now->format('M j, Y · g:i A') }}. They do not show when a delivery changed stage. Canceled bookings return to “Ready for delivery” only after provider verification. A courier completion stays With courier until the customer confirms receipt and chooses a rating. A written review is optional.</p>
 </section>

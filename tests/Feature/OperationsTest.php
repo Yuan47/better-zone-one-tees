@@ -159,7 +159,7 @@ class OperationsTest extends TestCase
             ->assertSee('2 orders in Ready for delivery need a booking check')
             ->assertSee('cancelled paid delivery orders are excluded from these four stages')
             ->assertDontSee('Other status')->assertDontSee('Being packed')->assertDontSee('Booking being checked')
-            ->assertSee('Customer confirmed receipt and submitted a review');
+            ->assertSee('Customer confirmed receipt and submitted a rating');
         $rows = collect($response->viewData('deliveryRows'))->keyBy('status');
         $this->assertSame(['Packing', 'Ready for delivery', 'With courier', 'Delivered'], $rows->pluck('label')->all());
         $this->assertSame([
@@ -306,7 +306,8 @@ class OperationsTest extends TestCase
             ->assertViewHas('statusRows', fn ($rows) => collect($rows)->firstWhere('status', 'delivered')['count'] === 1 && array_sum(array_column($rows, 'count')) === 1)
             ->assertViewHas('chart', fn ($rows) => $rows[4]['refunds'] === 2 && $rows[4]['refund_amount'] === 10000 && $rows[5]['refunds'] === 1
                 && array_sum(array_column($rows, 'refunds')) === 3 && array_sum(array_column($rows, 'orders')) === 1)
-            ->assertSee('₱110.00')->assertSee('may include delivery fees')->assertSee('do not automatically reduce Confirmed Clothing sale');
+            ->assertSee('₱110.00')->assertSee('Confirmed Clothing sale shows original paid clothing sales before refunds.')
+            ->assertSee('including their recorded clothing and delivery allocations');
         $this->assertSame('paid', $current->fresh()->payment_status);
         $this->assertSame(20000, $current->fresh()->subtotal);
         Http::assertNothingSent();

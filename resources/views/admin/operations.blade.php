@@ -91,12 +91,12 @@
         <div class="rank-row"><b>Open refund requests<small>Requested, approved or provider processing · request placed in range</small></b><span>{{ number_format($stats['open_refund_requests']) }}</span></div>
         <div class="rank-row"><b>PayMongo-confirmed refunds</b><span>₱{{ number_format($stats['provider_refund_amount']/100, 2) }}</span></div>
         <div class="rank-row"><b>Recorded cash refunds<small>Owner receipt and audit required · not a PayMongo confirmation</small></b><span>₱{{ number_format($stats['cash_refund_amount']/100, 2) }}</span></div>
-        <p class="muted">Refund requests are available after delivery is confirmed. Online orders require the customer's receipt confirmation and review.</p>
+        <p class="muted">Refund requests are available after delivery is confirmed. Online orders require the customer's receipt confirmation and star rating. A written review is optional.</p>
         <a class="text-link" href="{{ route('admin.refunds.index') }}">View refund request queue →</a>
         @if($stats['other_unpaid'])<div class="rank-row"><b>Other unconfirmed payments</b><span>{{ number_format($stats['other_unpaid']) }}</span></div>@endif
         <p class="muted">{{ number_format($stats['placed_orders']) }} total orders were placed in this range, including paid, partially paid, unpaid and cancelled orders. Pending and partial payments are excluded from confirmed order counts. Fully settled walk-in cash invoices are included.</p>
         <p class="muted">Provider-confirmed and owner-recorded cash refunds are separate financial events. An order with a refund remains in its current fulfillment status, and may have been placed before this range.</p>
-        <p class="muted">Refund amounts are gross recorded amounts and may include delivery fees. They do not automatically reduce Confirmed Clothing sale because a clothing/delivery allocation has not been recorded.</p>
+        <p class="muted">Confirmed Clothing sale shows original paid clothing sales before refunds. Refunds appear separately, including their recorded clothing and delivery allocations.</p>
     </section>
 </div>
 <section class="panel operations-trend-panel">

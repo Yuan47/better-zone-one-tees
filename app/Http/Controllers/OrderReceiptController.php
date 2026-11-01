@@ -13,7 +13,7 @@ class OrderReceiptController extends Controller
     public function store(Request $request, Order $order, ActivityRecorder $audit)
     {
         abort_unless($request->user()->role === 'customer' && $request->user()->id === $order->user_id, 403);
-        $data = $request->validate(['received' => 'required|accepted', 'rating' => 'required|integer|between:1,5', 'comment' => 'required|string|min:10|max:2000']);
+        $data = $request->validate(['received' => 'required|accepted', 'rating' => 'required|integer|between:1,5', 'comment' => 'nullable|string|max:2000']);
         DB::transaction(function () use ($request, $order, $data, $audit) {
             $locked = Order::whereKey($order->id)->lockForUpdate()->firstOrFail();
             if ($locked->customer_confirmed_at && $locked->review()->exists()) {
@@ -26,13 +26,13 @@ class OrderReceiptController extends Controller
                 throw ValidationException::withMessages(['receipt' => 'Receipt confirmation is available once your paid order has arrived, or is ready for store pickup.']);
             }
             $previous = $locked->status;
-            $locked->review()->create(['user_id' => $request->user()->id, 'rating' => $data['rating'], 'comment' => $data['comment']]);
+            $locked->review()->create(['user_id' => $request->user()->id, 'rating' => $data['rating'], 'comment' => $data['comment'] ?? '']);
             $locked->update(['status' => 'completed', 'customer_confirmed_at' => now()]);
-            if (! $audit->record($request->user(), 'order.received', $locked, ['previous_status' => $previous, 'status' => 'completed', 'reason' => 'Customer confirmed receipt and submitted the required review.'])) {
+            if (! $audit->record($request->user(), 'order.received', $locked, ['previous_status' => $previous, 'status' => 'completed', 'reason' => 'Customer confirmed receipt and submitted a rating.'])) {
                 throw new \RuntimeException('The receipt confirmation could not be audited.');
             }
         }, 3);
 
-        return back()->with('notice', 'Delivered confirmed. Thank you for your review. Refund requests are now available on this order.');
+        return back()->with('notice', 'Delivered confirmed. Thank you for your rating. Refund requests are now available on this order.');
     }
 }

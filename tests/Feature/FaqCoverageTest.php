@@ -78,7 +78,7 @@ class FaqCoverageTest extends TestCase
             'Can I open another installment?' => 'only one open',
             'Will you email payment reminders?' => '3 days and 1 day',
             'I need to reset password' => '60 minutes',
-            'How can I confirm receipt?' => 'rating and review',
+            'How can I confirm receipt?' => 'The written review is optional.',
         ] as $question => $answer) {
             $response = $this->chat($question)->assertOk()->assertJsonPath('mode', 'store');
             $this->assertStringContainsString($answer, $response->json('reply'), $question);

@@ -17,7 +17,7 @@
 <p class="muted">A refund does not automatically return clothing to inventory or cancel a courier. Check the returned items and delivery before changing physical stock.</p>
 @include('partials.refund-summary',['order'=>$refund->order])
 <a class="button" href="{{ route('orders.show',$refund->order) }}">Open order</a><a class="text-link" href="{{ route('admin.refunds.index') }}">← All refund requests</a></section>
-<aside class="panel stack"><h2>2. Review and process</h2>@if(!$refund->order->deliveryConfirmed())<p>Online refund requests can be processed after the customer confirms Delivered and submits their review. Fully paid walk-in orders use the store’s recorded receipt.</p>@endif
+<aside class="panel stack"><h2>2. Review and process</h2>@if(!$refund->order->deliveryConfirmed())<p>Online refund requests can be processed after the customer confirms Delivered and chooses a rating. A written review is optional. Fully paid walk-in orders use the store’s recorded receipt.</p>@endif
 @if($refund->status==='requested' && auth()->user()->role==='admin' && $refund->order->deliveryConfirmed())
 @if(!$refund->return_inspection_id)<p class="notice">Record or reuse a physical return inspection above before approving. You can decline an ineligible request with a reason.</p>@endif
 <form class="stack" method="post" action="{{ route('admin.refunds.review',$refund) }}">@csrf @method('PATCH')<label>Decision<select name="decision">@if($refund->return_inspection_id)<option value="approved">Approve for processing</option>@endif<option value="rejected">Decline request</option></select></label>

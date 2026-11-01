@@ -30,7 +30,7 @@ class ActivityLog extends Model
         'order.created' => 'Created an order',
         'order.status_changed' => 'Changed order status',
         'order.ready_email_retried' => 'Retried an unsent customer readiness email',
-        'order.received' => 'Customer confirmed delivery and reviewed order',
+        'order.received' => 'Customer confirmed delivery and rated order',
         'order.delivery_booked' => 'Booked a delivery',
         'order.delivery_reconciliation_required' => 'Delivery booking needs reconciliation',
         'order.delivery_reconciled' => 'Verified delivery recovery',

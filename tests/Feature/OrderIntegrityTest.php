@@ -48,7 +48,7 @@ class OrderIntegrityTest extends TestCase
         return array_intersect_key($order->fresh()->getRawOriginal(), array_flip(['user_id', 'quantity', 'tier', 'subtotal', 'merchandise_base', 'discount', 'shipping', 'total', 'payment_status', 'payment_id', 'paid_at', 'inventory_committed', 'inventory_released']));
     }
 
-    public function test_customer_receipt_requires_review_and_unlocks_refund_without_changing_payment_or_stock(): void
+    public function test_customer_receipt_with_a_written_review_unlocks_refund_without_changing_payment_or_stock(): void
     {
         $order = $this->order();
         $before = $this->invoice($order);
@@ -61,7 +61,7 @@ class OrderIntegrityTest extends TestCase
         $this->assertSame($before, $this->invoice($order));
         $this->assertSame($stock, Variant::first()->only(['stock', 'reserved']));
         $this->assertDatabaseHas('activity_logs', ['action' => 'order.received', 'actor_id' => $order->user_id, 'target_id' => $order->id]);
-        $this->get('/orders/'.$order->id)->assertOk()->assertSee('Customer review')->assertSee('1 / 5')->assertSee('Request a refund or return');
+        $this->get('/orders/'.$order->id)->assertOk()->assertSee('Customer rating')->assertSee('1 / 5')->assertSee('Request a refund or return');
         $this->post('/orders/'.$order->id.'/refunds', ['reason' => 'The clothing fit does not suit me.'])->assertSessionHasNoErrors();
         $this->assertDatabaseHas('refunds', ['order_id' => $order->id, 'status' => 'requested']);
         Http::assertNothingSent();
@@ -81,11 +81,11 @@ class OrderIntegrityTest extends TestCase
 
     public static function invalidReviews(): array
     {
-        return [['received', '0'], ['rating', 0], ['rating', 6], ['rating', 1.5], ['rating', 'excellent'], ['rating', null], ['comment', 'short'], ['comment', ''], ['comment', str_repeat('a', 2001)]];
+        return [['received', '0'], ['received', null], ['rating', 0], ['rating', 6], ['rating', 1.5], ['rating', 'excellent'], ['rating', null], ['comment', ['not a string']], ['comment', str_repeat('a', 2001)]];
     }
 
     #[DataProvider('invalidReviews')]
-    public function test_invalid_or_missing_review_cannot_close_order(string $field, mixed $value): void
+    public function test_invalid_rating_receipt_or_written_review_cannot_close_order(string $field, mixed $value): void
     {
         $order = $this->order();
         $this->actingAs($order->user)->post('/orders/'.$order->id.'/receipt', $this->receipt([$field => $value]))->assertSessionHasErrors($field);
@@ -93,6 +93,42 @@ class OrderIntegrityTest extends TestCase
         $this->assertNull($order->fresh()->customer_confirmed_at);
         $this->assertDatabaseCount('order_reviews', 0);
         $this->assertSame(0, ActivityLog::where('action', 'order.received')->count());
+    }
+
+    public static function optionalComments(): array
+    {
+        return [
+            'omitted' => [[], ''],
+            'null' => [['comment' => null], ''],
+            'empty' => [['comment' => ''], ''],
+            'whitespace' => [['comment' => '   '], ''],
+            'short review' => [['comment' => 'OK'], 'OK'],
+        ];
+    }
+
+    #[DataProvider('optionalComments')]
+    public function test_rating_and_confirmed_receipt_allow_an_optional_written_review_without_financial_changes(array $comment, string $expected): void
+    {
+        $order = $this->order();
+        $before = $this->invoice($order);
+        $stock = Variant::first()->only(['stock', 'reserved']);
+        $this->actingAs($order->user)->post('/orders/'.$order->id.'/receipt', ['received' => '1', 'rating' => 4] + $comment)
+            ->assertRedirect()->assertSessionHasNoErrors();
+
+        $this->assertTrue($order->fresh()->deliveryConfirmed());
+        $this->assertSame(4, $order->review()->sole()->rating);
+        $this->assertSame($expected, $order->review()->sole()->comment);
+        $this->assertSame($before, $this->invoice($order));
+        $this->assertSame($stock, Variant::first()->only(['stock', 'reserved']));
+        $this->get('/orders/'.$order->id)->assertOk()->assertSee('Request a refund or return');
+
+        $this->post('/orders/'.$order->id.'/receipt', ['received' => '1', 'rating' => 5, 'comment' => 'Changed after confirmation'])
+            ->assertSessionHasNoErrors();
+        $this->assertSame(4, $order->review()->sole()->rating);
+        $this->assertSame($expected, $order->review()->sole()->comment);
+        $this->assertSame(1, ActivityLog::where('action', 'order.received')->count());
+        $this->assertDatabaseCount('order_reviews', 1);
+        Http::assertNothingSent();
     }
 
     public static function notArrived(): array
@@ -110,7 +146,7 @@ class OrderIntegrityTest extends TestCase
         $this->assertDatabaseCount('order_reviews', 0);
     }
 
-    public function test_pickup_is_closed_only_by_customer_after_packing_and_required_review(): void
+    public function test_pickup_is_closed_only_by_customer_after_packing_and_required_rating(): void
     {
         $order = $this->order('pickup');
         $this->actingAs($order->user)->post('/orders/'.$order->id.'/receipt', $this->receipt())->assertSessionHasNoErrors();
