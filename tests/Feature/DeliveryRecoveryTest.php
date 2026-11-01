@@ -76,6 +76,52 @@ class DeliveryRecoveryTest extends TestCase
             'priceBreakdown' => ['currency' => 'PHP', 'total' => $total], 'stops' => [['stopId' => 'pickup'], ['stopId' => 'buyer']]];
     }
 
+    public function test_courier_details_explain_the_saved_status_without_exposing_staff_booking_reference_to_customers(): void
+    {
+        $order = $this->attached();
+        $order->forceFill(['amount_paid' => $order->total, 'paid_at' => now()])->save();
+        $this->actingAs($order->user)->get('/orders/'.$order->id)
+            ->assertOk()->assertSeeText('Looking for a rider')->assertDontSeeText('Courier booking reference:');
+        $this->actingAs($this->user())->get('/orders/'.$order->id)
+            ->assertOk()->assertSeeText('Courier booking reference:')->assertSeeText($order->delivery_id);
+        $this->actingAs($this->user('customer'))->get('/orders/'.$order->id)->assertForbidden();
+        Http::assertNothingSent();
+    }
+
+    public function test_courier_completion_details_still_require_the_customer_to_confirm_and_review(): void
+    {
+        $order = $this->attached();
+        $order->forceFill(['amount_paid' => $order->total, 'paid_at' => now()])->save();
+        $this->tracking($this->provider($order, 'COMPLETED'));
+        app(DeliveryRecovery::class)->refresh($order);
+        $this->actingAs($order->user)->get('/orders/'.$order->id)->assertOk()
+            ->assertSeeText('Courier marked delivery complete')
+            ->assertSeeText('Confirm receipt and submit your review to close this order.');
+        $this->assertSame('out_for_delivery', $order->fresh()->status);
+        $this->assertNull($order->fresh()->customer_confirmed_at);
+        Http::assertSentCount(1);
+    }
+
+    public static function trackingUrls(): array
+    {
+        return [
+            ['https://share.lalamove.com/test', true],
+            ['https://share.sandbox.lalamove.com?test=example', true],
+            ['https://share.lalamove.com.example.test/test', false],
+            ['http://share.lalamove.com/test', false],
+        ];
+    }
+
+    #[DataProvider('trackingUrls')]
+    public function test_tracking_links_accept_only_the_official_https_live_and_sandbox_hosts(string $url, bool $visible): void
+    {
+        $order = $this->attached();
+        $order->forceFill(['tracking_url' => $url, 'amount_paid' => $order->total, 'paid_at' => now()])->save();
+        $response = $this->actingAs($order->user)->get('/orders/'.$order->id)->assertOk();
+        $visible ? $response->assertSeeText('Track delivery ↗') : $response->assertDontSeeText('Track delivery ↗');
+        Http::assertNothingSent();
+    }
+
     public static function nonSuccessStatuses(): array
     {
         return [[300], [301], [302], [303], [304], [307], [308]];
