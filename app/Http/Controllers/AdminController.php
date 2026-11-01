@@ -269,7 +269,20 @@ class AdminController extends Controller
             return back()->withErrors(['delivery' => 'Configure Lalamove sandbox credentials and pickup location first.']);
         }
         // Invalid or repeated bookings fail before any provider request or state change.
-        $claimed = $recovery->beginBooking($order);
+        $costLimit = null;
+        $costReason = null;
+        if ($r->hasAny(['courier_cost_limit', 'courier_cost_reason', 'cover_courier_difference'])) {
+            abort_unless($r->user()->role === 'admin', 403);
+            $approval = $r->validate([
+                'courier_cost_limit' => ['required', 'regex:/^[0-9]{1,8}(?:\.[0-9]{1,2})?$/D', 'numeric', 'min:0', 'max:42949672.95'],
+                'courier_cost_reason' => 'required|string|min:10|max:1000',
+                'cover_courier_difference' => 'required|accepted',
+            ]);
+            $parts = explode('.', (string) $approval['courier_cost_limit']);
+            $costLimit = (int) $parts[0] * 100 + (int) str_pad($parts[1] ?? '', 2, '0');
+            $costReason = $approval['courier_cost_reason'];
+        }
+        $claimed = $recovery->beginBooking($order, $costLimit === null ? null : $r->user(), $costLimit, $costReason);
         try {
             $result = $delivery->book($claimed);
         } catch (DeliveryBookingNotStarted $e) {
@@ -293,7 +306,7 @@ class AdminController extends Controller
 
             return back()->withErrors(['delivery' => 'Lalamove returned an incomplete booking result. Check its delivery ID and recover the original booking before retrying.']);
         }
-        ActivityRecorder::mark($r, 'order.delivery_booked', $order, ['status' => $settled['status']]);
+        ActivityRecorder::mark($r, 'order.delivery_booked', $order, ['status' => $settled['status'], 'amount' => $result['_zone_one_quoted_cost'] ?? null]);
 
         return back()->with('notice', $settled['status'] === 'ready' ? 'The delivery ended at Lalamove. Its history was saved and this order is ready for another booking.' : 'Delivery booked.');
     }

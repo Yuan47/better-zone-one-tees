@@ -119,17 +119,21 @@ class Lalamove
         } catch (\Throwable $exception) {
             throw new DeliveryBookingNotStarted('Lalamove could not prepare the delivery quotation. No delivery was booked; this order remains ready.', 0, $exception);
         }
-        if ($cost > $order->shipping) {
-            throw ValidationException::withMessages(['delivery' => 'The current delivery quote is higher than the delivery fee paid. No delivery was booked; this order remains ready. Review the delivery cost before trying again.']);
+        $limit = data_get($order->delivery_booking_context, 'store_cost_approval.max_total', $order->shipping);
+        if (! is_int($limit) || $cost > $limit) {
+            throw ValidationException::withMessages(['delivery' => 'The current courier quote is ₱'.number_format($cost / 100, 2).', higher than the allowed booking cost. No delivery was booked; this order remains ready. The owner can approve a higher store-paid limit. The customer invoice stays unchanged.']);
         }
 
         try {
-            return $this->call('POST', '/v3/orders', [
+            $result = $this->call('POST', '/v3/orders', [
                 'quotationId' => $quote['quotationId'],
                 'sender' => ['stopId' => $quote['stops'][0]['stopId'], 'name' => 'Zone One Tee’s', 'phone' => $senderPhone],
                 'recipients' => [['stopId' => $quote['stops'][1]['stopId'], 'name' => $order->recipient, 'phone' => $recipientPhone]],
                 'isPODEnabled' => true, 'metadata' => ['order_number' => $order->number],
             ]);
+            $result['_zone_one_quoted_cost'] = $cost;
+
+            return $result;
         } catch (RequestException $exception) {
             if ($this->insufficientCreditRejection($exception)) {
                 throw new DeliveryBookingNotStarted('Lalamove rejected the booking because its account has insufficient credit. No delivery was booked; this order remains ready. Ask the store owner to check the Lalamove account credit before trying again.', 0, $exception);

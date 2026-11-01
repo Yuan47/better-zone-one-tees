@@ -95,7 +95,9 @@ class ActivityRecorder
             'refund.inspected', 'refund.policy_updated' => ['reason'],
             'invoice.due_changed' => ['reason', 'previous_due_at', 'due_at'],
             'invoice.terms_changed' => ['reason', 'days'],
-            'order.delivery_reconciled', 'order.payment_reconciled' => ['previous_status', 'status'], 'order.delivery_booked', 'order.delivery_reconciliation_required' => ['status'],
+            'order.delivery_reconciled', 'order.payment_reconciled' => ['previous_status', 'status'],
+            'order.delivery_booked' => ['status', 'amount'], 'order.delivery_reconciliation_required' => ['status'],
+            'order.delivery_cost_approved' => ['amount', 'reason'],
             'catalog.color_added' => ['variant_count'], 'faq.imported' => ['imported_count'], 'reports.exported' => ['format'],
             default => [],
         };

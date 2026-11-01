@@ -20,6 +20,12 @@
 @endif
 @if(in_array(auth()->user()?->role,['staff','admin']) && $order->delivery_id)
 <p>Courier booking reference: <span>{{ $order->delivery_id }}</span></p>
+@if(is_int(data_get($order->delivery_booking_context,'quoted_cost')))
+<p>Booking quote: ₱{{ number_format($order->delivery_booking_context['quoted_cost']/100,2) }} · Customer delivery fee: ₱{{ number_format($order->shipping/100,2) }}.</p>
+@endif
+@if(data_get($order->delivery_booking_context,'store_cost_approval'))
+<p>Owner-approved maximum courier cost: ₱{{ number_format(data_get($order->delivery_booking_context,'store_cost_approval.max_total')/100,2) }}. The store covers any difference above the customer's original delivery fee.</p>
+@endif
 @endif
 </details>
 @endif

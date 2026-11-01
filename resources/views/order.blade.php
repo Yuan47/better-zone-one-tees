@@ -14,7 +14,17 @@
 @if($order->fulfillmentOnHold())<div class="notice">Fulfillment is paused for an approved or processing refund, or a fully refunded payment. Review the refund request before another packing or booking action.</div>@endif
 @php($next=in_array($order->status,['to_pack','packing'])?'ready':null)
 @if($next && !$order->fulfillmentOnHold())<form action="{{ route('admin.orders.status',$order) }}" method="post">@csrf @method('PATCH')<label class="order-change-reason">Reason for this change<textarea name="reason" required minlength="10" maxlength="1000" rows="2" placeholder="Explain why this order is ready, for example: all pieces packed and checked.">{{ old('reason') }}</textarea></label><button class="button dark" name="status" value="{{ $next }}">Mark Ready for delivery</button></form>@endif
-@if($order->status==='ready' && $order->delivery_method==='lalamove' && !$order->delivery_id && !$order->fulfillmentOnHold())<form action="{{ route('admin.orders.delivery',$order) }}" method="post">@csrf<button class="button dark">Book Lalamove {{ config('shop.lalamove.mode')==='sandbox'?'sandbox':'' }} delivery</button></form>@endif
+@if($order->status==='ready' && $order->delivery_method==='lalamove' && !$order->delivery_id && !$order->fulfillmentOnHold())
+<form action="{{ route('admin.orders.delivery',$order) }}" method="post">@csrf<button class="button dark">Book Lalamove {{ config('shop.lalamove.mode')==='sandbox'?'sandbox':'' }} delivery</button></form>
+@if(auth()->user()->role==='admin')
+<details class="invoice-agreement"><summary>Approve a higher courier cost</summary><p>If the fresh courier quote is higher, the owner can cover the difference. Enter the maximum <strong>total courier fee</strong> for this booking, including the ₱{{ number_format($order->shipping/100,2) }} already paid for delivery. The customer invoice stays unchanged.</p>
+<form class="stack" action="{{ route('admin.orders.delivery',$order) }}" method="post">@csrf
+<label>Maximum total courier cost (PHP)<input name="courier_cost_limit" type="number" min="{{ number_format(($order->shipping+1)/100,2,'.','') }}" max="42949672.95" step="0.01" required value="{{ old('courier_cost_limit') }}"></label>
+<label>Reason for covering the difference<textarea name="courier_cost_reason" required minlength="10" maxlength="1000" rows="2">{{ old('courier_cost_reason') }}</textarea></label>
+<label class="receipt-check receipt-confirmation"><input type="checkbox" name="cover_courier_difference" value="1" required><span><strong>The store will cover the extra courier cost.</strong><small>This approval is for one booking only. A quote above this limit will be blocked.</small></span></label>
+<button class="button">Approve limit & book courier</button></form></details>
+@else<p class="muted">If the courier quote increases, ask the owner to approve covering the difference. Staff cannot change the customer invoice or approve an extra courier cost.</p>@endif
+@endif
 @if($order->delivery_id && in_array($order->status,['out_for_delivery','delivery_attention','delivery_booking','completed']))<form action="{{ route('admin.orders.delivery.refresh',$order) }}" method="post">@csrf<button class="button">Check delivery with Lalamove</button></form>@endif
 @if($order->status==='delivery_booking' && !$order->delivery_id)<div class="notice">The delivery booking response is uncertain. Check the original booking in Lalamove before requesting another courier.</div><form class="stack" action="{{ route('admin.orders.delivery.recover',$order) }}" method="post">@csrf<label>Lalamove delivery ID<input name="delivery_id" required maxlength="100" pattern="[A-Za-z0-9_-]+"></label><button class="button">Verify and recover delivery</button></form>@endif
 @endif</aside></div>

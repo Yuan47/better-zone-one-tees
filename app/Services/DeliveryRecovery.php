@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Order;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -15,9 +16,9 @@ class DeliveryRecovery
     public function __construct(private Lalamove $delivery) {}
 
     /** Commit the booking claim before the network request, so retries cannot duplicate it. */
-    public function beginBooking(Order $order): Order
+    public function beginBooking(Order $order, ?User $approver = null, ?int $costLimit = null, ?string $reason = null): Order
     {
-        return DB::transaction(function () use ($order) {
+        return DB::transaction(function () use ($order, $approver, $costLimit, $reason) {
             $locked = Order::whereKey($order->id)->lockForUpdate()->firstOrFail();
             if ($locked->fulfillmentOnHold()) {
                 $this->fail('A refund is approved or processing, or this payment was fully refunded. Review its refund before booking a courier.');
@@ -27,7 +28,20 @@ class DeliveryRecovery
                 || $locked->provider_completed_at || $locked->customer_confirmed_at) {
                 $this->fail('This order is not eligible for another delivery booking. Refresh or recover its existing delivery first.');
             }
-            $locked->update(['status' => 'delivery_booking', 'delivery_booking_context' => $this->snapshot($locked)]);
+            $context = $this->snapshot($locked);
+            if ($costLimit !== null || $approver !== null || $reason !== null) {
+                if (! $approver || ! User::whereKey($approver->id)->where('role', 'admin')->exists()
+                    || $costLimit === null || $costLimit <= $locked->shipping || $costLimit > 4294967295
+                    || $reason === null || mb_strlen(trim($reason)) < 10 || mb_strlen($reason) > 1000) {
+                    $this->fail('Only the owner can approve a higher courier cost limit with a clear reason. No delivery was booked.');
+                }
+                $context['store_cost_approval'] = ['max_total' => $costLimit, 'approved_by' => $approver->id,
+                    'approved_at' => now()->toIso8601String(), 'reason' => trim($reason)];
+                if (! app(ActivityRecorder::class)->record($approver, 'order.delivery_cost_approved', $locked, ['amount' => $costLimit, 'reason' => $reason])) {
+                    throw new \RuntimeException('The store courier cost approval could not be audited.');
+                }
+            }
+            $locked->update(['status' => 'delivery_booking', 'delivery_booking_context' => $context]);
 
             return $locked;
         });
@@ -57,6 +71,14 @@ class DeliveryRecovery
             $locked = Order::whereKey($order->id)->lockForUpdate()->firstOrFail();
             if ($locked->status !== 'delivery_booking' || $locked->delivery_id) {
                 $this->fail('The delivery booking changed while the provider was responding. Refresh the existing delivery.');
+            }
+            if (array_key_exists('_zone_one_quoted_cost', $data)) {
+                $cost = $data['_zone_one_quoted_cost'];
+                $limit = data_get($locked->delivery_booking_context, 'store_cost_approval.max_total', $locked->shipping);
+                if (! is_int($cost) || ! is_int($limit) || $cost < 0 || $cost > $limit) {
+                    $this->fail('The booking cost does not match its approved limit. Reconcile the existing booking before trying again.');
+                }
+                $locked->delivery_booking_context = $locked->delivery_booking_context + ['quoted_cost' => $cost];
             }
 
             return $this->apply($locked, $id, $status, $data);

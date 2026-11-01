@@ -32,6 +32,7 @@ class ActivityLog extends Model
         'order.ready_email_retried' => 'Retried an unsent customer readiness email',
         'order.received' => 'Customer confirmed delivery and rated order',
         'order.delivery_booked' => 'Booked a delivery',
+        'order.delivery_cost_approved' => 'Approved store courier cost limit',
         'order.delivery_reconciliation_required' => 'Delivery booking needs reconciliation',
         'order.delivery_reconciled' => 'Verified delivery recovery',
         'order.payment_reconciled' => 'Verified payment status',
