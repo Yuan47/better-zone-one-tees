@@ -54,6 +54,9 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
+    'canonical_redirect' => (bool) env('APP_CANONICAL_REDIRECT', false),
+    'legacy_hosts' => array_values(array_filter(array_map('trim', explode(',', (string) env('APP_LEGACY_HOSTS', ''))))),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone
