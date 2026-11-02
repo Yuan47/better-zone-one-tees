@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Middleware\CustomerIdleTimeout;
+use App\Models\StaffInvitation;
 use App\Models\User;
 use App\Rules\AccountPasswordSize;
 use App\Services\AccountNavigation;
@@ -58,6 +59,7 @@ class AuthController extends Controller
         $destination = AccountNavigation::destination($r, $r->session()->pull('url.intended')) ?? route(AccountNavigation::homeRoute($r->user()));
         if (config('auth.email_verification.required') === true && $r->user()->email_verified_at === null) {
             $r->session()->put('email_verification.return_to', $destination);
+
             return redirect()->route('verification.notice');
         }
 
@@ -66,6 +68,9 @@ class AuthController extends Controller
 
     public function register(Request $r)
     {
+        if (is_string($r->input('email'))) {
+            $r->merge(['email' => Str::lower(trim($r->input('email')))]);
+        }
         if (is_string($r->input('username'))) {
             $r->merge(['username' => Str::lower(trim($r->input('username')))]);
         }
@@ -75,7 +80,14 @@ class AuthController extends Controller
         $data = $r->validate([
             'name' => ['bail', 'required', 'string', 'max:100'],
             'username' => ['bail', 'required', 'string', 'min:3', 'max:40', 'regex:/^[a-z0-9_.-]+$/', 'unique:users,username'],
-            'email' => 'required|email|max:254|unique:users',
+            'email' => ['bail', 'required', 'email', 'max:254', 'unique:users,email',
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    // Match Google's canonical lookup, including older mixed-case accounts.
+                    if (User::whereRaw('LOWER(email) = ?', [$value])->exists()
+                        || StaffInvitation::whereRaw('LOWER(email) = ?', [$value])->exists()) {
+                        $fail('This email is already in use. Sign in with your existing account or contact the store.');
+                    }
+                }],
             'password' => ['required', 'string', 'confirmed', Password::min(10), new AccountPasswordSize],
         ]);
         try {

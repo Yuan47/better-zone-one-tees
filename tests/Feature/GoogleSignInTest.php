@@ -202,6 +202,47 @@ class GoogleSignInTest extends TestCase
         return [['customer'], ['staff'], ['admin']];
     }
 
+    public function test_manual_registration_then_google_signup_keeps_one_account_and_requires_explicit_linking(): void
+    {
+        config(['auth.email_verification.required' => false]);
+        $this->post('/register', ['name' => 'Original Manual Customer', 'username' => 'manual_customer',
+            'email' => ' GOOGLE.Customer@Example.Test ', 'password' => 'OriginalPassword!2026',
+            'password_confirmation' => 'OriginalPassword!2026'])->assertRedirect('/');
+        $user = User::sole();
+        $before = $user->getAttributes();
+        $this->post('/logout')->assertRedirect('/');
+
+        $parameters = $this->begin();
+        $this->providerResponds();
+        $this->completeCallback($parameters['state'])->assertRedirect('/login')->assertSessionHasErrors('google');
+
+        $this->assertGuest();
+        $this->assertDatabaseCount('users', 1);
+        $this->assertDatabaseCount('google_identities', 0);
+        $this->assertSame('google.customer@example.test', $user->fresh()->email);
+        $this->assertSame($before, $user->fresh()->getAttributes());
+    }
+
+    public function test_google_signup_then_manual_registration_keeps_one_account_and_its_google_link(): void
+    {
+        $parameters = $this->begin();
+        $this->providerResponds();
+        $this->completeCallback($parameters['state'])->assertRedirect('/');
+        $user = User::sole();
+        $before = $user->getAttributes();
+        $this->post('/logout')->assertRedirect('/');
+
+        $this->post('/register', ['name' => 'Replacement Attempt', 'username' => 'replacement_customer',
+            'email' => ' GOOGLE.Customer@Example.Test ', 'password' => 'ReplacementPassword!2026',
+            'password_confirmation' => 'ReplacementPassword!2026'])->assertSessionHasErrors('email');
+
+        $this->assertGuest();
+        $this->assertDatabaseCount('users', 1);
+        $this->assertDatabaseCount('google_identities', 1);
+        $this->assertDatabaseHas('google_identities', ['user_id' => $user->id, 'subject' => 'google-fixture-10001']);
+        $this->assertSame($before, $user->fresh()->getAttributes());
+    }
+
     #[DataProvider('existingRoles')]
     public function test_matching_existing_email_never_silently_links_or_changes_role(string $role): void
     {
