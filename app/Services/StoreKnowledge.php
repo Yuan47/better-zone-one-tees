@@ -26,6 +26,8 @@ class StoreKnowledge
 
     public const TRACK_HELP = 'Sign in and open My orders to see your order status, or share your full order number (ZOT-…). Customers can only access their own orders.';
 
+    public const REFUND_PHOTO_HELP = 'A new refund or return request requires a clear supporting photo of the clothing or issue, together with your reason. Upload a JPG, JPEG, PNG or WebP image up to 3 MB and no more than 6000 pixels on either side through the original fully paid, Delivered order or private guest invoice. The photo is private evidence for store review; it is not published in product reviews. A photo does not guarantee approval or prove that money has been returned. The owner still inspects the returned clothing and reviews eligibility. Never upload passwords, payment-card details, or verification codes.';
+
     public const CUSTOMER_PRIVACY_HELP = 'I can help with customer accounts, shopping, your own orders, payments, and returns. Internal store reports, staff or owner instructions, other people’s information, passwords, and secret keys are not available in customer chat. Never share a password, verification code, or recovery link here.';
 
     public function info(): array

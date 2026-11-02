@@ -13,8 +13,10 @@ use App\Services\OrderFlow;
 use App\Services\ReturnInspections;
 use App\Services\SalesReport;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -25,6 +27,7 @@ class RefundTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        Storage::fake('local');
         config(['shop.paymongo.mode' => 'test', 'shop.paymongo.secret' => 'sk_test_refunds', 'shop.paymongo.webhook_secret' => 'test-webhook']);
         Http::preventStrayRequests();
     }
@@ -116,7 +119,7 @@ class RefundTest extends TestCase
         $customer = $this->user();
         $order = $this->order($customer);
         $before = $this->unchangedCommerce($order);
-        $this->actingAs($customer)->post('/orders/'.$order->id.'/refunds', ['reason' => 'The size does not fit as expected.', 'status' => 'succeeded', 'amount' => 999999, 'requested_amount' => 1])
+        $this->actingAs($customer)->post('/orders/'.$order->id.'/refunds', ['customer_photo' => UploadedFile::fake()->image('return.jpg'), 'reason' => 'The size does not fit as expected.', 'status' => 'succeeded', 'amount' => 999999, 'requested_amount' => 1])
             ->assertRedirect()->assertSessionHasNoErrors();
         $refund = Refund::sole();
         $this->assertSame('requested', $refund->status);
@@ -153,7 +156,7 @@ class RefundTest extends TestCase
     {
         $order = $this->order();
         $order->update(['payment_status' => $status, 'payment_id' => $payment]);
-        $this->actingAs($order->user)->post('/orders/'.$order->id.'/refunds', ['reason' => 'The size does not fit as expected.'])->assertSessionHasErrors('refund');
+        $this->actingAs($order->user)->post('/orders/'.$order->id.'/refunds', ['customer_photo' => UploadedFile::fake()->image('return.jpg'), 'reason' => 'The size does not fit as expected.'])->assertSessionHasErrors('refund');
         $this->assertDatabaseCount('refunds', 0);
         Http::assertNothingSent();
     }
@@ -168,7 +171,7 @@ class RefundTest extends TestCase
     {
         $order = $this->order();
         $this->refund($order, ['status' => $status]);
-        $this->actingAs($order->user)->post('/orders/'.$order->id.'/refunds', ['reason' => 'Another request for the same payment.'])->assertSessionHasErrors('refund');
+        $this->actingAs($order->user)->post('/orders/'.$order->id.'/refunds', ['customer_photo' => UploadedFile::fake()->image('return.jpg'), 'reason' => 'Another request for the same payment.'])->assertSessionHasErrors('refund');
         $this->assertDatabaseCount('refunds', 1);
     }
 
@@ -182,7 +185,7 @@ class RefundTest extends TestCase
     {
         $order = $this->order();
         $this->refund($order, ['status' => $status, 'amount' => 10000]);
-        $this->actingAs($order->user)->post('/orders/'.$order->id.'/refunds', ['reason' => 'Requesting the remaining payment refund.'])->assertSessionHasNoErrors();
+        $this->actingAs($order->user)->post('/orders/'.$order->id.'/refunds', ['customer_photo' => UploadedFile::fake()->image('return.jpg'), 'reason' => 'Requesting the remaining payment refund.'])->assertSessionHasNoErrors();
         $new = Refund::where('status', 'requested')->sole();
         $this->assertSame($status === 'succeeded' ? 15000 : 25000, $new->requested_amount);
         $this->assertDatabaseCount('refunds', 2);
@@ -192,7 +195,7 @@ class RefundTest extends TestCase
     {
         $order = $this->order();
         $this->refund($order, ['status' => 'succeeded', 'amount' => $order->total]);
-        $this->actingAs($order->user)->post('/orders/'.$order->id.'/refunds', ['reason' => 'Requesting another payment refund.'])->assertSessionHasErrors('refund');
+        $this->actingAs($order->user)->post('/orders/'.$order->id.'/refunds', ['customer_photo' => UploadedFile::fake()->image('return.jpg'), 'reason' => 'Requesting another payment refund.'])->assertSessionHasErrors('refund');
         $this->assertDatabaseCount('refunds', 1);
     }
 
@@ -279,7 +282,7 @@ class RefundTest extends TestCase
         if ($status === 'out_for_delivery') {
             $order->update(['provider_completed_at' => now()]);
         }
-        $this->actingAs($order->user)->post('/orders/'.$order->id.'/refunds', ['reason' => 'Requesting a refund before confirming receipt.'])
+        $this->actingAs($order->user)->post('/orders/'.$order->id.'/refunds', ['customer_photo' => UploadedFile::fake()->image('return.jpg'), 'reason' => 'Requesting a refund before confirming receipt.'])
             ->assertSessionHasErrors('refund');
         $this->assertDatabaseCount('refunds', 0);
         $refund = $this->refund($order);
@@ -431,7 +434,7 @@ class RefundTest extends TestCase
         $this->actingAs($this->user('staff'))->post('/admin/refunds/'.$refund->id.'/check')->assertSessionHasNoErrors();
         $this->assertSame($before, $refund->fresh()->getAttributes());
         $this->assertFalse($order->fresh()->fulfillmentOnHold());
-        $this->actingAs($order->user)->post('/orders/'.$order->id.'/refunds', ['reason' => 'Retrying the provider failed refund.'])
+        $this->actingAs($order->user)->post('/orders/'.$order->id.'/refunds', ['customer_photo' => UploadedFile::fake()->image('return.jpg'), 'reason' => 'Retrying the provider failed refund.'])
             ->assertSessionHasNoErrors();
         $this->assertDatabaseCount('refunds', 2);
         Http::assertSentCount(2);

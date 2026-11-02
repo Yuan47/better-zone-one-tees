@@ -12,8 +12,10 @@ use App\Services\ActivityRecorder;
 use App\Services\InvoicePayments;
 use App\Services\OrderFlow;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -26,6 +28,7 @@ class InvoicePaymentTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        Storage::fake('local');
         config(['shop.paymongo.mode' => 'test', 'shop.paymongo.secret' => 'sk_test_invoice', 'shop.paymongo.webhook_secret' => 'invoice-secret']);
         Http::preventStrayRequests();
     }
@@ -130,7 +133,7 @@ class InvoicePaymentTest extends TestCase
         $this->assertDatabaseCount('order_reviews', 0);
         $this->assertSame(995, Variant::sole()->stock);
         $this->assertSame(2, ActivityLog::where('action', 'invoice.payment_received')->count());
-        $this->actingAs($order->user)->post('/orders/'.$order->id.'/refunds', ['reason' => 'The clothing did not fit after purchase.'])->assertSessionHasNoErrors();
+        $this->actingAs($order->user)->post('/orders/'.$order->id.'/refunds', ['customer_photo' => UploadedFile::fake()->image('return.jpg'), 'reason' => 'The clothing did not fit after purchase.'])->assertSessionHasNoErrors();
     }
 
     public static function badAmounts(): array

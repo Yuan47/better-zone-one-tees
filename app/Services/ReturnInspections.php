@@ -14,9 +14,9 @@ use Illuminate\Validation\ValidationException;
 
 class ReturnInspections
 {
-    public static function photoRules(): array
+    public static function photoRules(bool $required = false): array
     {
-        return ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:3072', 'dimensions:max_width=6000,max_height=6000'];
+        return [$required ? 'required' : 'nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:3072', 'dimensions:max_width=6000,max_height=6000'];
     }
 
     public function storePhoto(?UploadedFile $photo): ?string

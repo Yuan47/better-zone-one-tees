@@ -118,12 +118,13 @@ class ReturnInspectionTest extends TestCase
         Storage::disk('local')->assertExists($refund->customer_photo_path);
         $this->get('/admin/refunds/'.$refund->id.'/evidence/customer')->assertForbidden();
         $this->actingAs($this->owner())->get('/admin/refunds/'.$refund->id.'/evidence/customer')->assertOk()
-            ->assertHeader('X-Content-Type-Options', 'nosniff')->assertHeader('Cache-Control', 'no-store, private');
+            ->assertHeader('X-Content-Type-Options', 'nosniff')->assertHeader('Cache-Control', 'no-store, private')
+            ->assertStreamedContent(Storage::disk('local')->get($refund->customer_photo_path));
         $this->actingAs(User::factory()->create(['role' => 'staff']))->get('/admin/refunds/'.$refund->id.'/evidence/customer')->assertOk();
         Http::assertNothingSent();
     }
 
-    public function test_guest_request_accepts_optional_private_photo_only_through_a_valid_invoice_link(): void
+    public function test_guest_request_accepts_private_photo_only_through_a_valid_invoice_link(): void
     {
         $order = $this->order(['user_id' => null, 'sales_channel' => 'walk_in', 'customer_confirmed_at' => null, 'walk_in_received_at' => now()->subDay()]);
         $this->receipt($order);
@@ -135,6 +136,49 @@ class ReturnInspectionTest extends TestCase
         $this->assertSame(7, $refund->policy_days);
         Storage::disk('local')->assertExists($refund->customer_photo_path);
         $this->get('/admin/refunds/'.$refund->id.'/evidence/customer')->assertRedirect('/admin/login');
+    }
+
+    public static function invalidRequestPhotos(): array
+    {
+        $cases = [];
+        foreach ([false, true] as $guest) {
+            foreach (['missing', 'not-image', 'spoofed-jpg', 'oversized', 'too-wide', 'stored-path'] as $photo) {
+                $cases[($guest ? 'guest' : 'customer').'-'.$photo] = [$guest, $photo];
+            }
+        }
+
+        return $cases;
+    }
+
+    #[DataProvider('invalidRequestPhotos')]
+    public function test_new_refund_requests_require_valid_picture_proof_without_changing_the_order(bool $guest, string $photo): void
+    {
+        $order = $this->order($guest ? ['user_id' => null, 'sales_channel' => 'walk_in', 'customer_confirmed_at' => null,
+            'walk_in_received_at' => now()->subDay()] : []);
+        $this->receipt($order);
+        $before = $order->getAttributes();
+        if ($guest) {
+            $url = URL::temporarySignedRoute('guest.orders.refunds', now()->addHour(), ['order' => $order->id]);
+        } else {
+            $this->actingAs($order->user);
+            $url = '/orders/'.$order->id.'/refunds';
+        }
+        $upload = match ($photo) {
+            'missing' => null,
+            'not-image' => UploadedFile::fake()->create('proof.pdf', 10, 'application/pdf'),
+            'spoofed-jpg' => UploadedFile::fake()->createWithContent('proof.jpg', 'This is not a photograph.'),
+            'oversized' => UploadedFile::fake()->image('proof.jpg')->size(3073),
+            'too-wide' => UploadedFile::fake()->image('proof.jpg', 6001, 1),
+            'stored-path' => 'refund-evidence/another-customer.jpg',
+        };
+
+        $this->post($url, ['reason' => 'Please inspect the returned clothing because its size does not fit.', 'customer_photo' => $upload])
+            ->assertRedirect()->assertSessionHasErrors('customer_photo');
+
+        $this->assertDatabaseCount('refunds', 0);
+        $this->assertSame($before, $order->fresh()->getAttributes());
+        $this->assertSame([], Storage::disk('local')->allFiles());
+        Http::assertNothingSent();
     }
 
     public function test_approval_cash_and_new_provider_attachment_are_blocked_without_inspection(): void
@@ -226,7 +270,7 @@ class ReturnInspectionTest extends TestCase
     {
         $order = $this->order(['customer_confirmed_at' => now()->subDays(8)]);
         $receipt = $this->receipt($order);
-        $this->actingAs($order->user)->post('/orders/'.$order->id.'/refunds', ['reason' => 'Please review the late return because of an unresolved sizing issue.'])
+        $this->actingAs($order->user)->post('/orders/'.$order->id.'/refunds', ['reason' => 'Please review the late return because of an unresolved sizing issue.', 'customer_photo' => UploadedFile::fake()->image('late-return.jpg')])
             ->assertRedirect()->assertSessionHasNoErrors();
         $refund = Refund::sole();
         $this->assertTrue($refund->policy_late);

@@ -23,6 +23,7 @@
 <p class="muted" id="receipt-rating-help">Choose 1 star for poor to 5 stars for excellent.</p>
 </fieldset>
 <label>Your review <span class="muted">Optional</span><textarea name="comment" maxlength="2000" rows="4" placeholder="Tell us about the clothing you received (optional).">{{ old('comment') }}</textarea></label>
+<small class="muted">Your stars and optional review will appear on the purchased products with your name masked. Please leave out addresses, contact details and payment information.</small>
 <label class="receipt-check receipt-confirmation"><input type="checkbox" name="received" value="1" required @checked(old('received'))><span><strong>I have received my order.</strong><small>Confirm only after you have received and checked your clothing.</small></span></label>
 <button class="button dark">Confirm Delivered</button></form>
 @else<p class="muted">You can confirm Delivered and choose your rating here once the courier confirms arrival, or your pickup order is ready. A written review is optional.</p>@endif

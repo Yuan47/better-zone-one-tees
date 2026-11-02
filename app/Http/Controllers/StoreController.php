@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Models\OrderReview;
 use App\Models\Product;
 use App\Models\Variant;
 use App\Services\ActivityRecorder;
@@ -61,13 +62,33 @@ class StoreController extends Controller
         return view('store', compact('products', 'sizes', 'colors', 'wishIds', 'paymentAlerts'));
     }
 
-    public function product(Product $product)
+    public function product(Request $request, Product $product)
     {
         abort_unless($product->active, 404);
         $product->load('variants');
         $product->setRelation('variants', $product->variants->sortBy(fn ($variant) => $this->sizeSortKey($variant->size))->values());
 
-        return view('product', compact('product'));
+        // Reviews are order ratings, displayed once for each product in that verified purchase.
+        $reviewQuery = OrderReview::query()->whereBetween('rating', [1, 5])
+            ->whereHas('user', fn ($user) => $user->where('role', 'customer'))
+            ->whereHas('order', fn ($order) => $order->where('payment_status', 'paid')
+                ->whereNotNull('payment_id')->where('status', 'completed')->whereNotNull('customer_confirmed_at')
+                ->whereColumn('orders.user_id', 'order_reviews.user_id')
+                ->whereHas('items.variant', fn ($variant) => $variant->where('product_id', $product->id)));
+        $ratingCounts = (clone $reviewQuery)->select('rating')->selectRaw('COUNT(*) as total')
+            ->groupBy('rating')->pluck('total', 'rating')->map(fn ($count) => (int) $count);
+        $reviewCount = $ratingCounts->sum();
+        $averageRating = $reviewCount > 0 ? $ratingCounts->sum(fn ($count, $rating) => $count * (int) $rating) / $reviewCount : null;
+        $ratingFilter = in_array($request->query('rating'), ['1', '2', '3', '4', '5'], true) ? (int) $request->query('rating') : null;
+        $reviews = (clone $reviewQuery)->when($ratingFilter, fn ($query) => $query->where('rating', $ratingFilter))
+            ->with(['user:id,name', 'order:id', 'order.items' => fn ($items) => $items
+                ->whereHas('variant', fn ($variant) => $variant->where('product_id', $product->id))
+                ->select('id', 'order_id', 'size', 'color')])
+            ->orderByDesc('created_at')->orderByDesc('id')
+            ->paginate(5, ['order_reviews.id', 'order_id', 'user_id', 'rating', 'comment', 'created_at'], 'reviews_page')
+            ->appends($ratingFilter ? ['rating' => $ratingFilter] : [])->fragment('product-reviews');
+
+        return view('product', compact('product', 'ratingCounts', 'reviewCount', 'averageRating', 'ratingFilter', 'reviews'));
     }
 
     private function sizeSortKey(string $size): array

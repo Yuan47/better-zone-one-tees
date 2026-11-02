@@ -49,7 +49,8 @@ class RefundController extends Controller
     public function store(Request $request, Order $order)
     {
         abort_unless($request->user()->id === $order->user_id && $request->user()->role === 'customer', 403);
-        $data = $request->validate(['reason' => 'required|string|min:10|max:2000', 'customer_photo' => ReturnInspections::photoRules()]);
+        $data = $request->validate(['reason' => 'required|string|min:10|max:2000', 'customer_photo' => ReturnInspections::photoRules(true)],
+            ['customer_photo.required' => 'Upload a clear photo showing the clothing and the issue before sending your refund request.']);
         $photo = app(ReturnInspections::class)->storePhoto($request->file('customer_photo'));
         try {
             $refund = DB::transaction(function () use ($request, $order, $data, $photo) {
@@ -230,9 +231,9 @@ class RefundController extends Controller
         };
         abort_unless($path && str_starts_with($path, 'refund-evidence/') && Storage::disk('local')->exists($path), 404);
 
-        $response = response()->file(Storage::disk('local')->path($path), [
+        $response = Storage::disk('local')->response($path, null, [
             'X-Content-Type-Options' => 'nosniff', 'X-Robots-Tag' => 'noindex, nofollow']);
-        // BinaryFileResponse sets public caching during construction.
+        // Keep authorized evidence out of shared caches regardless of the disk implementation.
         $response->setPrivate();
         $response->headers->set('Cache-Control', 'private, no-store');
 

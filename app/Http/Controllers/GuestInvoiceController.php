@@ -61,7 +61,8 @@ class GuestInvoiceController extends Controller
     public function refund(Request $request, Order $order)
     {
         $this->guard($order);
-        $data = $request->validate(['reason' => 'required|string|min:10|max:2000', 'customer_photo' => ReturnInspections::photoRules()]);
+        $data = $request->validate(['reason' => 'required|string|min:10|max:2000', 'customer_photo' => ReturnInspections::photoRules(true)],
+            ['customer_photo.required' => 'Upload a clear photo showing the clothing and the issue before sending your refund request.']);
         $photo = app(ReturnInspections::class)->storePhoto($request->file('customer_photo'));
         try {
             DB::transaction(function () use ($order, $data, $photo) {

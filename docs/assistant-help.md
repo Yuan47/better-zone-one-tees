@@ -8,6 +8,8 @@ Product recommendations, named-product descriptions and fabric/comfort questions
 
 The default account-creation guide includes full name, unique username, email, matching passwords, email-code verification and customer-only Google sign-in. Its additive refresh changes only the exact old default answer and preserves owner edits.
 
+New refund requests require a private supporting photo. The assistant's controlled refund-photo answer states the allowed image types, 3 MB limit, 6000-pixel side limit, and that evidence is not published as a product review. The additional product-review guide explains that existing ratings belong to completed orders containing an item, written comments remain optional, and buyer identities are masked. The migration refreshes only exact untouched refund defaults and preserves owner edits, audiences, inactive entries and sort order.
+
 ## FAQ audiences
 
 Only the owner manages the FAQ library in Settings. Choose an audience when adding or editing an answer:

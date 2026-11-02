@@ -44,8 +44,8 @@ class ChatController extends Controller
         $faqs = $knowledge->approvedFaqs($audiences);
         $storeInfo = $knowledge->info();
         $context = ['catalog' => $catalog, 'requested_orders' => $orders->map(fn ($order) => $order->only(['number', 'status', 'payment_status', 'delivery_method', 'customer_confirmed_at', 'sales_channel', 'walk_in_received_at'])), 'quantity_pricing' => StoreKnowledge::QUANTITY_PRICING,
-            'payment_rules' => StoreKnowledge::PAYMENT_HELP, 'sizing_rules' => StoreKnowledge::SIZE_HELP,
-            'policy' => 'Only active approved FAQs and store information establish store policies. Unknown policies, hours and contact details must be confirmed by staff. The quantity pricing, verified payment rules, product size charts and requested order records take precedence over conflicting FAQ text. Only each supplied variant establishes a size/color combination, its price and its current availability. Size charts do not establish offered variants. Catalog context includes at most three products and forty variants per product. When variants_complete is false, omitted variants are unknown, not unavailable. Never infer availability or prices from another size/color. Ask for a product name, size and color if the choice is ambiguous.',
+            'payment_rules' => StoreKnowledge::PAYMENT_HELP, 'sizing_rules' => StoreKnowledge::SIZE_HELP, 'refund_photo_rules' => StoreKnowledge::REFUND_PHOTO_HELP,
+            'policy' => 'Only active approved FAQs and store information establish store policies. Unknown policies, hours and contact details must be confirmed by staff. The quantity pricing, verified payment rules, required refund-photo rules, product size charts and requested order records take precedence over conflicting FAQ text. Only each supplied variant establishes a size/color combination, its price and its current availability. Size charts do not establish offered variants. Catalog context includes at most three products and forty variants per product. When variants_complete is false, omitted variants are unknown, not unavailable. Never infer availability or prices from another size/color. Ask for a product name, size and color if the choice is ambiguous.',
             'approved_faqs' => $knowledge->relevantFaqs($message, $faqs)->map(fn ($faq) => $faq->only(['question', 'answer', 'keywords']))->values(),
             'store_information' => array_filter($storeInfo, fn ($value) => filled($value))];
         if ($staff && preg_match('/\b(?:forecast|forecasting|growth|demand|reorder|predictions?|slope|intercept)\b/i', $message)) {
@@ -97,6 +97,10 @@ class ChatController extends Controller
         } elseif ($staff && $matched && $matched->audience !== 'customer') {
             $protectedReply = true;
             $reply = $matched->answer;
+        } elseif (preg_match('/\b(?:refund(?:s|ed|ing)?|return(?:s|ed|ing)?)\b/i', $message)
+            && preg_match('/\b(?:photos?|pictures?|images?|proof|evidence)\b/i', $message)) {
+            $protectedReply = true;
+            $reply = StoreKnowledge::REFUND_PHOTO_HELP;
         } elseif ($policyFaq) {
             $protectedReply = true;
             $reply = $matched->answer;

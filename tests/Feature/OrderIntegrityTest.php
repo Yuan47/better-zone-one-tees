@@ -10,8 +10,10 @@ use App\Models\Variant;
 use App\Services\ActivityRecorder;
 use App\Services\OrderFlow;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -22,6 +24,7 @@ class OrderIntegrityTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        Storage::fake('local');
         Http::preventStrayRequests();
     }
 
@@ -53,7 +56,7 @@ class OrderIntegrityTest extends TestCase
         $order = $this->order();
         $before = $this->invoice($order);
         $stock = Variant::first()->only(['stock', 'reserved']);
-        $this->actingAs($order->user)->post('/orders/'.$order->id.'/refunds', ['reason' => 'The clothing fit does not suit me.'])->assertSessionHasErrors('refund');
+        $this->actingAs($order->user)->post('/orders/'.$order->id.'/refunds', ['customer_photo' => UploadedFile::fake()->image('return.jpg'), 'reason' => 'The clothing fit does not suit me.'])->assertSessionHasErrors('refund');
         $this->post('/orders/'.$order->id.'/receipt', $this->receipt(['total' => 1, 'payment_status' => 'failed', 'status' => 'cancelled']))->assertRedirect()->assertSessionHasNoErrors();
         $this->assertSame('completed', $order->fresh()->status);
         $this->assertNotNull($order->fresh()->customer_confirmed_at);
@@ -62,7 +65,7 @@ class OrderIntegrityTest extends TestCase
         $this->assertSame($stock, Variant::first()->only(['stock', 'reserved']));
         $this->assertDatabaseHas('activity_logs', ['action' => 'order.received', 'actor_id' => $order->user_id, 'target_id' => $order->id]);
         $this->get('/orders/'.$order->id)->assertOk()->assertSee('Customer rating')->assertSee('1 / 5')->assertSee('Request a refund or return');
-        $this->post('/orders/'.$order->id.'/refunds', ['reason' => 'The clothing fit does not suit me.'])->assertSessionHasNoErrors();
+        $this->post('/orders/'.$order->id.'/refunds', ['customer_photo' => UploadedFile::fake()->image('return.jpg'), 'reason' => 'The clothing fit does not suit me.'])->assertSessionHasNoErrors();
         $this->assertDatabaseHas('refunds', ['order_id' => $order->id, 'status' => 'requested']);
         Http::assertNothingSent();
     }

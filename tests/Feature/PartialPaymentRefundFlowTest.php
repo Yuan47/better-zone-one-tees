@@ -13,7 +13,9 @@ use App\Models\Variant;
 use App\Services\OrderFlow;
 use App\Services\ReturnInspections;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -26,6 +28,7 @@ class PartialPaymentRefundFlowTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        Storage::fake('local');
         config(['shop.paymongo.mode' => 'test', 'shop.paymongo.secret' => 'sk_test_flow', 'shop.paymongo.webhook_secret' => 'flow-webhook']);
         Http::preventStrayRequests();
     }
@@ -100,7 +103,7 @@ class PartialPaymentRefundFlowTest extends TestCase
     private function requestGuestRefund(Order $order): Refund
     {
         $this->asGuest();
-        $this->post($this->guestRefundUrl($order), ['reason' => 'Returned clothing checked because the size does not fit.'])
+        $this->post($this->guestRefundUrl($order), ['customer_photo' => UploadedFile::fake()->image('return.jpg'), 'reason' => 'Returned clothing checked because the size does not fit.'])
             ->assertRedirect()->assertSessionHasNoErrors();
 
         return $order->refunds()->where('status', 'requested')->sole();
@@ -198,7 +201,7 @@ class PartialPaymentRefundFlowTest extends TestCase
         Http::assertSent(fn ($request) => $request->method() === 'GET' && $request->url() === 'https://api.paymongo.com/refunds/ref_guest_balance');
 
         $this->asGuest();
-        $this->post($this->guestRefundUrl($order), ['reason' => 'Trying another request after the entire invoice was returned.'])->assertSessionHasErrors('refund');
+        $this->post($this->guestRefundUrl($order), ['customer_photo' => UploadedFile::fake()->image('return.jpg'), 'reason' => 'Trying another request after the entire invoice was returned.'])->assertSessionHasErrors('refund');
         $this->assertDatabaseCount('refunds', 2);
     }
 
@@ -223,7 +226,7 @@ class PartialPaymentRefundFlowTest extends TestCase
         $this->assertSame(18, Variant::sole()->stock);
         $this->assertSame(0, Variant::sole()->reserved);
         $this->assertSame(0, $order->fresh()->outstandingBalance());
-        $this->actingAs($customer)->post('/orders/'.$order->id.'/refunds', ['reason' => 'Request before the customer has received the order.'])->assertSessionHasErrors('refund');
+        $this->actingAs($customer)->post('/orders/'.$order->id.'/refunds', ['customer_photo' => UploadedFile::fake()->image('return.jpg'), 'reason' => 'Request before the customer has received the order.'])->assertSessionHasErrors('refund');
         $this->assertDatabaseCount('refunds', 0);
         $this->actingAs($staff)->patch('/admin/orders/'.$order->id, ['status' => 'ready', 'reason' => 'The paid clothing has been packed for store pickup.'])
             ->assertRedirect()->assertSessionHasNoErrors();
@@ -232,7 +235,7 @@ class PartialPaymentRefundFlowTest extends TestCase
         $this->assertTrue($order->fresh()->deliveryConfirmed());
         $this->assertSame(1, $order->review()->count());
         $beforeRefund = $this->commerce($order);
-        $this->post('/orders/'.$order->id.'/refunds', ['reason' => 'Returned clothing because the chosen size does not fit.'])
+        $this->post('/orders/'.$order->id.'/refunds', ['customer_photo' => UploadedFile::fake()->image('return.jpg'), 'reason' => 'Returned clothing because the chosen size does not fit.'])
             ->assertRedirect()->assertSessionHasNoErrors();
         $refund = $order->refunds()->sole();
         $this->actingAs($owner)->patch('/admin/refunds/'.$refund->id, ['decision' => 'approved', 'approved_amount' => '700.00',
@@ -292,7 +295,7 @@ class PartialPaymentRefundFlowTest extends TestCase
         $deposit = $this->cash($order, $this->actor('staff'), 70000);
         $before = $this->commerce($order);
         $this->assertSame('partially_paid', $order->fresh()->payment_status);
-        $this->actingAs($order->user)->post('/orders/'.$order->id.'/refunds', ['reason' => 'Requesting a return while the remaining balance is unpaid.'])->assertSessionHasErrors('refund');
+        $this->actingAs($order->user)->post('/orders/'.$order->id.'/refunds', ['customer_photo' => UploadedFile::fake()->image('return.jpg'), 'reason' => 'Requesting a return while the remaining balance is unpaid.'])->assertSessionHasErrors('refund');
         $this->post('/orders/'.$order->id.'/receipt', ['received' => '1', 'rating' => 4, 'comment' => 'Trying to confirm receipt before paying the full balance.'])->assertSessionHasErrors('receipt');
         $this->assertDatabaseCount('refunds', 0);
         $this->assertSame('paid', $deposit->fresh()->status);
@@ -319,7 +322,7 @@ class PartialPaymentRefundFlowTest extends TestCase
         }
         $before = $this->commerce($order);
         $this->asGuest();
-        $this->post($this->guestRefundUrl($order), ['reason' => 'Trying a refund without a settled and handed-over invoice.'])->assertSessionHasErrors('refund');
+        $this->post($this->guestRefundUrl($order), ['customer_photo' => UploadedFile::fake()->image('return.jpg'), 'reason' => 'Trying a refund without a settled and handed-over invoice.'])->assertSessionHasErrors('refund');
         $this->assertDatabaseCount('refunds', 0);
         $this->assertSame($before, $this->commerce($order));
         Http::assertNothingSent();
@@ -369,7 +372,7 @@ class PartialPaymentRefundFlowTest extends TestCase
                 'provider_refund_id' => in_array($status, ['pending', 'processing'], true) ? 'ref_guest_active' : null]);
         }
         $before = $this->commerce($order);
-        $this->post($this->guestRefundUrl($order), ['reason' => 'Submitting the same return while the first is unresolved.'])->assertSessionHasErrors('refund');
+        $this->post($this->guestRefundUrl($order), ['customer_photo' => UploadedFile::fake()->image('return.jpg'), 'reason' => 'Submitting the same return while the first is unresolved.'])->assertSessionHasErrors('refund');
         $this->assertDatabaseCount('refunds', 1);
         $this->assertSame($status, $refund->fresh()->status);
         $this->assertSame(1, ActivityLog::where('action', 'refund.requested')->count());
