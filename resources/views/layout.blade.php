@@ -10,7 +10,7 @@
 @if(auth()->check() && auth()->user()->role === 'customer')<link rel="stylesheet" href="{{ asset('customer-session.css') }}?v={{ filemtime(public_path('customer-session.css')) }}">@endif
 </head>
 @php($isAdmin=\App\Services\AccountNavigation::workspace(auth()->user()) && ((request()->routeIs('admin.*') && !request()->routeIs('admin.login','admin.login.submit')) || request()->routeIs('account*','orders.show')))
-<body class="{{ $isAdmin ? 'admin-body' : 'store-body' }}{{ request()->routeIs('verification.*', 'password.*', 'admin.staff.create', 'admin.staff.show') ? ' verification-page' : '' }}{{ request()->routeIs('admin.staff.*') ? ' staff-setup-page' : '' }}">
+<body class="{{ $isAdmin ? 'admin-body' : 'store-body' }}{{ request()->routeIs('login', 'register', 'admin.login') ? ' auth-page' : '' }}{{ request()->routeIs('verification.*', 'password.*', 'admin.staff.create', 'admin.staff.show') ? ' verification-page' : '' }}{{ request()->routeIs('admin.staff.*') ? ' staff-setup-page' : '' }}">
 <a class="skip-link" href="#main-content">Skip to content</a>
 @if($isAdmin)
 <aside class="sidebar" id="workspace-menu"><div class="sidebar-heading"><a class="brand" href="{{ route('admin.dashboard') }}"><img class="brand-logo" src="{{ asset('brand/zone-one-tees-logo-transparent.png') }}" alt="Zone One Tee’s logo"><span>Zone One Tee’s<small>STORE WORKSPACE</small></span></a><button type="button" class="icon-btn admin-menu-close" id="workspace-menu-close" aria-label="Close workspace menu">×</button></div>

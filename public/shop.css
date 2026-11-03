@@ -346,3 +346,8 @@ a:focus-visible,button:focus-visible,summary:focus-visible,input:focus-visible,t
     .product-review-header>time{width:100%;margin-left:0}
     .product-review-stars{gap:8px}
 }
+
+/* Keep small-screen sign-in controls clear of the assistant launcher. */
+@media(max-width:600px){
+    .auth-page .chat-launcher{position:static;width:max-content;max-width:calc(100% - 36px);margin:0 18px max(24px,env(safe-area-inset-bottom)) auto}
+}
