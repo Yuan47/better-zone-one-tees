@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content"><meta name="csrf-token" content="{{ csrf_token() }}"><meta name="theme-color" content="#941B0C"><link rel="icon" type="image/png" href="{{ asset('brand/zone-one-tees-logo.png') }}">
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content"><meta name="csrf-token" content="{{ csrf_token() }}"><meta name="theme-color" content="#941B0C"><link rel="icon" type="image/png" href="{{ asset('brand/zone-one-tees-logo-transparent.png') }}">
 <title>@yield('title','Zone One Tee’s') · 2.0</title>
 @if(request()->routeIs('checkout'))<link rel="stylesheet" href="{{ asset('vendor/leaflet/leaflet.css') }}"><script src="{{ asset('vendor/leaflet/leaflet.js') }}" defer></script>@endif
 <link rel="stylesheet" href="{{ asset('shop.css') }}?v={{ filemtime(public_path('shop.css')) }}"><script src="{{ asset('shop.js') }}?v={{ filemtime(public_path('shop.js')) }}" defer></script>
@@ -13,7 +13,7 @@
 <body class="{{ $isAdmin ? 'admin-body' : 'store-body' }}{{ request()->routeIs('verification.*', 'password.*', 'admin.staff.create', 'admin.staff.show') ? ' verification-page' : '' }}{{ request()->routeIs('admin.staff.*') ? ' staff-setup-page' : '' }}">
 <a class="skip-link" href="#main-content">Skip to content</a>
 @if($isAdmin)
-<aside class="sidebar" id="workspace-menu"><div class="sidebar-heading"><a class="brand" href="{{ route('admin.dashboard') }}"><img class="brand-logo" src="{{ asset('brand/zone-one-tees-logo.png') }}" alt="Zone One Tee’s logo"><span>Zone One Tee’s<small>STORE WORKSPACE</small></span></a><button type="button" class="icon-btn admin-menu-close" id="workspace-menu-close" aria-label="Close workspace menu">×</button></div>
+<aside class="sidebar" id="workspace-menu"><div class="sidebar-heading"><a class="brand" href="{{ route('admin.dashboard') }}"><img class="brand-logo" src="{{ asset('brand/zone-one-tees-logo-transparent.png') }}" alt="Zone One Tee’s logo"><span>Zone One Tee’s<small>STORE WORKSPACE</small></span></a><button type="button" class="icon-btn admin-menu-close" id="workspace-menu-close" aria-label="Close workspace menu">×</button></div>
 <div class="workspace"><span class="dot"></span> Zone One Tee’s 2.0 <small>{{ config('shop.demo')?'Local demo':'Store workspace' }}</small></div>
 <nav class="side-nav" aria-label="Admin navigation">
 <span class="nav-caption">YOUR STORE</span>
@@ -36,7 +36,7 @@
 <div class="admin-main"><header class="admin-top"><div class="workspace-top-title"><button type="button" class="button small admin-menu-toggle" id="workspace-menu-toggle" aria-controls="workspace-menu" aria-expanded="false">☰ Menu</button><span class="workspace-crumb">Workspace <span class="muted">/ @yield('crumb','Overview')</span></span></div><span class="badge">{{ config('shop.paymongo.mode')==='test'?'PayMongo test mode':'PayMongo live mode' }}</span></header>
 @else
 <div class="announcement">Better basics. Better prices. <span>Wholesale pricing starts at just 6 pieces.</span></div>
-<header class="store-header"><a class="brand" href="{{ route('store') }}"><img class="brand-logo" src="{{ asset('brand/zone-one-tees-logo.png') }}" alt="Zone One Tee’s logo"><span>Zone One Tee’s<small>EVERYDAY STARTS HERE</small></span></a>
+<header class="store-header"><a class="brand" href="{{ route('store') }}"><img class="brand-logo" src="{{ asset('brand/zone-one-tees-logo-transparent.png') }}" alt="Zone One Tee’s logo"><span>Zone One Tee’s<small>EVERYDAY STARTS HERE</small></span></a>
 <form class="header-search" action="{{ route('store') }}" role="search"><span aria-hidden="true">⌕</span><input type="search" name="q" aria-label="Search products" placeholder="Search tees, brands, and essentials" value="{{ request('q') }}"><button class="icon-btn" aria-label="Search">→</button></form>
 <nav class="header-actions" aria-label="Customer navigation"><a href="{{ auth()->check()?route('store',['wishlist'=>1]):route('login') }}" aria-label="Wishlist">♡ <span>Wishlist</span></a><a href="{{ route('cart') }}">▢ <span>Cart</span><b>{{ array_sum(session('cart',[])) }}</b></a>
 @auth
@@ -65,7 +65,7 @@
 @endif
 @endif
 @yield('content')</main>
-@if($isAdmin)</div>@else<footer class="footer"><a class="brand" href="{{ route('store') }}"><img class="brand-logo" src="{{ asset('brand/zone-one-tees-logo.png') }}" alt="Zone One Tee’s logo">Zone One Tee’s<span class="muted">2.0</span></a><span>Good clothes. Thoughtful service. Everyday value.</span><a href="{{ route('store') }}#quantity">Quantity pricing</a></footer>@endif
+@if($isAdmin)</div>@else<footer class="footer"><a class="brand" href="{{ route('store') }}"><img class="brand-logo" src="{{ asset('brand/zone-one-tees-logo-transparent.png') }}" alt="Zone One Tee’s logo">Zone One Tee’s<span class="muted">2.0</span></a><span>Good clothes. Thoughtful service. Everyday value.</span><a href="{{ route('store') }}#quantity">Quantity pricing</a></footer>@endif
 <button id="chat-toggle" class="chat-launcher" aria-controls="chat-panel" aria-expanded="false">✧ <span>{{ $isAdmin?'Staff assistant':'Ask Zone One' }}</span></button>
 <section id="chat-panel" class="chat-panel" hidden aria-label="Store assistant"><header><div><b>{{ $isAdmin?'Store assistant':'Hey, welcome to Zone One.' }}</b><small>{{ (filled(config('shop.groq.key')) && filled(config('shop.groq.model')))?'Powered by GroqCloud':'Basic help · GroqCloud not connected' }}</small></div><button id="chat-close" class="icon-btn" aria-label="Close chat">×</button></header>
 <div id="chat-messages" class="chat-messages" role="log" aria-live="polite"><p class="assistant-message">{{ $isAdmin?'Ask how to use your workspace. I can explain the steps allowed for your role.':'Need a hand? Ask how to create an account, shop, or find your own orders.' }}</p></div>
