@@ -2,7 +2,7 @@
 @section('title',$product->name)
 @section('content')
 <div class="breadcrumb"><a href="{{ route('store') }}">Shop all</a> / {{ $product->name }}</div>
-@php($variantData=$product->variants->map(fn($v)=>['id'=>$v->id,'size'=>$v->size,'color'=>$v->color,'stock'=>$v->available(),'retail'=>$v->retail_price,'wholesale'=>$v->wholesale_price,'reseller'=>$v->reseller_price,'photo'=>$v->photoUrl(),'sku'=>$v->sku])->values())
+@php($variantData=$product->variants->map(fn($v)=>['id'=>$v->id,'size'=>$v->size,'color'=>$v->color,'stock'=>$v->available(),'retail'=>$v->retail_price,'wholesale'=>$v->wholesale_price,'reseller'=>$v->reseller_price,'photo'=>$v->photoUrl($product),'sku'=>$v->sku])->values())
 @php($styleOptions=$product->variants->isNotEmpty() && $product->variants->every(fn($variant)=>in_array($variant->color,['Plain','Reflector'],true)))
 <div class="product-detail"><div class="detail-art">
 <img id="selected-product-photo" src="{{ $product->photoUrl()??'' }}" alt="{{ $product->name }}" @if(!$product->photoUrl()) hidden @endif>

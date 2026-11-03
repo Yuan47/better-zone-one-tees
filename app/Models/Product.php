@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\DannonProductImages;
 use Illuminate\Database\Eloquent\Model;
 
 class Product extends Model
@@ -15,7 +16,8 @@ class Product extends Model
 
     public function photoUrl(): ?string
     {
-        return $this->image_path ? asset($this->image_path) : ($this->image_url ?: null);
+        return DannonProductImages::url($this->slug, $this->image_path)
+            ?? ($this->image_path ? asset($this->image_path) : ($this->image_url ?: null));
     }
 
     public function isPolo(): bool

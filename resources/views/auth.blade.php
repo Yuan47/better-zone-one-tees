@@ -1,7 +1,7 @@
 @extends('layout')
 @section('title',$mode==='register'?'Create account':($workspace?'Staff & owner sign in':'Customer sign in'))
 @section('content')
-<div class="auth-layout"><div class="auth-intro"><span class="eyebrow">{{ $workspace?'YOUR STORE WORKSPACE':'YOUR EVERYDAY STARTS HERE' }}</span><h1>{{ $workspace?'Keep your store moving.':($mode==='login'?'Good to see you again.':'Make yourself at home.') }}</h1><p>@if($workspace)Manage orders, payments and inventory<br>from your store workspace.@else Save your favorites, find your fit,<br>and follow every order in one place.@endif</p><div class="auth-art"><x-shirt color="#a1b2a1"/></div></div><div class="panel auth-card"><h2>{{ $mode==='register'?'Create your account':($workspace?'Staff & owner sign in':'Customer sign in') }}</h2>
+<div class="auth-layout"><div class="auth-intro"><span class="eyebrow">{{ $workspace?'YOUR STORE WORKSPACE':'YOUR EVERYDAY STARTS HERE' }}</span><h1>{{ $workspace?'Keep your store moving.':($mode==='login'?'Good to see you again.':'Make yourself at home.') }}</h1><p>@if($workspace)Manage orders, payments and inventory<br>from your store workspace.@else Save your favorites, find your fit,<br>and follow every order in one place.@endif</p><div class="auth-art"><img class="auth-logo" src="{{ asset('brand/zone-one-tees-logo.png') }}" alt="Zone One Tee’s logo" width="230" height="230"></div></div><div class="panel auth-card"><h2>{{ $mode==='register'?'Create your account':($workspace?'Staff & owner sign in':'Customer sign in') }}</h2>
 @if($switchRequired)
 <p>You’re already signed in with {{ \App\Services\AccountNavigation::workspace(auth()->user())?'a staff or owner':'a customer' }} account. Sign out before using another account.</p>
 <form method="post" action="{{ route('logout') }}" class="stack">@csrf<input type="hidden" name="sign_in_portal" value="{{ $workspace?'workspace':'customer' }}"><button class="button dark">Sign out to switch accounts</button></form>
@@ -15,10 +15,10 @@
 @if($mode==='register')<label>Confirm password<input name="password_confirmation" type="password" autocomplete="new-password" required minlength="10"></label>@if(config('auth.email_verification.required'))<p class="muted">We’ll email a six-digit verification code after you create your account.</p>@endif @endif<button class="button dark">{{ $mode==='login'?'Sign in →':'Create account →' }}</button></form>
 @if($mode==='login')<p><a class="text-link" href="{{ route('password.request') }}">Forgot your password?</a></p>@endif
 @if(!$workspace && app(\App\Services\GoogleSignIn::class)->ready())
-<form method="post" action="{{ route('google.start') }}" class="stack">@csrf<button class="button" type="submit">Continue with Google</button><small class="muted">For customer accounts. Staff and owners sign in with email and password.</small></form>
+<form method="post" action="{{ route('google.start') }}" class="stack">@csrf<button class="button" type="submit">Continue with Google</button><small class="muted">Sign in or create your customer account with Google.</small></form>
 @endif
 @if(!$workspace)<p>{{ $mode==='login'?'New here?':'Already have an account?' }} <a class="text-link" href="{{ $mode==='login'?route('register'):route('login') }}">{{ $mode==='login'?'Create an account':'Sign in' }}</a></p>@endif
 @if(config('shop.demo') && app()->environment('local','testing'))<details class="demo-accounts"><summary>Local demo accounts</summary><p>@if($workspace)admin@zoneone.test<br>staff@zoneone.test @else customer@zoneone.test @endif</p><p>Password: <code>ZoneOneDemo!2026</code></p></details>@endif
 @endif
-<p><a class="text-link" href="{{ route($workspace?'login':'admin.login') }}">{{ $workspace?'Customer sign in':'Staff & owner sign in' }}</a></p></div></div>
+@if($workspace)<p><a class="text-link" href="{{ route('login') }}">Customer sign in</a></p>@endif</div></div>
 @endsection

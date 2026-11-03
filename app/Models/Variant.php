@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\DannonProductImages;
 use Illuminate\Database\Eloquent\Model;
 
 class Variant extends Model
@@ -13,9 +14,17 @@ class Variant extends Model
         return $this->belongsTo(Product::class);
     }
 
-    public function photoUrl(): ?string
+    public function photoUrl(?Product $product = null): ?string
     {
-        return $this->image_path ? asset($this->image_path) : $this->product->photoUrl();
+        if ($this->image_path && ! DannonProductImages::isLegacyPreview($this->image_path)) {
+            return asset($this->image_path);
+        }
+
+        $product = $product !== null && (string) $product->id === (string) $this->product_id ? $product : $this->product;
+
+        return $this->image_path
+            ? (DannonProductImages::url($product->slug, $this->image_path) ?? asset($this->image_path))
+            : $product->photoUrl();
     }
 
     public function available(): int

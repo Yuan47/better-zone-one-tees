@@ -13,6 +13,7 @@
 :root{--coffee:#220901;--garnet:#621708;--oxblood:#941B0C;--rust:#BC3908;--orange:#F6AA1C;--white:#FFFFFF}
 .announcement{background:var(--coffee)}
 .brand-logo{width:53px;height:53px;object-fit:contain;flex-shrink:0;background:white;border-radius:8px}
+.auth-art .auth-logo{display:block;width:100%;height:auto;object-fit:contain}
 .sidebar .brand-logo{width:40px;height:40px}
 .footer .brand-logo{width:35px;height:35px}
 .hero-sticker{background:var(--orange);color:var(--coffee)}

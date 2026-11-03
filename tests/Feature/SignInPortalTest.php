@@ -35,8 +35,10 @@ class SignInPortalTest extends TestCase
     {
         config(['services.google.enabled' => true, 'services.google.client_id' => 'fixture', 'services.google.client_secret' => 'fixture',
             'services.google.redirect' => 'http://localhost/auth/google/callback']);
-        $this->get('/login')->assertOk()->assertSee('Customer sign in')->assertSee('Continue with Google')->assertSee('Create an account');
-        $this->get('/register')->assertOk()->assertSee('Create your account')->assertSee('Continue with Google');
+        $this->get('/login')->assertOk()->assertSee('Customer sign in')->assertSee('Continue with Google')->assertSee('Create an account')
+            ->assertSee('class="auth-logo"', false)->assertDontSee('href="http://localhost/admin/login"', false);
+        $this->get('/register')->assertOk()->assertSee('Create your account')->assertSee('Continue with Google')
+            ->assertSee('class="auth-logo"', false)->assertDontSee('href="http://localhost/admin/login"', false);
         $this->get('/admin/login')->assertOk()->assertSee('Staff & owner sign in')->assertSee('created by the store owner')
             ->assertSee('action="http://localhost/admin/login"', false)->assertDontSee('Continue with Google')
             ->assertDontSee('href="http://localhost/register"', false)->assertDontSee('auth/google', false)->assertDontSee('Admin navigation');
@@ -214,10 +216,10 @@ class SignInPortalTest extends TestCase
         $this->assertGuest();
     }
 
-    public function test_shared_recovery_links_offer_both_sign_in_pages_without_looking_up_an_account(): void
+    public function test_public_recovery_pages_return_to_customer_sign_in_without_exposing_workspace_links_or_looking_up_an_account(): void
     {
-        $this->get('/forgot-password')->assertOk()->assertSee('http://localhost/admin/login', false)->assertSee('Customer sign in');
-        $this->get('/reset-password/'.str_repeat('a', 64))->assertOk()->assertSee('http://localhost/admin/login', false)->assertSee('Customer sign in');
+        $this->get('/forgot-password')->assertOk()->assertDontSee('href="http://localhost/admin/login"', false)->assertSee('Customer sign in');
+        $this->get('/reset-password/'.str_repeat('a', 64))->assertOk()->assertDontSee('href="http://localhost/admin/login"', false)->assertSee('Customer sign in');
         $this->assertDatabaseCount('users', 0);
         Http::assertNothingSent();
     }

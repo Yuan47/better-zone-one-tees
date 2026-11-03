@@ -108,7 +108,7 @@ class GoogleSignInTest extends TestCase
 
     public function test_configured_customer_buttons_appear_and_oauth_uses_state_pkce_and_minimal_scopes(): void
     {
-        $this->get('/login')->assertOk()->assertSee('Continue with Google')->assertSee('Staff and owners sign in with email and password.');
+        $this->get('/login')->assertOk()->assertSee('Continue with Google')->assertSee('Sign in or create your customer account with Google.');
         $this->get('/register')->assertOk()->assertSee('Continue with Google');
         $parameters = $this->begin();
         $this->assertSame('openid email profile', $parameters['scope']);
