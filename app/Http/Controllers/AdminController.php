@@ -105,19 +105,22 @@ class AdminController extends Controller
         if ($variant) {
             abort_unless($variant->product_id === $product->id, 404);
         }
-        $group = $r->input('color_group', 'COLORED');
-        $r->merge(['color_group' => $group, 'size' => strtoupper(trim((string) $r->input('size'))), 'color' => $group === 'WHITE' ? 'White' : trim((string) $r->input('color'))]);
+        $color = $r->input('color');
+        if (is_string($color)) {
+            $color = trim($color);
+            $color = strcasecmp($color, 'white') === 0 ? 'White' : $color;
+        }
+        $size = $r->input('size');
+        $r->merge(['size' => is_string($size) ? strtoupper(trim($size)) : $size, 'color' => $color]);
         $data = $r->validate([
-            'size' => 'required|string|max:40', 'color_group' => 'required|in:WHITE,COLORED',
+            'size' => 'required|string|max:40',
             'color' => ['required', 'string', 'max:80', Rule::unique('variants', 'color')->where(fn ($q) => $q->where('product_id', $product->id)->where('size', $r->input('size')))->ignore($variant?->id)],
             'stock' => 'required|integer|min:0|max:1000000', 'reorder_level' => 'required|integer|min:0|max:1000000',
             'expected_stock' => [Rule::requiredIf($variant !== null), 'nullable', 'integer', 'min:0', 'max:1000000'],
             'retail' => 'required|numeric|min:1|max:100000', 'wholesale' => 'required|numeric|min:1|max:100000', 'reseller' => 'required|numeric|min:1|max:100000',
             'photo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120', 'remove_photo' => 'nullable|boolean',
         ], ['expected_stock.required' => 'This stock form is out of date. Reopen the variant before saving.']);
-        if ($group === 'COLORED' && strtolower($data['color']) === 'white') {
-            throw ValidationException::withMessages(['color' => 'Select WHITE for white clothing.']);
-        }
+        $data['color_group'] = $data['color'] === 'White' ? 'WHITE' : 'COLORED';
         foreach (['retail', 'wholesale', 'reseller'] as $tier) {
             $data[$tier.'_price'] = (int) round($data[$tier] * 100);
             unset($data[$tier]);
@@ -130,6 +133,10 @@ class AdminController extends Controller
         $savedVariant = null;
         DB::transaction(function () use ($r, $product, $variant, $uploads, &$data, &$savedVariant) {
             Product::whereKey($product->id)->lockForUpdate()->firstOrFail();
+            if ($product->variants()->where('size', $data['size'])->whereRaw('LOWER(color) = ?', [mb_strtolower($data['color'])])
+                ->when($variant, fn ($query) => $query->whereKeyNot($variant->id))->exists()) {
+                throw ValidationException::withMessages(['color' => 'This size and color already exist. Edit the existing variant.']);
+            }
             $locked = $variant ? Variant::whereKey($variant->id)->lockForUpdate()->firstOrFail() : null;
             if ($locked && $r->integer('expected_stock') !== (int) $locked->stock) {
                 throw ValidationException::withMessages(['stock' => 'Stock changed while this page was open. The current count is '.$locked->stock.'. Review the refreshed count before saving again.']);
@@ -162,28 +169,42 @@ class AdminController extends Controller
 
     public function color(Request $r, Product $product, ImageUploads $uploads)
     {
-        $data = $r->validate(['color' => 'required|string|max:80', 'photo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120']);
+        $data = $r->validate(['color' => 'required|string|max:80', 'template_color' => 'nullable|string|max:80', 'photo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120']);
         $color = trim($data['color']);
-        if (strtolower($color) === 'white' || $product->variants()->where('color', $color)->exists()) {
-            throw ValidationException::withMessages(['color' => 'This color already exists. Edit its variants below.']);
-        }
-        $templates = $product->variants()->where('color_group', 'COLORED')->orderBy('id')->get()->unique('size');
-        if ($templates->isEmpty()) {
-            throw ValidationException::withMessages(['color' => 'Add a COLORED size variant first to set its prices.']);
-        }
-        $photo = $r->file('photo') ? $uploads->store($r->file('photo'), 'variants') : null;
-        DB::transaction(function () use ($templates, $color, $product, $photo) {
-            Product::whereKey($product->id)->lockForUpdate()->firstOrFail();
-            foreach ($templates as $v) {
-                $product->variants()->create([
-                    'sku' => Sku::forNewVariant($product, $v->size, $color), 'size' => $v->size, 'color' => $color, 'color_group' => 'COLORED', 'image_path' => $photo,
-                    'retail_price' => $v->retail_price, 'wholesale_price' => $v->wholesale_price, 'reseller_price' => $v->reseller_price, 'stock' => 0, 'reorder_level' => $v->reorder_level,
-                ]);
+        $color = strcasecmp($color, 'white') === 0 ? 'White' : $color;
+        $photo = null;
+        $templates = collect();
+        try {
+            DB::transaction(function () use ($r, $data, $color, $product, $uploads, &$photo, &$templates) {
+                Product::whereKey($product->id)->lockForUpdate()->firstOrFail();
+                if ($product->variants()->whereRaw('LOWER(color) = ?', [mb_strtolower($color)])->exists()) {
+                    throw ValidationException::withMessages(['color' => 'This color already exists. Edit its variants below.']);
+                }
+                $colors = $product->variants()->orderBy('id')->pluck('color')->unique()->values();
+                $source = filled($data['template_color'] ?? null) ? trim($data['template_color'])
+                    : ($colors->first(fn ($name) => strcasecmp($name, 'white') !== 0) ?? $colors->first());
+                $templates = $product->variants()->whereRaw('LOWER(color) = ?', [mb_strtolower($source ?? '')])->orderBy('id')->get()->unique('size');
+                if ($templates->isEmpty()) {
+                    throw ValidationException::withMessages(['template_color' => 'Choose an existing color to copy, or add the first size and color variant below.']);
+                }
+                $photo = $r->file('photo') ? $uploads->store($r->file('photo'), 'variants') : null;
+                foreach ($templates as $v) {
+                    $product->variants()->create([
+                        'sku' => Sku::forNewVariant($product, $v->size, $color), 'size' => $v->size, 'color' => $color,
+                        'color_group' => $color === 'White' ? 'WHITE' : 'COLORED', 'image_path' => $photo,
+                        'retail_price' => $v->retail_price, 'wholesale_price' => $v->wholesale_price, 'reseller_price' => $v->reseller_price, 'stock' => 0, 'reorder_level' => $v->reorder_level,
+                    ]);
+                }
+            });
+        } catch (\Throwable $exception) {
+            if ($photo) {
+                $uploads->delete($photo);
             }
-        });
+            throw $exception;
+        }
         ActivityRecorder::mark($r, 'catalog.color_added', $product, ['variant_count' => $templates->count()]);
 
-        return back()->with('notice', 'Color added across existing colored sizes. Review its prices and enter counted stock.');
+        return back()->with('notice', 'Color added with the selected color’s sizes and prices. Review its prices and enter counted stock.');
     }
 
     public function orders(Request $r)

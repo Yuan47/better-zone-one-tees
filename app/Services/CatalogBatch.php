@@ -21,6 +21,11 @@ class CatalogBatch
 
         return DB::transaction(function () use ($catalog) {
             $counts = ['products_created' => 0, 'variants_created' => 0, 'samples_archived' => 0];
+            // Existing styles split from their actual owner-maintained variants first.
+            // The additive catalog import can then fill any separately missing rows.
+            $split = app(DannonNecklineSplit::class)->apply();
+            $counts['products_created'] += $split['products_created'];
+            $counts['variants_created'] += $split['variants_created'];
             foreach ($catalog as $line) {
                 $product = Product::firstOrCreate(['slug' => $line['slug']], [
                     'name' => $line['name'],
@@ -47,6 +52,9 @@ class CatalogBatch
                     }
                     $counts['variants_created'] += (int) $variant->wasRecentlyCreated;
                 }
+                $split = app(DannonNecklineSplit::class)->split($product);
+                $counts['products_created'] += $split['products_created'];
+                $counts['variants_created'] += $split['variants_created'];
             }
 
             // Keep existing orders and their variants intact; archive the original demo catalog once.

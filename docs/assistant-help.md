@@ -10,6 +10,8 @@ The default account-creation guide includes full name, unique username, email, m
 
 New refund requests require a private supporting photo. The assistant's controlled refund-photo answer states the allowed image types, 3 MB limit, 6000-pixel side limit, and that evidence is not published as a product review. The additional product-review guide explains that existing ratings belong to completed orders containing an item, written comments remain optional, and buyer identities are masked. The migration refreshes only exact untouched refund defaults and preserves owner edits, audiences, inactive entries and sort order.
 
+The simplified catalog guides explain separate adult/kids Dannon Round Neck and V-Neck products, White as an ordinary color, and copying a selected color's sizes/prices without copying stock. A staff/owner-only guide explains the read-only Customer reviews workspace and its order links. Catalog context supplies actual color names and no longer supplies a White/Colored grouping control. Existing owner-edited answers and audience decisions remain preserved.
+
 ## FAQ audiences
 
 Only the owner manages the FAQ library in Settings. Choose an audience when adding or editing an answer:

@@ -16,7 +16,7 @@
 <label class="check"><input type="checkbox" name="in_stock" value="1" @checked(request('in_stock'))> In stock</label><button class="button small">Apply</button><a class="text-link" href="{{ route('store') }}">Reset</a></form>
 <div class="product-grid">@forelse($products as $product)
 @php($styleOptions=$product->variants->isNotEmpty() && $product->variants->every(fn($variant)=>in_array($variant->color,['Plain','Reflector'],true)))
-@php($selectionLabel=$styleOptions?'PLAIN + REFLECTOR':($product->variants->pluck('color_group')->unique()->implode(' + ')?:'OPTIONS'))
+@php($selectionLabel=$styleOptions?'PLAIN + REFLECTOR':'SIZES + COLORS')
 <article class="product-card"><div class="product-art" style="--art-bg:{{ $loop->iteration%2?'#fff8f2':'#fff4e7' }}"><a href="{{ route('product',$product) }}" aria-label="View {{ $product->name }}">@if($product->photoUrl())<img src="{{ $product->photoUrl() }}" alt="{{ $product->name }}" loading="lazy">@else<x-shirt :color="$product->art_color" :polo="$product->isPolo()"/>@endif</a><span class="product-tag">{{ $selectionLabel }}</span>
 <form method="post" action="{{ route('wishlist.toggle',$product) }}">@csrf<button class="wish-button" aria-label="{{ in_array($product->id,$wishIds)?'Remove from':'Add to' }} wishlist">{{ in_array($product->id,$wishIds)?'♥':'♡' }}</button></form><span class="art-caption">{{ $product->photoUrl()?'':'CATALOG ILLUSTRATION' }}</span></div>
 <div class="product-meta"><div><span class="muted">{{ $selectionLabel }}</span><a href="{{ route('product',$product) }}"><h3>{{ $product->name }}</h3></a></div><span class="product-arrow">↗</span></div>

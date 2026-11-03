@@ -19,6 +19,7 @@ use App\Http\Controllers\PasswordRecoveryController;
 use App\Http\Controllers\PaymentRecoveryController;
 use App\Http\Controllers\ReadyNotificationController;
 use App\Http\Controllers\RefundController;
+use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\ReportsController;
 use App\Http\Controllers\StaffAccountController;
 use App\Http\Controllers\StoreController;
@@ -89,6 +90,7 @@ Route::middleware(['auth', 'staff'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/inventory-attention', [ReportsController::class, 'inventoryAttention'])->name('inventory-attention');
     Route::get('/operations', [OperationsController::class, 'index'])->name('operations');
     Route::get('/refunds', [RefundController::class, 'index'])->name('refunds.index');
+    Route::get('/reviews', [ReviewController::class, 'index'])->name('reviews.index');
     Route::get('/refunds/{refund}', [RefundController::class, 'show'])->name('refunds.show');
     Route::get('/refunds/{refund}/evidence/{kind}', [RefundController::class, 'evidence'])->whereIn('kind', ['customer', 'inspection'])->name('refunds.evidence');
     Route::post('/refunds/{refund}/check', [RefundController::class, 'check'])->middleware('throttle:6,1')->name('refunds.check');

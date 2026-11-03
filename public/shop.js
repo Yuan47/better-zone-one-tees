@@ -61,13 +61,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
   var variantData=document.getElementById('product-variants');
   if(variantData){
-    var variants=JSON.parse(variantData.textContent), group=document.getElementById('color-group'), color=document.getElementById('variant-color'), size=document.getElementById('variant-size');
+    var variants=JSON.parse(variantData.textContent), color=document.getElementById('variant-color'), size=document.getElementById('variant-size');
     var selectedImage=document.getElementById('selected-product-photo'), placeholder=document.getElementById('product-photo-placeholder');
     function options(select, values, previous){select.replaceChildren();values.forEach(function(value){var opt=document.createElement('option');opt.value=value;opt.textContent=value;select.appendChild(opt);});if(values.includes(previous))select.value=previous;}
-    function refreshColors(){options(color,[...new Set(variants.filter(function(v){return v.group===group.value;}).map(function(v){return v.color;}))],color.value);refreshSizes();}
-    function refreshSizes(){options(size,[...new Set(variants.filter(function(v){return v.group===group.value && v.color===color.value;}).map(function(v){return v.size;}))],size.value);refreshVariant();}
+    function refreshColors(){options(color,[...new Set(variants.map(function(v){return v.color;}))],color.value);refreshSizes();}
+    function refreshSizes(){options(size,[...new Set(variants.filter(function(v){return v.color===color.value;}).map(function(v){return v.size;}))],size.value);refreshVariant();}
     function refreshVariant(){
-      var v=variants.find(function(v){return v.group===group.value && v.color===color.value && v.size===size.value;}), add=document.getElementById('add-to-cart');
+      var v=variants.find(function(v){return v.color===color.value && v.size===size.value;}), add=document.getElementById('add-to-cart');
       document.getElementById('variant-id').value=v?v.id:'';add.disabled=!v||v.stock===0;
       document.getElementById('variant-availability').textContent=v?(v.stock===0?'Currently out of stock':v.stock+' pieces available'):'This combination is unavailable.';
       document.getElementById('variant-sku').textContent=v?'SKU: '+v.sku:'';
@@ -76,10 +76,8 @@ document.addEventListener('DOMContentLoaded', function () {
       var qty=document.getElementById('variant-quantity');qty.max=v?Math.min(10000,Math.max(1,v.stock)):1;if(Number(qty.value)>Number(qty.max))qty.value=qty.max;
       selectedImage.hidden=!(v&&v.photo);placeholder.hidden=!!(v&&v.photo);if(v&&v.photo)selectedImage.src=v.photo;else selectedImage.removeAttribute('src');
     }
-    group.addEventListener('change',refreshColors);color.addEventListener('change',refreshSizes);size.addEventListener('change',refreshVariant);
-    options(group,[...new Set(variants.map(function(v){return v.group;}))],group.value);refreshColors();
+    color.addEventListener('change',refreshSizes);size.addEventListener('change',refreshVariant);refreshColors();
   }
-  document.querySelectorAll('.color-group-input').forEach(function(select){var input=select.closest('form').querySelector('input[name="color"]');function updateColor(){if(select.value==='WHITE'){input.value='White';input.readOnly=true;}else{input.readOnly=false;if(input.value==='White')input.value='';}}select.addEventListener('change',updateColor);updateColor();});
   var rows=document.getElementById('size-chart-rows'), addRow=document.getElementById('add-size-row');
   if(rows){var rowIndex=rows.children.length;addRow.addEventListener('click',function(){if(rows.children.length>=30)return;var row=document.createElement('tr');['size','width','length'].forEach(function(field){var cell=document.createElement('td'),input=document.createElement('input');input.name='size_chart['+rowIndex+']['+field+']';input.setAttribute('aria-label','Chart '+field+' '+(rowIndex+1));if(field==='size')input.maxLength=40;else{input.type='number';input.step='.5';input.min=1;input.max=100;}cell.appendChild(input);row.appendChild(cell);});var cell=document.createElement('td'),button=document.createElement('button');button.type='button';button.className='text-button remove-size-row';button.setAttribute('aria-label','Remove size row');button.textContent='×';cell.appendChild(button);row.appendChild(cell);rows.appendChild(row);rowIndex++;});rows.addEventListener('click',function(e){if(e.target.classList.contains('remove-size-row'))e.target.closest('tr').remove();});}
   var filter=document.getElementById('admin-color-filter');if(filter)filter.addEventListener('change',function(){document.querySelectorAll('[data-variant-color]').forEach(function(row){row.hidden=!!filter.value&&row.dataset.variantColor!==filter.value;});});

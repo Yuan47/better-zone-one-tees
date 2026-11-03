@@ -212,7 +212,7 @@ class StoreKnowledge
                 'variant_scope' => ['sizes' => $sizes, 'colors' => $colors],
                 'matching_variant_count' => $variants->count(), 'variants_complete' => $variants->count() <= 40,
                 'variants' => $variants->sortByDesc(fn ($variant) => $variant->available())->take(40)->map(fn ($variant) => [
-                    'size' => $variant->size, 'color' => $variant->color, 'color_group' => $variant->color_group, 'available_pieces' => $variant->available(),
+                    'size' => $variant->size, 'color' => $variant->color, 'available_pieces' => $variant->available(),
                     'retail_price' => $variant->retail_price, 'wholesale_price' => $variant->wholesale_price, 'reseller_price' => $variant->reseller_price,
                 ])->values(),
             ];

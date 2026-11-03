@@ -91,7 +91,7 @@ class ChatAccuracyTest extends TestCase
         $this->product()->variants()->where('size', 'S')->where('color', 'Yellow')->update(['stock' => 11]);
         $this->chat('Is Dannon polo S Light Yellow available?')->assertJsonPath('reply', fn ($reply) => str_contains($reply, 'S / Light Yellow: 7 pieces currently available'));
         $this->chat('Is Dannon polo S Yellow available?')->assertJsonPath('reply', fn ($reply) => str_contains($reply, 'S / Yellow: 11 pieces currently available'));
-        $this->chat('Is Dannon round neck kids size 14 White available?')->assertJsonPath('reply', fn ($reply) => str_contains($reply, 'DANNON - ROUND NECK / V-NECK KIDS') && str_contains($reply, '14 / White is not an offered variant'));
+        $this->chat('Is Dannon round neck kids size 14 White available?')->assertJsonPath('reply', fn ($reply) => str_contains($reply, 'DANNON - ROUND NECK KIDS') && str_contains($reply, '14 / White is not an offered variant'));
         $this->chat("I'm interested in Dannon collar White, what is the price?")->assertSee('please specify one size and one color');
         Http::assertNothingSent();
     }
@@ -106,6 +106,22 @@ class ChatAccuracyTest extends TestCase
         Http::assertNothingSent();
     }
 
+    public function test_separate_dannon_necklines_resolve_their_own_color_prices_and_stock(): void
+    {
+        $round = $this->product('dannon-round-neck-v-neck');
+        $vneck = $this->product('dannon-v-neck');
+        $round->variants()->where('size', 'S')->where('color', 'Red')->update(['stock' => 15, 'reserved' => 3]);
+        $vneck->variants()->where('size', 'S')->where('color', 'Red')->update(['stock' => 4, 'reserved' => 0]);
+        $this->chat('Is Dannon round neck S Red in stock?')->assertOk()
+            ->assertJsonPath('reply', fn ($reply) => str_contains($reply, 'DANNON - ROUND NECK · S / Red: 12 pieces currently available'));
+        $this->chat('Is Dannon V-neck S Red in stock?')->assertOk()
+            ->assertJsonPath('reply', fn ($reply) => str_contains($reply, 'DANNON - V-NECK · S / Red: 4 pieces currently available'));
+        $this->chat('What is Dannon V-neck kids size 4 White price?')->assertOk()
+            ->assertJsonPath('reply', fn ($reply) => str_contains($reply, 'DANNON - V-NECK KIDS · 4 / White')
+                && str_contains($reply, '₱95.00'));
+        Http::assertNothingSent();
+    }
+
     public function test_groq_context_is_bounded_and_does_not_treat_omitted_variants_as_unavailable(): void
     {
         $this->chat('Hello there, please introduce yourself.')->assertJsonPath('mode', 'groq');
@@ -116,6 +132,7 @@ class ChatAccuracyTest extends TestCase
             return count($context['catalog']) === 3
                 && collect($context['catalog'])->every(fn ($product) => count($product['variants']) <= 40)
                 && collect($context['catalog'])->every(fn ($product) => $product['variants_complete'] === false)
+                && collect($context['catalog'])->every(fn ($product) => collect($product['variants'])->every(fn ($variant) => ! array_key_exists('color_group', $variant)))
                 && str_contains($context['policy'], 'omitted variants are unknown, not unavailable')
                 && strlen(json_encode($context['catalog'])) < 30000;
         });

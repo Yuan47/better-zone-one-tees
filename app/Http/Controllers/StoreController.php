@@ -69,12 +69,7 @@ class StoreController extends Controller
         $product->setRelation('variants', $product->variants->sortBy(fn ($variant) => $this->sizeSortKey($variant->size))->values());
 
         // Reviews are order ratings, displayed once for each product in that verified purchase.
-        $reviewQuery = OrderReview::query()->whereBetween('rating', [1, 5])
-            ->whereHas('user', fn ($user) => $user->where('role', 'customer'))
-            ->whereHas('order', fn ($order) => $order->where('payment_status', 'paid')
-                ->whereNotNull('payment_id')->where('status', 'completed')->whereNotNull('customer_confirmed_at')
-                ->whereColumn('orders.user_id', 'order_reviews.user_id')
-                ->whereHas('items.variant', fn ($variant) => $variant->where('product_id', $product->id)));
+        $reviewQuery = OrderReview::query()->verifiedPurchase()->forProduct($product->id);
         $ratingCounts = (clone $reviewQuery)->select('rating')->selectRaw('COUNT(*) as total')
             ->groupBy('rating')->pluck('total', 'rating')->map(fn ($count) => (int) $count);
         $reviewCount = $ratingCounts->sum();

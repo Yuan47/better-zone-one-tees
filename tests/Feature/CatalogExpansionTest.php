@@ -15,12 +15,12 @@ class CatalogExpansionTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_permanent_catalog_appends_twelve_styles_without_replacing_the_first_six(): void
+    public function test_permanent_catalog_keeps_the_original_and_expanded_styles_with_separate_dannon_necklines(): void
     {
-        $this->assertSame(['products_created' => 18, 'variants_created' => 1049, 'samples_archived' => 0], app(CatalogBatch::class)->import());
-        $this->assertDatabaseCount('products', 18);
-        $this->assertDatabaseCount('variants', 1049);
-        $this->assertSame(1049, Variant::distinct()->count('sku'));
+        $this->assertSame(['products_created' => 20, 'variants_created' => 1287, 'samples_archived' => 0], app(CatalogBatch::class)->import());
+        $this->assertDatabaseCount('products', 20);
+        $this->assertDatabaseCount('variants', 1287);
+        $this->assertSame(1287, Variant::distinct()->count('sku'));
         $this->assertSame(0, (int) Variant::sum('stock'));
         $this->assertSame(0, (int) Variant::sum('reserved'));
 
@@ -88,8 +88,8 @@ class CatalogExpansionTest extends TestCase
         $this->assertSame(2, $original->fresh()->reserved);
         $this->assertSame($items, $order->items()->orderBy('id')->get()->toArray());
         $this->assertSame($invoice, $order->fresh()->toArray());
-        $this->assertDatabaseCount('products', 18);
-        $this->assertDatabaseCount('variants', 1049);
+        $this->assertDatabaseCount('products', 20);
+        $this->assertDatabaseCount('variants', 1287);
     }
 
     public function test_new_prices_use_total_mixed_cart_quantity_and_bulk_discounts_the_reseller_subtotal(): void

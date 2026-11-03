@@ -53,7 +53,7 @@ class ProductRevisionTest extends TestCase
     private function variantInput(array $attributes = []): array
     {
         return $attributes + [
-            'size' => 'M', 'color_group' => 'COLORED', 'color' => 'Red', 'stock' => 10, 'reorder_level' => 3,
+            'size' => 'M', 'color' => 'Red', 'stock' => 10, 'reorder_level' => 3,
             'retail' => 140, 'wholesale' => 130, 'reseller' => 125,
         ];
     }
@@ -113,12 +113,12 @@ class ProductRevisionTest extends TestCase
         $this->assertSame('', $product->category);
     }
 
-    public function test_variant_sku_is_automatic_and_white_group_normalizes_color_and_size(): void
+    public function test_white_is_an_ordinary_color_with_automatic_sku_and_normalized_size(): void
     {
         $this->admin();
         $product = $this->product();
         $this->post(route('admin.variants.store', $product), $this->variantInput([
-            'sku' => 'INJECTED-SKU', 'size' => ' m ', 'color_group' => 'WHITE', 'color' => 'Mandarin',
+            'sku' => 'INJECTED-SKU', 'size' => ' m ', 'color_group' => 'COLORED', 'color' => ' white ',
             'photo' => UploadedFile::fake()->image('white.png'), 'image_path' => '../../bad.png',
         ]))->assertRedirect()->assertSessionHasNoErrors();
         $variant = $product->variants()->firstOrFail();
@@ -132,7 +132,7 @@ class ProductRevisionTest extends TestCase
         Storage::disk('uploads')->assertExists(substr($variant->image_path, 8));
     }
 
-    public function test_duplicate_variants_invalid_tier_prices_and_colored_white_are_rejected(): void
+    public function test_duplicate_variants_and_invalid_tier_prices_are_rejected_but_white_needs_no_group(): void
     {
         $this->admin();
         $product = $this->product();
@@ -143,8 +143,8 @@ class ProductRevisionTest extends TestCase
         $this->post(route('admin.variants.store', $product), $this->variantInput(['color' => 'Blue', 'reseller' => 135]))
             ->assertSessionHasErrors('prices');
         $this->post(route('admin.variants.store', $product), $this->variantInput(['color' => 'White']))
-            ->assertSessionHasErrors('color');
-        $this->assertSame(1, $product->variants()->count());
+            ->assertRedirect()->assertSessionHasNoErrors();
+        $this->assertSame(2, $product->variants()->count());
     }
 
     public function test_new_color_copies_each_colored_size_price_and_keeps_zero_stock(): void
@@ -214,12 +214,97 @@ class ProductRevisionTest extends TestCase
             ->assertDontSee('name="category"', false)->assertDontSee('Legacy Category');
         $this->get('/?size=4XL&color=Batis')->assertOk()->assertSee('Revision Tee')->assertDontSee('Other Shirt');
         $this->get(route('product', $product))->assertOk()->assertSee('Size chart')->assertSee('19.5')
-            ->assertSee('Owner confirmed sample chart')->assertDontSee('Legacy Category');
+            ->assertSee('Owner confirmed sample chart')->assertDontSee('Legacy Category')
+            ->assertDontSee('id="color-group"', false)->assertDontSee('WHITE + COLORED');
         $this->admin();
         $this->get(route('admin.products.create'))->assertOk()->assertDontSee('name="category"', false)
             ->assertDontSee('name="image_url"', false);
         $this->get(route('admin.products.edit', $product))->assertOk()->assertDontSee('<th>Reserved</th>', false)
-            ->assertDontSee('name="reserved"', false)->assertDontSee('name="sku"', false)->assertSee('Automatic SKU');
+            ->assertDontSee('name="reserved"', false)->assertDontSee('name="sku"', false)->assertSee('Automatic SKU')
+            ->assertDontSee('name="color_group"', false)->assertDontSee('WHITE &amp; COLORED', false)->assertSee('All variants');
+    }
+
+    public function test_posted_legacy_group_cannot_replace_the_actual_color_and_case_duplicates_are_rejected(): void
+    {
+        $this->admin();
+        $product = $this->product();
+        $this->post(route('admin.variants.store', $product), $this->variantInput(['color' => 'Mandarin', 'color_group' => 'WHITE']))
+            ->assertRedirect()->assertSessionHasNoErrors();
+        $variant = $product->variants()->sole();
+        $this->assertSame('Mandarin', $variant->color);
+        $this->assertSame('COLORED', $variant->color_group);
+        $this->post(route('admin.variants.store', $product), $this->variantInput(['color' => 'mandarin']))->assertSessionHasErrors('color');
+        $this->assertSame(1, $product->variants()->count());
+    }
+
+    public function test_add_color_can_copy_white_only_sizes_and_can_create_white_from_another_color(): void
+    {
+        $this->admin();
+        $product = $this->product();
+        $white = $this->variant($product, ['color' => 'White', 'color_group' => 'WHITE', 'retail_price' => 13200]);
+        $this->post(route('admin.colors.store', $product), ['color' => 'Red', 'template_color' => 'White'])
+            ->assertRedirect()->assertSessionHasNoErrors();
+        $red = $product->variants()->where('color', 'Red')->sole();
+        $this->assertSame([$white->size, $white->retail_price, $white->wholesale_price, $white->reseller_price],
+            [$red->size, $red->retail_price, $red->wholesale_price, $red->reseller_price]);
+        $this->assertSame([0, 0], [$red->stock, $red->reserved]);
+
+        $second = $this->product();
+        $this->variant($second, ['color' => 'Teal', 'retail_price' => 16700]);
+        $this->post(route('admin.colors.store', $second), ['color' => 'white', 'template_color' => 'Teal'])
+            ->assertRedirect()->assertSessionHasNoErrors();
+        $newWhite = $second->variants()->where('color', 'White')->sole();
+        $this->assertSame('WHITE', $newWhite->color_group);
+        $this->assertSame(16700, $newWhite->retail_price);
+        $this->assertSame(0, $newWhite->stock);
+    }
+
+    public function test_add_color_uses_only_the_selected_source_and_rejects_foreign_sources_or_duplicate_colors(): void
+    {
+        $this->admin();
+        $product = $this->product();
+        $this->variant($product, ['color' => 'White', 'color_group' => 'WHITE', 'size' => 'XS', 'retail_price' => 13200]);
+        $this->variant($product, ['color' => 'Red', 'size' => 'L', 'retail_price' => 18200]);
+        $this->post(route('admin.colors.store', $product), ['color' => 'Gold', 'template_color' => 'White'])
+            ->assertRedirect()->assertSessionHasNoErrors();
+        $gold = $product->variants()->where('color', 'Gold')->sole();
+        $this->assertSame(['XS', 13200, 0], [$gold->size, $gold->retail_price, $gold->stock]);
+        $this->post(route('admin.colors.store', $product), ['color' => 'Orange', 'template_color' => 'Not on this product'])
+            ->assertSessionHasErrors('template_color');
+        $this->post(route('admin.colors.store', $product), ['color' => ' gold ', 'template_color' => 'Red'])
+            ->assertSessionHasErrors('color');
+        $this->assertSame(3, $product->variants()->count());
+    }
+
+    public function test_blank_or_malformed_color_inputs_cannot_create_variants_or_leave_uploaded_photos(): void
+    {
+        $this->admin();
+        $product = $this->product();
+        $this->variant($product, ['color' => 'White', 'color_group' => 'WHITE']);
+        foreach (['   ', ['Red'], 123] as $color) {
+            $this->postJson(route('admin.variants.store', $product), $this->variantInput(['color' => $color]))
+                ->assertUnprocessable()->assertJsonValidationErrors('color');
+            $this->postJson(route('admin.colors.store', $product), ['color' => $color, 'template_color' => 'White'])
+                ->assertUnprocessable()->assertJsonValidationErrors('color');
+        }
+        $this->postJson(route('admin.colors.store', $product), ['color' => 'Gold', 'template_color' => ['White']])
+            ->assertUnprocessable()->assertJsonValidationErrors('template_color');
+        foreach ([['M'], 123] as $size) {
+            $this->postJson(route('admin.variants.store', $product), $this->variantInput(['size' => $size, 'color' => 'Gold']))
+                ->assertUnprocessable()->assertJsonValidationErrors('size');
+        }
+        $this->assertSame(1, $product->variants()->count());
+        $this->assertSame([], Storage::disk('uploads')->allFiles());
+    }
+
+    public function test_an_empty_product_requires_its_first_variant_before_a_color_can_be_copied(): void
+    {
+        $this->admin();
+        $product = $this->product();
+        $this->post(route('admin.colors.store', $product), ['color' => 'White', 'photo' => UploadedFile::fake()->image('white.png')])
+            ->assertRedirect()->assertSessionHasErrors('template_color');
+        $this->assertSame(0, $product->variants()->count());
+        $this->assertSame([], Storage::disk('uploads')->allFiles());
     }
 
     public function test_archived_products_are_unavailable_and_existing_cart_entries_are_cleared(): void
