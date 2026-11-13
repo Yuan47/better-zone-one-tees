@@ -13,6 +13,7 @@ This pass tested customer, staff and owner workflows using isolated data and con
 | Inventory search ignored the literal search term `0`. | The same search/filter now treats zero as an actual search term. |
 | An invalid provider checkout reference could leave an unusable pending payment. | Invalid creation responses remain uncertain and available for owner reconciliation instead of saving a reference that the retrieval flow cannot use. Valid documented mixed-case references and the already-supported boundary remain accepted. |
 | Legacy payment confirmation could reuse another invoice's recorded payment. | Both callback and reconciliation paths check previously used receipt/order references before applying funds. Wrong confirmations leave the original payment, invoice and stock unchanged. |
+| The phone agreement box split its sentence and policy link into narrow columns. | Terms and pin confirmations now keep the checkbox beside normal flowing text; the sign-up hint appears on a separate readable line. Consent requirements remain unchanged. |
 | The assistant invited unverified customers to send messages that verification rules would block. | The widget now provides a short verification guide and a direct next-step link. Verified users and guests retain the normal assistant; private chat/commerce verification requirements are unchanged. |
 
 ## Workflows exercised
@@ -23,11 +24,11 @@ This pass tested customer, staff and owner workflows using isolated data and con
 - Transaction failures: malformed checkout replies, callback before checkout-save completion, retries, competing cash/online claims, duplicate sources, unchanged source receipts, and preserved stock on rejected confirmations.
 - Pricing: the browser showed 6 pieces at PHP 852.00 wholesale, and 101 pieces at PHP 13,837.00 re-seller base less PHP 691.85 bulk discount = PHP 13,145.15. No sale or real payment was submitted for these browser checks.
 
-Browser checks covered 8 customer and 8 staff screens at 390px phone width and 12 owner screens at 820px tablet width. All reached their intended screens, showed no captured application JavaScript errors, and stayed within the page width; large tables/graphs keep their own scrolling areas. The customer cart restored its three saved pieces after explicit sign-out and sign-in.
+Browser checks covered 8 customer and 8 staff screens at 390px phone width and 12 owner screens at 820px tablet width. All reached their intended screens, showed no captured application JavaScript errors, and stayed within the page width; large tables/graphs keep their own scrolling areas. The customer cart restored its three saved pieces after explicit sign-out and sign-in. The final hosted phone check exposed an agreement text layout problem; its CSS correction was visually checked at phone/tablet widths and the existing account-consent, Google sign-in and checkout-progress tests were repeated.
 
 ## Evidence and limits
 
-A full feature suite passed 1,805 tests and 15,973 assertions after the cart/activity regression fix. Three additional malformed-filter cases then reproduced server errors and passed after correction. **The final complete release suite passed 1,808 tests and 15,982 assertions, with no failures, errors or skipped tests.** The result is retained in the private acceptance report and JUnit log.
+A full feature suite passed 1,805 tests and 15,973 assertions after the cart/activity regression fix. Three additional malformed-filter cases then reproduced server errors and passed after correction. **The final complete release suite passed 1,808 tests and 15,982 assertions, with no failures, errors or skipped tests.** The later display-only consent correction also passed 90 repeated account-consent, Google sign-in and checkout-progress tests (844 assertions); these are part of the full suite, not 90 additional distinct tests. The results are retained in the private acceptance report and JUnit log.
 
 The tests use disposable in-memory SQLite and controlled provider responses. They test transaction outcomes and deliberate request interleavings; they do not prove real MySQL simultaneous-process locking behavior. The hosted publication checks the deployed file hashes and preservation of real MySQL records, but does not replay real customer purchases.
 
