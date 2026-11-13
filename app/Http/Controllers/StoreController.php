@@ -16,6 +16,7 @@ use App\Services\OrderFlow;
 use App\Services\PayMongo;
 use App\Services\Pricing;
 use App\Services\StructuredAddress;
+use App\Support\FormInput;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -25,22 +26,25 @@ class StoreController extends Controller
 {
     public function index(Request $r)
     {
+        $search = FormInput::query('q');
+        $size = FormInput::query('size');
+        $color = FormInput::query('color');
         $query = Product::published()->with(['variants' => fn ($variants) => $variants->whereNull('archived_at')]);
-        if ($r->filled('q')) {
-            $query->where('name', 'like', '%'.mb_substr($r->string('q'), 0, 100).'%');
+        if (filled($search)) {
+            $query->where('name', 'like', '%'.mb_substr((string) $search, 0, 100).'%');
         }
         if ($r->boolean('wishlist')) {
             abort_unless($r->user(), 403);
             $query->whereIn('id', DB::table('wishlists')->where('user_id', $r->user()->id)->pluck('product_id'));
         }
-        if ($r->filled('size') || $r->filled('color') || $r->boolean('in_stock')) {
-            $query->whereHas('variants', function ($q) use ($r) {
+        if (filled($size) || filled($color) || $r->boolean('in_stock')) {
+            $query->whereHas('variants', function ($q) use ($r, $size, $color) {
                 $q->whereNull('archived_at');
-                if ($r->filled('size')) {
-                    $q->where('size', $r->string('size'));
+                if (filled($size)) {
+                    $q->where('size', $size);
                 }
-                if ($r->filled('color')) {
-                    $q->where('color', $r->string('color'));
+                if (filled($color)) {
+                    $q->where('color', $color);
                 }
                 if ($r->boolean('in_stock')) {
                     $q->whereColumn('stock', '>', 'reserved');
@@ -111,6 +115,9 @@ class StoreController extends Controller
         $v = Variant::sellable()->with('product')->findOrFail($data['variant_id']);
         $cart = $r->session()->get('cart', []);
         $quantity = ($cart[$v->id] ?? 0) + $data['quantity'];
+        if ($quantity > 10000) {
+            return back()->withErrors(['quantity' => 'Your cart can hold up to 10,000 pieces of each variant.']);
+        }
         if ($quantity > $v->available()) {
             return back()->withErrors(['stock' => 'Only '.$v->available().' pieces are available for this variant.']);
         }

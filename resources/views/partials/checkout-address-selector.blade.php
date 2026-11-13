@@ -5,7 +5,7 @@
         <select name="address_id" id="checkout-address-id">
             <option value="">Enter an address below</option>
             @foreach($savedAddresses as $savedAddress)
-                <option value="{{ $savedAddress->id }}" @selected((string) old('address_id', $savedAddresses->firstWhere('is_default', true)?->id) === (string) $savedAddress->id)
+                <option value="{{ $savedAddress->id }}" @selected((string) \App\Support\FormInput::old('address_id', $savedAddresses->firstWhere('is_default', true)?->id) === (string) $savedAddress->id)
                     data-address="{{ json_encode($savedAddress->only(['recipient', 'phone', 'street_address', 'city', 'province', 'postal_code', 'country', 'lat', 'lng'])) }}">{{ $savedAddress->label }} — {{ $savedAddress->recipient }}{{ $savedAddress->is_default ? ' · Default' : '' }}</option>
             @endforeach
         </select>

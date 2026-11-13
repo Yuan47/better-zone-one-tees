@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Order;
+use App\Models\PaymentAttempt;
 use App\Models\Variant;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -112,7 +113,9 @@ class PaymentRecovery
                 }
                 if (data_get($payment, 'attributes.currency') !== 'PHP' || data_get($payment, 'attributes.amount') !== $locked->total
                     || data_get($payment, 'attributes.livemode') !== (config('shop.paymongo.mode') === 'live')
-                    || ! is_string($payment['id'] ?? null) || ! preg_match('/^pay_[A-Za-z0-9_]+$/', $payment['id'])) {
+                    || ! is_string($payment['id'] ?? null) || ! preg_match('/^pay_[A-Za-z0-9_]+$/D', $payment['id'])
+                    || PaymentAttempt::where('payment_id', $payment['id'])->exists()
+                    || Order::where('payment_id', $payment['id'])->whereKeyNot($locked->id)->exists()) {
                     $this->fail('A payment needs review because its details do not match. Inventory remains reserved.');
                 }
                 $timestamp = data_get($payment, 'attributes.paid_at');

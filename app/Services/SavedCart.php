@@ -8,6 +8,7 @@ use App\Models\Variant;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class SavedCart
 {
@@ -96,8 +97,16 @@ class SavedCart
                         continue;
                     }
                     $quantity = $request->routeIs('cart.add')
-                        ? max(0, min(10000, ($latest[$id] ?? 0) + ($after[$id] ?? 0) - ($before[$id] ?? 0)))
+                        ? max(0, ($latest[$id] ?? 0) + ($after[$id] ?? 0) - ($before[$id] ?? 0))
                         : ($after[$id] ?? 0);
+                    if ($quantity > 10000) {
+                        $request->session()->forget('notice');
+                        $request->attributes->set(ActivityRecorder::REQUEST_KEY, array_values(array_filter(
+                            $request->attributes->get(ActivityRecorder::REQUEST_KEY, []),
+                            static fn ($event) => ($event['action'] ?? null) !== 'cart.added',
+                        )));
+                        throw ValidationException::withMessages(['quantity' => 'Your cart changed in another browser. It can hold up to 10,000 pieces of each variant.']);
+                    }
                     if ($quantity > 0) {
                         $latest[$id] = $quantity;
                     } else {

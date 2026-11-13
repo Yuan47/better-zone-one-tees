@@ -12,7 +12,7 @@
 @endif
 <form class="stack" method="post" action="{{ route('password.email') }}">@csrf
 <label for="recovery-email">Email address
-<input id="recovery-email" name="email" type="email" autocomplete="email" maxlength="254" required value="{{ old('email') }}" aria-describedby="recovery-help">
+<input id="recovery-email" name="email" type="email" autocomplete="email" maxlength="254" required value="{{ \App\Support\FormInput::old('email') }}" aria-describedby="recovery-help">
 </label>
 <p id="recovery-help" class="muted">The link expires after 60 minutes. Check your spam folder too.</p>
 <button class="button dark" @disabled(!$recoveryReady)>Send reset link →</button>

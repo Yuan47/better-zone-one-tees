@@ -26,8 +26,8 @@ class AccountController extends Controller
     public function update(Request $request, ImageUploads $images, StructuredAddress $addresses)
     {
         $user = $request->user();
-        if ($request->has('username')) {
-            $request->merge(['username' => Str::lower(trim((string) $request->input('username')))]);
+        if (is_string($request->input('username'))) {
+            $request->merge(['username' => Str::lower(trim($request->input('username')))]);
         }
         $rules = [
             'name' => ['required', 'string', 'max:100'],

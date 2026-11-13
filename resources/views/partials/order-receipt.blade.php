@@ -14,7 +14,7 @@
 <div class="receipt-stars">
 @foreach([1=>'Poor',2=>'Fair',3=>'Good',4=>'Very good',5=>'Excellent'] as $rating=>$description)
 <label class="receipt-star" title="{{ $rating }} {{ $rating===1?'star':'stars' }} · {{ $description }}">
-<input class="sr-only" type="radio" name="rating" value="{{ $rating }}" required @checked((string)old('rating')===(string)$rating)>
+<input class="sr-only" type="radio" name="rating" value="{{ $rating }}" required @checked((string)\App\Support\FormInput::old('rating')===(string)$rating)>
 <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="m12 2.5 2.9 5.9 6.5.9-4.7 4.6 1.1 6.5-5.8-3.1-5.8 3.1 1.1-6.5L2.6 9.3l6.5-.9Z"/></svg>
 <span class="sr-only">{{ $rating }} {{ $rating===1?'star':'stars' }} · {{ $description }}</span>
 </label>
@@ -22,9 +22,9 @@
 </div>
 <p class="muted" id="receipt-rating-help">Choose 1 star for poor to 5 stars for excellent.</p>
 </fieldset>
-<label>Your review <span class="muted">Optional</span><textarea name="comment" maxlength="2000" rows="4" placeholder="Tell us about the clothing you received (optional).">{{ old('comment') }}</textarea></label>
+<label>Your review <span class="muted">Optional</span><textarea name="comment" maxlength="2000" rows="4" placeholder="Tell us about the clothing you received (optional).">{{ \App\Support\FormInput::old('comment') }}</textarea></label>
 <small class="muted">Your stars and optional review will appear on the purchased products with your name masked. Please leave out addresses, contact details and payment information.</small>
-<label class="receipt-check receipt-confirmation"><input type="checkbox" name="received" value="1" required @checked(old('received'))><span><strong>I have received my order.</strong><small>Confirm only after you have received and checked your clothing.</small></span></label>
+<label class="receipt-check receipt-confirmation"><input type="checkbox" name="received" value="1" required @checked(\App\Support\FormInput::old('received'))><span><strong>I have received my order.</strong><small>Confirm only after you have received and checked your clothing.</small></span></label>
 <button class="button dark">Confirm Delivered</button></form>
 @else<p class="muted">You can confirm Delivered and choose your rating here once the courier confirms arrival, or your pickup order is ready. A written review is optional.</p>@endif
 @else<p class="muted">Only the customer can confirm receipt and choose their rating. A written review is optional.</p>@endif

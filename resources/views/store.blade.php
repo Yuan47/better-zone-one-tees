@@ -5,10 +5,10 @@
 <div class="hero-art storefront-photo-hero"><img src="{{ asset('catalog-photos/storefront-hero.png') }}" alt="Photorealistic demonstration of cream and dark garnet cotton shirts" fetchpriority="high"><span class="hero-caption">A little comfort goes a long way. · Demo preview</span></div></section>
 <div class="benefits"><div><span>◇</span><b>Find your perfect fit<small>Sizes and colors for your everyday</small></b></div><div><span>↘</span><b>More pieces, more savings<small>Quantity pricing applied automatically</small></b></div><div><span>▣</span><b>Pay with confidence<small>Hosted checkout through PayMongo</small></b></div><div><span>✧</span><b>A little help, anytime<small>Ask our store assistant</small></b></div></div>
 @endif
-<section id="catalog"><div class="section-heading"><div><span class="eyebrow">THE EVERYDAY EDIT</span><h2>{{ request('wishlist')?'Your wishlist':(request('q')?'Results for “'.request('q').'”':'Find your next favorite') }}</h2></div><span class="muted">{{ $products->count() }} styles to explore</span></div>
+<section id="catalog"><div class="section-heading"><div><span class="eyebrow">THE EVERYDAY EDIT</span><h2>{{ request('wishlist')?'Your wishlist':(\App\Support\FormInput::query('q')?'Results for “'.\App\Support\FormInput::query('q').'”':'Find your next favorite') }}</h2></div><span class="muted">{{ $products->count() }} styles to explore</span></div>
 <form class="filters catalog-filters" action="{{ route('store') }}">
 @if(request('wishlist'))<input type="hidden" name="wishlist" value="1">@endif
-<label><span class="sr-only">Search catalog</span><input name="q" placeholder="Search products…" value="{{ request('q') }}"></label>
+<label><span class="sr-only">Search catalog</span><input name="q" placeholder="Search products…" value="{{ \App\Support\FormInput::query('q') }}"></label>
 
 <label><span class="sr-only">Size</span><select name="size"><option value="">All sizes</option>@foreach($sizes as $size)<option @selected(request('size')===$size)>{{ $size }}</option>@endforeach</select></label>
 <label><span class="sr-only">Color</span><select name="color"><option value="">All colors</option>@foreach($colors as $color)<option @selected(request('color')===$color)>{{ $color }}</option>@endforeach</select></label>
@@ -17,7 +17,7 @@
 <div class="product-grid">@forelse($products as $product)
 @php($styleOptions=$product->variants->isNotEmpty() && $product->variants->every(fn($variant)=>in_array($variant->color,['Plain','Reflector'],true)))
 @php($selectionLabel=$styleOptions?'PLAIN + REFLECTOR':'SIZES + COLORS')
-@php($cardVariant = $product->variants->firstWhere('color', request('color', 'White')) ?? $product->variants->first())
+@php($cardVariant = $product->variants->firstWhere('color', \App\Support\FormInput::query('color', 'White')) ?? $product->variants->first())
 <article class="product-card"><div class="product-art" style="--art-bg:{{ $loop->iteration%2?'#fff8f2':'#fff4e7' }}"><a href="{{ route('product',$product) }}" aria-label="View {{ $product->name }}">@if($cardVariant?->photoUrl($product) || $product->photoUrl())<x-catalog-photo :product="$product" :variant="$cardVariant"/>@else<div class="photo-pending">Photo to follow</div>@endif</a><span class="product-tag">{{ $selectionLabel }}</span>
 <form method="post" action="{{ route('wishlist.toggle',$product) }}">@csrf<button class="wish-button" aria-label="{{ in_array($product->id,$wishIds)?'Remove from':'Add to' }} wishlist">{{ in_array($product->id,$wishIds)?'♥':'♡' }}</button></form><span class="art-caption">{{ $product->usesDemoPhoto()?'DEMO PREVIEW':'' }}</span></div>
 <div class="product-meta"><div><span class="muted">{{ $selectionLabel }}</span><a href="{{ route('product',$product) }}"><h3>{{ $product->name }}</h3></a></div><span class="product-arrow">↗</span></div>

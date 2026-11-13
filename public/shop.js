@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var token = document.querySelector('meta[name="csrf-token"]').content;
   function money(cents) { return '₱' + (cents / 100).toLocaleString('en-PH', {minimumFractionDigits:2,maximumFractionDigits:2}); }
   var toggle = document.getElementById('chat-toggle'), panel = document.getElementById('chat-panel'), close = document.getElementById('chat-close'), chat = document.getElementById('chat-form');
-  function showChat(show, restoreFocus) { panel.hidden=!show; toggle.setAttribute('aria-expanded',String(show)); if(show) document.getElementById('chat-input').focus({preventScroll:true}); else if(restoreFocus) toggle.focus({preventScroll:true}); }
+  function showChat(show, restoreFocus) { panel.hidden=!show; toggle.setAttribute('aria-expanded',String(show)); if(show) (document.getElementById('chat-input') || panel.querySelector('[data-verification-help-link]') || close).focus({preventScroll:true}); else if(restoreFocus) toggle.focus({preventScroll:true}); }
   toggle.addEventListener('click',function(){showChat(panel.hidden);}); close.addEventListener('click',function(){showChat(false,true);});
   document.addEventListener('keydown',function(e){if(e.key==='Escape' && !panel.hidden)showChat(false,true);});
 
@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', function () {
   document.addEventListener('toggle',function(){window.requestAnimationFrame(fitScrollableRegions);},true);
   var chatPending=false, suggestions=document.querySelectorAll('.chat-suggestion');
   suggestions.forEach(function(suggestion){suggestion.addEventListener('click',function(){if(chatPending)return;var input=document.getElementById('chat-input');input.value=suggestion.dataset.question;input.focus({preventScroll:true});chat.requestSubmit();});});
-  chat.addEventListener('submit',async function(e) {
+  if(chat) chat.addEventListener('submit',async function(e) {
     e.preventDefault(); var input=document.getElementById('chat-input'), text=input.value.trim(); if(!text || chatPending)return;
     var log=document.getElementById('chat-messages'), button=chat.querySelector('button');
     function append(message,type){var p=document.createElement('p');p.className=type;p.textContent=message;log.appendChild(p);log.scrollTop=log.scrollHeight;}

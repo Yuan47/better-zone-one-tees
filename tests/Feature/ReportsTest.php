@@ -305,6 +305,15 @@ class ReportsTest extends TestCase
         $this->actingAs($this->user('admin'))->get('/admin/inventory-attention')->assertOk()->assertSee('Edit inventory');
     }
 
+    public function test_inventory_search_applies_a_single_zero_search_term(): void
+    {
+        $matching = $this->variant($this->product('Alpha Tee', '2026-01-01'), ['sku' => 'SEARCH-0', 'stock' => 5]);
+        $this->variant($this->product('Beta Tee', '2026-01-01'), ['sku' => 'SEARCH-B', 'stock' => 5]);
+
+        $this->actingAs($this->user('staff'))->get('/admin/inventory-attention?q=0')->assertOk()
+            ->assertViewHas('shortages', fn ($rows) => $rows->total() === 1 && $rows->pluck('id')->all() === [$matching->id]);
+    }
+
     public static function explicitPeriods(): array
     {
         return [['daily', 3], ['weekly', 1], ['monthly', 2], ['yearly', 1]];

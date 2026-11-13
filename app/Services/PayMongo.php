@@ -49,12 +49,14 @@ class PayMongo
             throw new \RuntimeException('PayMongo checkout did not return a successful response.');
         }
         $data = $response->json('data');
+        $id = data_get($data, 'id');
         $url = data_get($data, 'attributes.checkout_url');
-        if (! is_string($url) || ! str_starts_with($url, 'https://checkout.paymongo.com/') || empty($data['id'])) {
+        if (! is_string($id) || ! preg_match('/^cs_[A-Za-z0-9_]{1,120}$/D', $id)
+            || ! is_string($url) || ! str_starts_with($url, 'https://checkout.paymongo.com/')) {
             throw new \RuntimeException('Invalid PayMongo checkout response');
         }
 
-        return ['checkout_session_id' => $data['id'], 'checkout_url' => $url];
+        return ['checkout_session_id' => $id, 'checkout_url' => $url];
     }
 
     public function verify(string $body, string $header): bool
@@ -106,7 +108,7 @@ class PayMongo
 
     private function assertSession(string $id): void
     {
-        if (! $this->ready() || ! preg_match('/^cs_[A-Za-z0-9_]{1,120}$/', $id)) {
+        if (! $this->ready() || ! preg_match('/^cs_[A-Za-z0-9_]{1,120}$/D', $id)) {
             throw ValidationException::withMessages(['payment' => 'A configured PayMongo account and valid checkout reference are required.']);
         }
     }

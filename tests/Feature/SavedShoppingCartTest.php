@@ -12,6 +12,7 @@ use App\Services\SavedCart;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
 use Mockery\MockInterface;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class SavedShoppingCartTest extends TestCase
@@ -97,6 +98,31 @@ class SavedShoppingCartTest extends TestCase
         $this->assertSame(0, $variant->fresh()->reserved);
     }
 
+    public static function cartOwners(): array
+    {
+        return [['customer'], ['guest']];
+    }
+
+    #[DataProvider('cartOwners')]
+    public function test_adding_beyond_the_saved_cart_limit_keeps_the_existing_quantity(string $owner): void
+    {
+        if ($owner === 'customer') {
+            $this->actingAs($this->customer());
+        }
+        $variant = $this->variant();
+        $variant->update(['stock' => 20000]);
+        $this->post('/cart', ['variant_id' => $variant->id, 'quantity' => 9999])
+            ->assertRedirect('/cart')->assertSessionHasNoErrors();
+        $this->post('/cart', ['variant_id' => $variant->id, 'quantity' => 1])
+            ->assertRedirect('/cart')->assertSessionHasNoErrors();
+
+        $this->post('/cart', ['variant_id' => $variant->id, 'quantity' => 1])
+            ->assertRedirect()->assertSessionHasErrors('quantity')
+            ->assertSessionHas('cart.'.$variant->id, 10000);
+        $this->assertSame(10000, ShoppingCart::sole()->items[$variant->id]);
+        $this->assertSame([20000, 0], [$variant->fresh()->stock, $variant->fresh()->reserved]);
+    }
+
     public function test_inactive_product_is_removed_when_a_saved_cart_is_restored(): void
     {
         $customer = $this->customer();
@@ -155,6 +181,32 @@ class SavedShoppingCartTest extends TestCase
         $this->assertTrue($request->attributes->get('saved_cart_consumed'));
     }
 
+    public function test_overlapping_browser_additions_do_not_silently_clip_the_saved_quantity_limit(): void
+    {
+        $customer = $this->customer();
+        $variant = $this->variant();
+        $variant->update(['stock' => 20000]);
+        $this->actingAs($customer)->post('/cart', ['variant_id' => $variant->id, 'quantity' => 5000]);
+        $request = \Illuminate\Http\Request::create('/cart', 'POST');
+        $request->setUserResolver(fn () => $customer);
+        $request->setLaravelSession($this->app['session.store']);
+        $route = (new \Illuminate\Routing\Route('POST', 'cart', fn () => null))->name('cart.add');
+        $request->setRouteResolver(fn () => $route);
+        app(SavedCart::class)->open($request);
+        $request->session()->put('cart', [$variant->id => 8000]);
+        ShoppingCart::where('user_id', $customer->id)->sole()->update(['items' => [$variant->id => 8000]]);
+
+        try {
+            app(SavedCart::class)->close($request);
+        } catch (\Illuminate\Validation\ValidationException $exception) {
+            $this->assertArrayHasKey('quantity', $exception->errors());
+            $this->assertSame(8000, ShoppingCart::where('user_id', $customer->id)->sole()->items[$variant->id]);
+
+            return;
+        }
+        $this->fail('An overlapping addition must be rejected instead of silently reducing the requested quantity.');
+    }
+
     public function test_payment_callback_does_not_open_or_mutate_browser_cart_storage(): void
     {
         $this->mock(SavedCart::class, function (MockInterface $mock) {
@@ -163,5 +215,25 @@ class SavedShoppingCartTest extends TestCase
         });
         $this->postJson('/webhooks/paymongo', [])->assertUnauthorized();
         $this->assertDatabaseCount('shopping_carts', 0);
+    }
+
+    public function test_rejected_overlapping_addition_is_not_logged_as_a_completed_cart_action(): void
+    {
+        $customer = $this->customer();
+        $variant = $this->variant();
+        $variant->update(['stock' => 20000]);
+        $this->actingAs($customer)->post('/cart', ['variant_id' => $variant->id, 'quantity' => 5000]);
+        $eventsBefore = \App\Models\ActivityLog::count();
+        $this->partialMock(SavedCart::class, function (MockInterface $mock) use ($customer, $variant) {
+            $mock->shouldReceive('close')->once()->andReturnUsing(function ($request) use ($customer, $variant) {
+                ShoppingCart::where('user_id', $customer->id)->sole()->update(['items' => [$variant->id => 8000]]);
+                (new SavedCart)->close($request);
+            });
+        });
+
+        $this->from('/cart')->post('/cart', ['variant_id' => $variant->id, 'quantity' => 3000])
+            ->assertRedirect('/cart')->assertSessionHasErrors('quantity')->assertSessionMissing('notice');
+        $this->assertSame(8000, ShoppingCart::where('user_id', $customer->id)->sole()->items[$variant->id]);
+        $this->assertSame($eventsBefore, \App\Models\ActivityLog::count());
     }
 }

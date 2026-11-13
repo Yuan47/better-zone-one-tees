@@ -100,6 +100,34 @@ class AccountTest extends TestCase
         $this->assertSame('new_user', $second->fresh()->username);
     }
 
+    public static function malformedUsernames(): array
+    {
+        return ['array' => [['unexpected']], 'number' => [12345], 'boolean' => [true]];
+    }
+
+    #[DataProvider('malformedUsernames')]
+    public function test_malformed_username_returns_validation_errors_without_changing_the_profile(mixed $username): void
+    {
+        $user = $this->user();
+        $before = $user->fresh()->getAttributes();
+
+        $this->actingAs($user)->patchJson('/account', $this->profile(['username' => $username]))
+            ->assertUnprocessable()->assertJsonValidationErrors('username');
+
+        $this->assertSame($before, $user->fresh()->getAttributes());
+    }
+
+    public function test_malformed_profile_form_can_be_corrected_after_the_validation_redirect(): void
+    {
+        $user = $this->user();
+
+        $this->actingAs($user)->from('/account')->patch('/account', $this->profile(['username' => ['unexpected']]))
+            ->assertRedirect('/account')->assertSessionHasErrors('username');
+        $this->get('/account')->assertOk()->assertSee('Updated Customer');
+
+        $this->assertNotSame('Updated Customer', $user->fresh()->name);
+    }
+
     public static function shortDisplayNames(): array
     {
         return [['A'], ['Li'], ['王']];

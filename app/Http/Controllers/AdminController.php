@@ -22,6 +22,7 @@ use App\Services\Sku;
 use App\Services\StoreKnowledge;
 use App\Services\VariantSizes;
 use App\Support\WorkspaceTableSort;
+use App\Support\FormInput;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -33,10 +34,11 @@ class AdminController extends Controller
 {
     public function products(Request $r)
     {
+        $search = FormInput::query('q');
         $products = Product::with('variants')
             ->when($r->boolean('archived'), fn ($query) => $query->whereNotNull('archived_at'), fn ($query) => $query->whereNull('archived_at'))
             ->when(! $r->boolean('archived') && ! $r->boolean('hidden'), fn ($query) => $query->where('active', true))
-            ->when($r->filled('q'), fn ($query) => $query->where('name', 'like', '%'.$r->string('q').'%'))->get();
+            ->when(filled($search), fn ($query) => $query->where('name', 'like', '%'.$search.'%'))->get();
 
         return view('admin.products', compact('products'));
     }

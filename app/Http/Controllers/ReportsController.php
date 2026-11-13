@@ -133,7 +133,7 @@ class ReportsController extends Controller
             'availability' => ['nullable', Rule::in(['all', 'out_of_stock'])],
         ]);
         $query = $this->inventoryQuery();
-        if (! empty($filters['q'])) {
+        if (filled($filters['q'] ?? null)) {
             $search = '%'.$filters['q'].'%';
             $query->where(function ($q) use ($search) {
                 $q->where('sku', 'like', $search)->orWhere('size', 'like', $search)->orWhere('color', 'like', $search)

@@ -73,6 +73,8 @@ class WebhookController extends Controller
             if ($payments->count() !== 1 || ! $payment || data_get($session, 'attributes.reference_number') !== $order->number
                 || data_get($payment, 'attributes.currency') !== 'PHP' || data_get($payment, 'attributes.amount') !== $order->total
                 || ! is_string($payment['id'] ?? null) || ! preg_match('/^pay_[A-Za-z0-9_]+$/D', $payment['id'])
+                || PaymentAttempt::where('payment_id', $payment['id'])->exists()
+                || Order::where('payment_id', $payment['id'])->whereKeyNot($order->id)->exists()
                 || (array_key_exists('livemode', $payment['attributes']) && $payment['attributes']['livemode'] !== (config('shop.paymongo.mode') === 'live'))) {
                 return 'mismatch';
             }
