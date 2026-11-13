@@ -110,6 +110,46 @@ class PurchaseWorkspaceRevisionTest extends TestCase
         Http::assertNothingSent();
     }
 
+    public function test_released_paid_invoices_remain_in_closed_history_without_counting_in_fulfillment_tabs(): void
+    {
+        $customer = User::factory()->create();
+        $stages = [
+            'packing' => ['status' => 'packing'],
+            'ready' => ['status' => 'ready'],
+            'courier' => ['status' => 'out_for_delivery', 'delivery_method' => 'lalamove'],
+            'delivered' => ['status' => 'completed', 'customer_confirmed_at' => now()],
+        ];
+        $active = [];
+        $released = [];
+        foreach ($stages as $stage => $attributes) {
+            $active[$stage] = $this->order($customer, 'ACTIVE-'.strtoupper($stage), $attributes)->id;
+            $released[] = $this->order($customer, 'RELEASED-'.strtoupper($stage), $attributes + ['inventory_released' => true])->id;
+        }
+        $released[] = $this->order($customer, 'RELEASED-PROVIDER-COMPLETED', [
+            'status' => 'completed', 'delivery_method' => 'lalamove', 'provider_completed_at' => now(), 'inventory_released' => true,
+        ])->id;
+        Refund::create(['order_id' => $released[0], 'reason' => 'Retained return history', 'requested_amount' => 1000, 'status' => 'requested']);
+        $before = Order::orderBy('id')->get()->map->getAttributes()->all();
+        $expectedCounts = ['all' => 9, 'to_pay' => 0, 'packing' => 1, 'ready' => 1,
+            'to_ship' => 1, 'completed' => 1, 'cancelled' => 5, 'return_refund' => 1];
+        $this->actingAs($customer);
+
+        foreach (['all' => [...array_values($active), ...$released], 'cancelled' => $released, 'return_refund' => [$released[0]],
+            'to_pay' => [], 'packing' => [$active['packing']], 'ready' => [$active['ready']],
+            'to_ship' => [$active['courier']], 'completed' => [$active['delivered']]] as $status => $ids) {
+            $response = $this->get(route('orders', ['status' => $status]))->assertOk();
+            $this->assertEqualsCanonicalizing($ids, $response->viewData('orders')->pluck('id')->all());
+            $this->assertSame($expectedCounts, collect($response->viewData('tabs'))->pluck('count', 'status')->all());
+        }
+        $this->actingAs(User::factory()->create(['role' => 'staff']));
+        foreach ($active as $stage => $id) {
+            $response = $this->get(route('admin.orders', ['fulfillment' => $stage]))->assertOk();
+            $this->assertSame([$id], $response->viewData('orders')->pluck('id')->all());
+        }
+        $this->assertSame($before, Order::orderBy('id')->get()->map->getAttributes()->all());
+        Http::assertNothingSent();
+    }
+
     public function test_invalid_purchase_filters_are_rejected(): void
     {
         $this->actingAs(User::factory()->create());

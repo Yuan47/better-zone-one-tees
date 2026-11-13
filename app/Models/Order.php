@@ -98,7 +98,7 @@ class Order extends Model
 
     public function scopeWhereDeliveryStage(Builder $query, string $stage): Builder
     {
-        $query->where('payment_status', 'paid')->where('status', '!=', 'cancelled');
+        $query->where('payment_status', 'paid')->where('status', '!=', 'cancelled')->where('inventory_released', false);
 
         return match ($stage) {
             'packing' => $query->whereIn('status', ['to_pack', 'packing']),

@@ -3,6 +3,9 @@
 @section('content')
 @if(str_starts_with($order->number,'ZOT-DEMO-'))<div class="notice">SIMULATED / TEST ORDER · For demonstration. No real money or physical delivery is represented by this record.</div>@endif
 <div class="page-heading"><span class="eyebrow">ORDER DETAILS</span><h1>{{ $order->number }}</h1><span class="badge {{ $order->customerDeliveryBadgeClass() }}">{{ $order->payment_status==='paid' && $order->status!=='cancelled' ? $order->customerDeliveryLabel() : ucfirst(str_replace('_',' ',$order->status)) }}</span></div>
+@if($order->sales_channel !== 'walk_in' && $order->status !== 'cancelled' && !$order->inventory_released)
+@include('partials.checkout-progress', ['checkoutStage' => $order->payment_status === 'paid' ? 4 : 3])
+@endif
 <div class="checkout-grid"><div class="panel"><h2>Your order</h2><div class="table-scroll"><table @if(in_array(auth()->user()?->role,['staff','admin'])) data-sortable @endif><thead><tr><th data-sort-type="text">Product</th><th data-sort-type="number">Quantity</th><th data-sort-type="number">Amount</th></tr></thead><tbody>@foreach($order->items as $item)<tr data-sort-row><td data-sort-value="{{ $item->name }}">{{ $item->name }}<small>{{ $item->size }} / {{ $item->color }}</small></td><td data-sort-value="{{ $item->quantity }}">{{ $item->quantity }}</td><td data-sort-value="{{ $item->total }}">₱{{ number_format($item->total/100,2) }}</td></tr>@endforeach</tbody></table></div>
 <h3>Contact & delivery</h3><p>{{ $order->recipient }} · {{ $order->phone }}</p><p>{{ $order->address }}</p><p>{{ $order->delivery_method==='pickup'?'Store pickup':'Lalamove delivery' }}</p>
 @include('partials.courier-details')

@@ -3,6 +3,9 @@
 @section('content')
 @if(str_starts_with($order->number,'ZOT-DEMO-'))<div class="notice">SIMULATED / TEST ORDER · For demonstration. No real money or physical delivery is represented by this record.</div>@endif
 <div class="page-heading"><span class="eyebrow">PRIVATE WALK-IN INVOICE</span><h1>{{ $order->number }}</h1><p>For {{ $order->recipient }} · {{ $order->inventory_released || $order->status==='cancelled'?'Closed invoice · no payment due':($order->deliveryConfirmed()?'Delivered · payment received':'Awaiting payment received in full') }}</p><p class="muted">Keep this private link safe. Anyone with the link can view this invoice and its payment history. No account is required.</p></div>
+@if($order->payments->contains('method', 'paymongo') && $order->status !== 'cancelled' && !$order->inventory_released)
+@include('partials.checkout-progress', ['checkoutStage' => $order->payment_status === 'paid' ? 4 : 3])
+@endif
 <div class="panel table-scroll"><table><thead><tr><th>Clothing</th><th>Quantity</th><th>Amount</th></tr></thead><tbody>@foreach($order->items as $item)<tr><td>{{ $item->name }}<small>{{ $item->size }} / {{ $item->color }}</small></td><td>{{ $item->quantity }}</td><td>₱{{ number_format($item->total/100,2) }}</td></tr>@endforeach</tbody></table></div>
 @include('partials.invoice-payments',['guest'=>true])
 @if($order->deliveryConfirmed())<section class="panel"><h2>Refunds & returns</h2>
