@@ -45,13 +45,25 @@ class PartialPaymentRefundFlowTest extends TestCase
         $variant = $product->variants()->create(['sku' => 'FLOW-'.Str::uuid(), 'size' => 'M', 'color' => 'White', 'stock' => 20,
             'retail_price' => 60000, 'wholesale_price' => 55000, 'reseller_price' => 50000]);
 
-        return app(OrderFlow::class)->reserve([$variant->id => 2], ['recipient' => 'Payment flow buyer', 'phone' => '09123456789',
+        $order = app(OrderFlow::class)->reserve([$variant->id => 2], ['recipient' => 'Payment flow buyer', 'phone' => '09123456789',
             'address' => 'Store pickup', 'delivery_method' => 'pickup', 'shipping' => 0, 'sales_channel' => $walkIn ? 'walk_in' : 'online',
-            'payment_plan' => 'partial', 'due_at' => now()->addDays(14)], $customer?->id)->fresh();
+            'payment_plan' => 'full'], $customer?->id);
+        $order->update(['payment_plan' => 'partial', 'due_at' => now()->addDays(14), 'original_due_at' => now()->addDays(14)]);
+
+        return $order->fresh();
     }
 
     private function cash(Order $order, User $staff, int $amount): PaymentAttempt
     {
+        if ($amount < $order->fresh()->outstandingBalance()) {
+            // Retained historical receipt, not a newly accepted partial cash payment.
+            $receipt = $order->payments()->create(['reference' => (string) Str::uuid(), 'method' => 'cash', 'status' => 'paid',
+                'amount' => $amount, 'recorded_by' => $staff->id, 'reason' => 'Legacy cash receipt retained before the full-payment revision.', 'received_at' => now()->subDay()]);
+            $order->update(['amount_paid' => $amount, 'payment_status' => 'partially_paid', 'status' => 'awaiting_payment']);
+
+            return $receipt;
+        }
+
         $this->actingAs($staff)->post('/admin/orders/'.$order->id.'/payments/cash', ['amount' => number_format($amount / 100, 2, '.', ''),
             'reason' => 'Cash counted and received at the store counter.', 'payment_received' => '1', 'request_key' => (string) Str::uuid()])
             ->assertRedirect()->assertSessionHasNoErrors();
@@ -71,6 +83,15 @@ class PartialPaymentRefundFlowTest extends TestCase
 
     private function online(Order $order, User $actor, int $amount): PaymentAttempt
     {
+        if ($amount < $order->fresh()->outstandingBalance()) {
+            // An already-issued legacy checkout must still reconcile its authentic callback.
+            $attempt = $order->payments()->create(['reference' => (string) Str::uuid(), 'method' => 'paymongo', 'status' => 'pending',
+                'amount' => $amount, 'checkout_session_id' => 'cs_legacy_'.Str::random(8), 'checkout_url' => 'https://checkout.paymongo.com/legacy']);
+            $order->update(['checkout_session_id' => $attempt->checkout_session_id, 'checkout_url' => $attempt->checkout_url]);
+
+            return $attempt;
+        }
+
         $this->actingAs($actor)->post('/orders/'.$order->id.'/payments', ['amount' => number_format($amount / 100, 2, '.', ''), 'request_key' => (string) Str::uuid()])
             ->assertRedirect()->assertSessionHasNoErrors();
 
@@ -137,7 +158,7 @@ class PartialPaymentRefundFlowTest extends TestCase
             'stock' => Variant::orderBy('id')->get()->map->getRawOriginal()->all()];
     }
 
-    public function test_guest_mixed_installments_can_be_returned_per_receipt_after_full_payment_and_walk_in_handover(): void
+    public function test_guest_legacy_mixed_receipts_can_be_refunded_per_receipt_after_full_balance_and_handover(): void
     {
         $order = $this->invoice(true, true);
         $staff = $this->actor('staff');
@@ -205,7 +226,7 @@ class PartialPaymentRefundFlowTest extends TestCase
         $this->assertDatabaseCount('refunds', 2);
     }
 
-    public function test_online_installments_require_customer_receipt_and_provider_confirmation_and_cannot_be_counted_or_refunded_twice(): void
+    public function test_legacy_online_receipts_require_customer_handover_and_provider_confirmation_and_cannot_be_counted_or_refunded_twice(): void
     {
         $order = $this->invoice();
         $customer = $order->user;
@@ -289,7 +310,7 @@ class PartialPaymentRefundFlowTest extends TestCase
         Http::assertNotSent(fn ($request) => $request->method() !== 'GET');
     }
 
-    public function test_a_real_customer_deposit_does_not_unlock_delivery_or_refunds_while_the_invoice_is_partially_paid(): void
+    public function test_a_legacy_customer_deposit_does_not_unlock_delivery_or_refunds_before_full_settlement(): void
     {
         $order = $this->invoice();
         $deposit = $this->cash($order, $this->actor('staff'), 70000);

@@ -39,7 +39,7 @@ class CustomerCheckoutAccessTest extends TestCase
     {
         return ['recipient' => 'Checkout Customer', 'phone' => '09123456789', 'delivery_method' => 'lalamove',
             'street_address' => '12 Example Street', 'city' => 'Quezon City', 'province' => 'Metro Manila', 'postal_code' => '1100',
-            'country' => 'Philippines', 'lat' => '14.676', 'lng' => '121.0437'];
+            'country' => 'Philippines', 'lat' => '14.676', 'lng' => '121.0437', 'pin_confirmed' => '1', 'terms' => '1'];
     }
 
     public static function storeRoles(): array

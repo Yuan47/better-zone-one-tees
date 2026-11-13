@@ -75,76 +75,15 @@ document.addEventListener('DOMContentLoaded', function () {
       var price=document.getElementById('selected-price');price.replaceChildren(document.createTextNode(v?money(v.retail):'—'));var note=document.createElement('small');note.textContent=' / piece · SRP';price.appendChild(note);
       var qty=document.getElementById('variant-quantity');qty.max=v?Math.min(10000,Math.max(1,v.stock)):1;if(Number(qty.value)>Number(qty.max))qty.value=qty.max;
       selectedImage.hidden=!(v&&v.photo);placeholder.hidden=!!(v&&v.photo);if(v&&v.photo)selectedImage.src=v.photo;else selectedImage.removeAttribute('src');
+      var photoFrame=selectedImage.closest('[data-catalog-photo]'), demo=!!(v&&v.photo&&v.demo_photo), demoNote=document.getElementById('product-demo-photo-note');
+      photoFrame.classList.toggle('demo-photo',demo);photoFrame.hidden=!(v&&v.photo);
+      if(demo){photoFrame.style.setProperty('--garment-photo','url("'+v.photo+'")');photoFrame.style.setProperty('--garment-color',v.photo_color);}else{photoFrame.style.removeProperty('--garment-photo');photoFrame.style.removeProperty('--garment-color');}
+      selectedImage.alt=(v?v.color+' · ':'')+document.querySelector('.detail-copy h1').textContent+(demo?' · demonstration preview':'');if(demoNote)demoNote.hidden=!demo;
     }
     color.addEventListener('change',refreshSizes);size.addEventListener('change',refreshVariant);refreshColors();
   }
   var rows=document.getElementById('size-chart-rows'), addRow=document.getElementById('add-size-row');
   if(rows){var rowIndex=rows.children.length;addRow.addEventListener('click',function(){if(rows.children.length>=30)return;var row=document.createElement('tr');['size','width','length'].forEach(function(field){var cell=document.createElement('td'),input=document.createElement('input');input.name='size_chart['+rowIndex+']['+field+']';input.setAttribute('aria-label','Chart '+field+' '+(rowIndex+1));if(field==='size')input.maxLength=40;else{input.type='number';input.step='.5';input.min=1;input.max=100;}cell.appendChild(input);row.appendChild(cell);});var cell=document.createElement('td'),button=document.createElement('button');button.type='button';button.className='text-button remove-size-row';button.setAttribute('aria-label','Remove size row');button.textContent='×';cell.appendChild(button);row.appendChild(cell);rows.appendChild(row);rowIndex++;});rows.addEventListener('click',function(e){if(e.target.classList.contains('remove-size-row'))e.target.closest('tr').remove();});}
   var filter=document.getElementById('admin-color-filter');if(filter)filter.addEventListener('change',function(){document.querySelectorAll('[data-variant-color]').forEach(function(row){row.hidden=!!filter.value&&row.dataset.variantColor!==filter.value;});});
-  document.querySelectorAll('input[type="file"]').forEach(function(input){input.addEventListener('change',function(){var file=input.files[0];if(!file || !['image/jpeg','image/png','image/webp'].includes(file.type))return;var preview=input.closest('.upload-row,.account-photo')?.querySelector('img');if(!preview){preview=document.createElement('img');preview.className='upload-preview';preview.alt='Selected upload preview';input.parentElement.appendChild(preview);}if(input.dataset.previewUrl)URL.revokeObjectURL(input.dataset.previewUrl);input.dataset.previewUrl=URL.createObjectURL(file);preview.src=input.dataset.previewUrl;});});
-  var method=document.getElementById('delivery-method');
-  if(method){
-    var fields=document.getElementById('delivery-fields'), quote=document.getElementById('quote-button'), result=document.getElementById('quote-result'), total=document.getElementById('checkout-total'), shipping=document.getElementById('shipping-value');
-    var addressFields={street_address:document.getElementById('address-street'),city:document.getElementById('address-city'),province:document.getElementById('address-province'),postal_code:document.getElementById('address-postal'),country:document.getElementById('address-country')}, lat=document.getElementById('delivery-lat'),lng=document.getElementById('delivery-lng');
-    var quoteRevision=0, expiryTimer, quoteFresh=false, payButton=document.getElementById('pay-button'), payConfigured=!payButton.disabled;
-    var mapElement=document.getElementById('delivery-map'), map, marker, locate=document.getElementById('locate-button'), pinStatus=document.getElementById('pin-status');
-    function hasPin(){return lat.value.trim()!=='' && lng.value.trim()!=='' && Number.isFinite(Number(lat.value)) && Number.isFinite(Number(lng.value));}
-    function pinMessage(){pinStatus.textContent=hasPin()?'Delivery pin selected. Confirm that it matches your address.':'No delivery pin selected.';}
-    function setPin(point){lat.value=Number(point.lat).toFixed(6);lng.value=Number(point.lng).toFixed(6);resetQuote();pinMessage();if(map){if(!marker){marker=L.marker(point,{draggable:true,icon:L.divIcon({className:'delivery-pin',html:'<span aria-hidden="true">●</span>',iconSize:[28,28],iconAnchor:[14,14]})}).addTo(map);marker.on('dragend',function(){setPin(marker.getLatLng());});}else marker.setLatLng(point);}}
-    function showMap(){
-      if(!mapElement || !window.L){pinStatus.textContent='Map could not load. Use your current location or enter coordinates below.';return;}
-      if(!map){var start=hasPin()?[Number(lat.value),Number(lng.value)]:[Number(mapElement.dataset.startLat),Number(mapElement.dataset.startLng)];map=L.map(mapElement,{scrollWheelZoom:false}).setView(start,14);L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>'}).addTo(map);map.on('click',function(e){setPin(e.latlng);});if(hasPin())setPin({lat:Number(lat.value),lng:Number(lng.value)});}
-      requestAnimationFrame(function(){map.invalidateSize();});
-    }
-    locate.addEventListener('click',function(){if(!navigator.geolocation){pinStatus.textContent='Location is unavailable. Tap the map or enter coordinates below.';return;}locate.disabled=true;pinStatus.textContent='Finding your current location…';navigator.geolocation.getCurrentPosition(function(position){setPin({lat:position.coords.latitude,lng:position.coords.longitude});if(map)map.setView([Number(lat.value),Number(lng.value)],17);locate.disabled=false;},function(){locate.disabled=false;pinStatus.textContent='Location was unavailable or permission was declined. Tap the map or enter coordinates below.';},{enableHighAccuracy:true,timeout:10000,maximumAge:60000});});
-    [lat,lng].forEach(function(el){el.addEventListener('change',function(){if(hasPin()){setPin({lat:Number(lat.value),lng:Number(lng.value)});if(map)map.panTo([Number(lat.value),Number(lng.value)]);}else pinMessage();});});
-    function resetQuote(){quoteRevision++;quoteFresh=false;clearTimeout(expiryTimer);payButton.disabled=!payConfigured||method.value==='lalamove';result.textContent='';shipping.textContent=method.value==='pickup'?'Free pickup':'Get a quote';total.dataset.invoiceTotal=total.dataset.subtotal;total.textContent=money(Number(total.dataset.subtotal));}
-    function updateDelivery(){fields.hidden=method.value!=='lalamove';lat.required=lng.required=method.value==='lalamove';Object.values(addressFields).forEach(function(el){el.required=method.value==='lalamove';});resetQuote();if(method.value==='lalamove')showMap();}
-    method.addEventListener('change',updateDelivery);[...Object.values(addressFields),lat,lng].forEach(function(el){el.addEventListener('input',resetQuote);});updateDelivery();
-    quote.addEventListener('click',async function(){
-      var body={lat:lat.value,lng:lng.value};Object.entries(addressFields).forEach(function(pair){body[pair[0]]=pair[1].value;});
-      if(Object.values(body).some(function(value){return !value.trim();})){result.textContent='Complete your address and choose a delivery pin first.';return;}
-      var requestedRevision=quoteRevision;
-      quote.disabled=true;result.textContent='Getting your delivery quote…';
-      try{var res=await fetch(quote.dataset.url,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':token},body:JSON.stringify(body)});var data=await res.json();if(requestedRevision!==quoteRevision)return;if(!res.ok)throw new Error(Object.values(data.errors||{}).flat().join(' ')||data.message||'Quote is unavailable.');result.textContent='Delivery: '+money(data.amount)+' · Valid until '+new Date(data.expires_at).toLocaleTimeString();shipping.textContent=money(data.amount);total.dataset.invoiceTotal=Number(total.dataset.subtotal)+data.amount;total.textContent=money(Number(total.dataset.invoiceTotal));var remaining=new Date(data.expires_at).getTime()-Date.now();if(remaining<=0)throw new Error('This quote has expired. Request another quote.');quoteFresh=true;payButton.disabled=!payConfigured;expiryTimer=setTimeout(function(){resetQuote();result.textContent='The delivery quote expired. Request a fresh quote before payment.';},Math.min(remaining,2147483647));}catch(error){if(requestedRevision===quoteRevision)result.textContent=error.message;}finally{quote.disabled=false;}
-    });
-    document.getElementById('checkout-form').addEventListener('submit',function(e){if(method.value==='lalamove'&&!quoteFresh){e.preventDefault();result.textContent='Request a fresh delivery quote before payment.';return;}var button=document.getElementById('pay-button');button.disabled=true;button.textContent='Preparing checkout…';});
-  }
+  document.querySelectorAll('input[type="file"]').forEach(function(input){input.addEventListener('change',function(){var file=input.files[0];if(!file || !['image/jpeg','image/png','image/webp'].includes(file.type))return;var preview=input.closest('.upload-row,.account-photo')?.querySelector('img');if(!preview){preview=document.createElement('img');preview.className='upload-preview';preview.alt='Selected upload preview';input.parentElement.appendChild(preview);}if(input.dataset.previewUrl)URL.revokeObjectURL(input.dataset.previewUrl);input.dataset.previewUrl=URL.createObjectURL(file);preview.src=input.dataset.previewUrl;var frame=preview.closest('[data-catalog-photo]');if(frame){frame.classList.remove('demo-photo');frame.style.removeProperty('--garment-photo');frame.style.removeProperty('--garment-color');}});});
 });
-(() => {
-  const choice = document.getElementById('payment-option');
-  const fields = document.getElementById('partial-payment-fields');
-  if (!choice || !fields) return;
-  const amount = document.getElementById('payment-amount');
-  const summary = document.getElementById('partial-payment-summary');
-  const total = document.getElementById('checkout-total');
-  const minimumNote = document.getElementById('first-payment-minimum');
-  let automaticAmount = amount.dataset.autoAmount === '1';
-  const money = n => new Intl.NumberFormat('en-PH', {style:'currency',currency:'PHP'}).format(n);
-  const update = () => {
-    const partial = choice.value === 'partial';
-    fields.hidden = !partial;
-    amount.required = partial;
-    amount.disabled = !partial;
-    if (summary && total) {
-      const invoiceCentavos = Number(total.dataset.invoiceTotal);
-      const minimum = Math.ceil(invoiceCentavos / 2);
-      const invoice = invoiceCentavos / 100;
-      amount.min = (minimum / 100).toFixed(2);
-      amount.max = ((invoiceCentavos - 100) / 100).toFixed(2);
-      if (automaticAmount) amount.value = (minimum / 100).toFixed(2);
-      if (minimumNote) minimumNote.textContent = 'First payment minimum: '+money(minimum / 100)+' (50% of the invoice including delivery, rounded up).';
-      const now = Number(amount.value);
-      const payment = Math.round(now * 100);
-      summary.textContent = !partial ? '' : payment < minimum
-        ? 'Enter at least '+money(minimum / 100)+' for the first payment.'
-        : payment > invoiceCentavos - 100
-          ? 'Choose full payment, or leave at least ₱1.00 outstanding.'
-          : 'Pay '+money(now)+' now. Remaining balance: '+money(invoice-now)+'.';
-    }
-  };
-  choice.addEventListener('change', update);
-  amount.addEventListener('input', () => { automaticAmount = false; update(); });
-  if (total) new MutationObserver(update).observe(total,{attributes:true,attributeFilter:['data-invoice-total'],childList:true,characterData:true,subtree:true});
-  update();
-})();

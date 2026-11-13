@@ -51,6 +51,7 @@ class GoogleSignIn
             'password_hash' => $link ? hash('sha256', $request->user()->getAuthPassword()) : null,
             'session_id' => $request->session()->getId(), 'expires_at' => now()->addMinutes(10)->timestamp,
             'state_hash' => hash('sha256', $request->session()->get('state')),
+            'terms_accepted' => $request->boolean('terms'), 'terms_version' => StoreTerms::VERSION,
         ]);
 
         return $response;
@@ -155,9 +156,12 @@ class GoogleSignIn
                 if (StaffInvitation::whereRaw('LOWER(email) = ?', [$identity['email']])->exists()) {
                     throw new GoogleSignInException('This email has a staff setup. Ask the store owner to finish its verification, then sign in with email and password.');
                 }
+                if (($context['terms_accepted'] ?? false) !== true || ($context['terms_version'] ?? null) !== StoreTerms::VERSION) {
+                    throw new GoogleSignInException('Agree to the store Terms and Conditions before creating a new Google customer account.');
+                }
                 $user = new User;
                 $user->forceFill(['name' => $identity['name'], 'email' => $identity['email'], 'role' => 'customer',
-                    'password' => Str::random(64), 'email_verified_at' => now()])->save();
+                    'password' => Str::random(64), 'email_verified_at' => now()] + StoreTerms::acceptance())->save();
                 GoogleIdentity::create(['subject' => $identity['subject'], 'user_id' => $user->id]);
 
                 return [$user, true];

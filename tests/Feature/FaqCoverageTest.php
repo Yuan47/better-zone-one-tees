@@ -25,8 +25,9 @@ class FaqCoverageTest extends TestCase
         $variant = $product->variants()->create(['sku' => 'INVOICE-FAQ', 'size' => 'M', 'color' => 'White', 'stock' => 20,
             'retail_price' => 20000, 'wholesale_price' => 19000, 'reseller_price' => 18000]);
         $order = app(OrderFlow::class)->reserve([$variant->id => 10], ['recipient' => 'FAQ Buyer', 'phone' => '09123456789',
-            'address' => 'Store pickup', 'delivery_method' => 'pickup', 'shipping' => 0, 'payment_plan' => 'partial'], $customer->id);
-        $order->update(['payment_status' => 'partially_paid', 'amount_paid' => 50000]);
+            'address' => 'Store pickup', 'delivery_method' => 'pickup', 'shipping' => 0], $customer->id);
+        // A pre-revision invoice remains a truthful legacy record, not a new offer.
+        $order->update(['payment_plan' => 'partial', 'payment_status' => 'partially_paid', 'amount_paid' => 50000]);
 
         return $order->fresh();
     }
@@ -52,7 +53,7 @@ class FaqCoverageTest extends TestCase
         Http::fake();
         $faqs = ChatbotFaq::whereBetween('sort_order', [100, 299])->orderBy('sort_order')->get();
         $this->assertCount(18, $faqs);
-        foreach ($faqs->where('audience', 'customer')->take(12) as $faq) {
+        foreach ($faqs->where('audience', 'customer')->where('active', true)->take(12) as $faq) {
             $this->chat($faq->question)->assertOk()->assertJsonPath('mode', 'store')->assertJsonPath('reply', $faq->answer);
         }
         Http::assertNothingSent();
@@ -74,8 +75,8 @@ class FaqCoverageTest extends TestCase
         config(['shop.groq.key' => 'test-groq']);
         Http::fake();
         foreach ([
-            'What is the minimum partial payment eligibility?' => 'more than ₱1,000',
-            'Can I open another installment?' => 'only one open',
+            'What is the minimum partial payment eligibility?' => 'no longer offered',
+            'Can I open another installment?' => 'no longer offered',
             'Will you email payment reminders?' => '3 days and 1 day',
             'I need to reset password' => '60 minutes',
             'How can I confirm receipt?' => 'The written review is optional.',
@@ -117,12 +118,12 @@ class FaqCoverageTest extends TestCase
         config(['shop.groq.key' => 'test-groq']);
         Http::fake();
         foreach ([
-            'Can I pay an order in installments? ZOT-261017-ABCD1234' => 'more than ₱1,000',
+            'Can I pay an order in installments? ZOT-261017-ABCD1234' => 'no longer offered',
             'Will you send payment reminders for ZOT-261017-ABCD1234?' => '3 days and 1 day',
-            'Can I open another installment for ZOT-261017-ABCD1234?' => 'only one open',
-            'How do I pay the remaining invoice balance for ZOT-261017-ABCD1234?' => 'available payment action',
+            'Can I open another installment for ZOT-261017-ABCD1234?' => 'no longer offered',
+            'How do I pay the remaining invoice balance for ZOT-261017-ABCD1234?' => 'entire remaining balance',
             'How is the outstanding balance calculated for ZOT-261017-ABCD1234?' => 'original invoice total minus payments received',
-            'What is the deadline for a partial-payment invoice ZOT-261017-ABCD1234?' => 'between 7 and 30 days',
+            'What is the deadline for a partial-payment invoice ZOT-261017-ABCD1234?' => 'no longer offered',
         ] as $message => $answer) {
             $this->chat($message)->assertOk()->assertJsonPath('mode', 'store')->assertJsonPath('reply', fn ($reply) => str_contains($reply, $answer));
         }

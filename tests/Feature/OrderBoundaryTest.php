@@ -177,7 +177,7 @@ class OrderBoundaryTest extends TestCase
         Http::fake(['api.paymongo.com/v2/checkout_sessions' => Http::response(['data' => ['id' => 'cs_boundary_new',
             'attributes' => ['checkout_url' => 'https://checkout.paymongo.com/cs_boundary_new']]])]);
         $this->actingAs($buyer)->withSession(['pending_order' => $paid->id, 'cart' => [$variant->id => 3]])
-            ->post(route('checkout.place'), ['recipient' => 'New recipient', 'phone' => '09123456789', 'delivery_method' => 'pickup',
+            ->post(route('checkout.place'), ['recipient' => 'New recipient', 'phone' => '09123456789', 'delivery_method' => 'pickup', 'terms' => '1',
                 'order_id' => $paid->id, 'pending_order' => $paid->id, 'payment_status' => 'paid', 'payment_id' => 'pay_forged',
                 'total' => 1, 'quantity' => 999])->assertRedirect('https://checkout.paymongo.com/cs_boundary_new');
         $pending = Order::whereKeyNot($paid->id)->sole();
@@ -203,7 +203,7 @@ class OrderBoundaryTest extends TestCase
         Http::fake(['api.paymongo.com/v2/checkout_sessions' => Http::response(['data' => ['id' => 'cs_boundary_own',
             'attributes' => ['checkout_url' => 'https://checkout.paymongo.com/cs_boundary_own']]])]);
         $this->actingAs($buyer)->withSession(['pending_order' => $foreign->id, 'cart' => [$variant->id => 1]])
-            ->post(route('checkout.place'), ['recipient' => 'Current buyer', 'phone' => '09123456789', 'delivery_method' => 'pickup',
+            ->post(route('checkout.place'), ['recipient' => 'Current buyer', 'phone' => '09123456789', 'delivery_method' => 'pickup', 'terms' => '1',
                 'user_id' => $foreign->user_id, 'order_id' => $foreign->id])->assertRedirect('https://checkout.paymongo.com/cs_boundary_own');
         $own = Order::where('user_id', $buyer->id)->sole();
         $this->assertSame($before, $this->commerceSnapshot($foreign));
@@ -221,7 +221,7 @@ class OrderBoundaryTest extends TestCase
         foreach ([
             [['status' => 'packing'], 'Packing'],
             [['status' => 'delivery_attention', 'delivery_method' => 'lalamove'], 'Ready for delivery'],
-            [['status' => 'out_for_delivery', 'delivery_method' => 'lalamove', 'provider_completed_at' => now()], 'With courier'],
+            [['status' => 'out_for_delivery', 'delivery_method' => 'lalamove', 'provider_completed_at' => now()], 'To Ship'],
             [['status' => 'completed', 'customer_confirmed_at' => now()], 'Delivered'],
         ] as [$attributes, $label]) {
             $order = $this->purchase($buyer, attributes: $attributes);

@@ -139,7 +139,7 @@ class EmailVerificationFlowTest extends TestCase
             ['staff', 'PATCH', '/admin/orders/{order}'], ['staff', 'POST', '/admin/orders/{order}/delivery'],
             ['admin', 'GET', '/admin'], ['admin', 'GET', '/admin/settings'], ['admin', 'GET', '/admin/activity'],
             ['admin', 'POST', '/admin/products'], ['admin', 'POST', '/admin/settings'],
-            ['admin', 'POST', '/admin/settings/payment-terms'], ['admin', 'POST', '/admin/orders/{order}/due'],
+            ['admin', 'POST', '/admin/refund-policy'], ['admin', 'POST', '/admin/orders/{order}/payment/recover'],
         ];
     }
 
@@ -158,9 +158,23 @@ class EmailVerificationFlowTest extends TestCase
 
     public function test_json_clients_get_a_useful_verification_response_without_changing_the_cart(): void
     {
-        $this->actingAs($this->user())->withSession(['cart' => [42 => 3]])->postJson('/cart', ['variant_id' => 42, 'quantity' => 1])
+        $variant = $this->variant();
+        $cart = [$variant->id => 3];
+        $this->actingAs($this->user())->withSession(['cart' => $cart])->postJson('/cart', ['variant_id' => $variant->id, 'quantity' => 1])
             ->assertForbidden()->assertJsonPath('verification_url', route('verification.notice'))
-            ->assertSessionHas('cart', [42 => 3]);
+            ->assertSessionHas('cart', $cart);
+        Http::assertNothingSent();
+    }
+
+    public function test_removed_installment_configuration_endpoints_cannot_change_invoices_even_for_verified_owners(): void
+    {
+        $owner = $this->user('admin', true);
+        $order = $this->order($this->user(), $this->variant());
+        $before = $this->financialState();
+        $this->actingAs($owner)->post('/admin/settings/payment-terms', ['days' => 30])->assertNotFound();
+        $this->post('/admin/orders/'.$order->id.'/due', ['due_at' => now()->addDays(30)->toDateString(),
+            'reason' => 'Attempt to restore the removed installment feature.'])->assertNotFound();
+        $this->assertSame($before, $this->financialState());
         Http::assertNothingSent();
     }
 
@@ -194,7 +208,7 @@ class EmailVerificationFlowTest extends TestCase
     public function test_registration_creates_an_unverified_customer_and_sends_one_code_to_the_registered_email(string $email): void
     {
         $this->acceptEmail();
-        $this->post('/register', ['name' => 'New Verification Customer', 'username' => 'new_verification_customer', 'email' => $email,
+        $this->post('/register', ['terms' => '1', 'name' => 'New Verification Customer', 'username' => 'new_verification_customer', 'email' => $email,
             'password' => 'VerificationPassword!2026', 'password_confirmation' => 'VerificationPassword!2026',
             'role' => 'admin', 'email_verified_at' => now()->toDateTimeString()])->assertRedirect('/email/verify');
         $user = User::where('email', $email)->sole();
@@ -249,7 +263,7 @@ class EmailVerificationFlowTest extends TestCase
         $this->post('/login', ['email' => $user->email, 'password' => 'VerificationPassword!2026'])->assertRedirect('/');
         $this->get('/orders')->assertOk();
         $this->post('/logout')->assertRedirect('/');
-        $this->post('/register', ['name' => 'Local Customer', 'username' => 'local_customer', 'email' => 'local@example.test',
+        $this->post('/register', ['terms' => '1', 'name' => 'Local Customer', 'username' => 'local_customer', 'email' => 'local@example.test',
             'password' => 'VerificationPassword!2026', 'password_confirmation' => 'VerificationPassword!2026'])->assertRedirect('/');
         $this->assertNull(User::where('email', 'local@example.test')->sole()->email_verified_at);
         Http::assertNothingSent();
@@ -258,7 +272,7 @@ class EmailVerificationFlowTest extends TestCase
     public function test_required_but_unconfigured_email_keeps_the_new_account_unverified_without_provider_work(): void
     {
         config(['services.brevo.api_key' => '']);
-        $this->post('/register', ['name' => 'Waiting Customer', 'username' => 'waiting_customer', 'email' => 'waiting@example.test',
+        $this->post('/register', ['terms' => '1', 'name' => 'Waiting Customer', 'username' => 'waiting_customer', 'email' => 'waiting@example.test',
             'password' => 'VerificationPassword!2026', 'password_confirmation' => 'VerificationPassword!2026'])->assertRedirect('/email/verify');
         $this->assertNull(User::where('email', 'waiting@example.test')->sole()->email_verified_at);
         $this->get('/email/verify')->assertOk();

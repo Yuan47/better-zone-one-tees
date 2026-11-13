@@ -135,6 +135,9 @@ class SignInPortalTest extends TestCase
     public static function intendedPaths(): array
     {
         return [['customer', '/account?tab=profile', '/account?tab=profile'],
+            ['customer', '/account/addresses', '/account/addresses'], ['customer', '/account/addresses/create', '/account/addresses/create'],
+            ['customer', '/account/addresses/123/edit', '/account/addresses/123/edit'], ['customer', '/account/addresses/123/default', '/'],
+            ['staff', '/account/addresses', '/admin'],
             ['customer', 'http://localhost/orders', 'http://localhost/orders'], ['staff', '/admin/orders?status=ready', '/admin/orders?status=ready'],
             ['admin', '/admin/products', '/admin/products'], ['staff', '/account', '/account'],
             ['staff', '/admin/products', '/admin'], ['customer', '/admin/orders', '/'], ['admin', '/dashboard', '/admin'],

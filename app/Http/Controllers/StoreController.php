@@ -9,7 +9,8 @@ use App\Models\Variant;
 use App\Services\ActivityRecorder;
 use App\Services\InstallmentCredit;
 use App\Services\InvoicePayments;
-use App\Services\InvoiceTerms;
+use App\Services\CustomerAddresses;
+use App\Services\SavedCart;
 use App\Services\Lalamove;
 use App\Services\OrderFlow;
 use App\Services\PayMongo;
@@ -24,7 +25,7 @@ class StoreController extends Controller
 {
     public function index(Request $r)
     {
-        $query = Product::with('variants')->where('active', true);
+        $query = Product::published()->with(['variants' => fn ($variants) => $variants->whereNull('archived_at')]);
         if ($r->filled('q')) {
             $query->where('name', 'like', '%'.mb_substr($r->string('q'), 0, 100).'%');
         }
@@ -34,6 +35,7 @@ class StoreController extends Controller
         }
         if ($r->filled('size') || $r->filled('color') || $r->boolean('in_stock')) {
             $query->whereHas('variants', function ($q) use ($r) {
+                $q->whereNull('archived_at');
                 if ($r->filled('size')) {
                     $q->where('size', $r->string('size'));
                 }
@@ -53,7 +55,7 @@ class StoreController extends Controller
         if ($sort === 'price_desc') {
             $products = $products->sortByDesc(fn ($p) => $p->variants->min('retail_price'));
         }
-        $filterVariants = Variant::whereHas('product', fn ($q) => $q->where('active', true))->get();
+        $filterVariants = Variant::sellable()->get();
         $sizes = $filterVariants->pluck('size')->unique()->sortBy(fn ($size) => $this->sizeSortKey($size))->values();
         $colors = $filterVariants->pluck('color')->unique()->sort()->values();
         $wishIds = $r->user() ? DB::table('wishlists')->where('user_id', $r->user()->id)->pluck('product_id')->all() : [];
@@ -64,8 +66,8 @@ class StoreController extends Controller
 
     public function product(Request $request, Product $product)
     {
-        abort_unless($product->active, 404);
-        $product->load('variants');
+        abort_unless($product->active && ! $product->archived_at, 404);
+        $product->load(['variants' => fn ($variants) => $variants->whereNull('archived_at')]);
         $product->setRelation('variants', $product->variants->sortBy(fn ($variant) => $this->sizeSortKey($variant->size))->values());
 
         // Reviews are order ratings, displayed once for each product in that verified purchase.
@@ -106,8 +108,7 @@ class StoreController extends Controller
     public function add(Request $r)
     {
         $data = $r->validate(['variant_id' => 'required|integer|exists:variants,id', 'quantity' => 'required|integer|min:1|max:10000']);
-        $v = Variant::with('product')->findOrFail($data['variant_id']);
-        abort_unless($v->product->active, 404);
+        $v = Variant::sellable()->with('product')->findOrFail($data['variant_id']);
         $cart = $r->session()->get('cart', []);
         $quantity = ($cart[$v->id] ?? 0) + $data['quantity'];
         if ($quantity > $v->available()) {
@@ -183,8 +184,10 @@ class StoreController extends Controller
     public function quote(Request $r, Lalamove $delivery, StructuredAddress $addresses)
     {
         $this->requireCustomerCheckout($r);
+        app(CustomerAddresses::class)->applySelected($r);
         $data = $addresses->validatedInput($r, true);
-        $r->validate(['lat' => 'required|numeric|between:-90,90', 'lng' => 'required|numeric|between:-180,180']);
+        $r->validate(['lat' => 'required|numeric|between:-90,90', 'lng' => 'required|numeric|between:-180,180',
+            'pin_confirmed' => 'required|accepted']);
         $data['address'] = $addresses->format($data);
         if (strcasecmp($data['country'], 'Philippines') !== 0) {
             throw ValidationException::withMessages(['country' => 'Lalamove delivery is available in the Philippines only.']);
@@ -222,14 +225,21 @@ class StoreController extends Controller
         if (! in_array($checkoutKey, $r->session()->get('checkout_keys', []), true)) {
             throw ValidationException::withMessages(['checkout_key' => 'Refresh checkout before submitting this purchase.']);
         }
-        $data = $r->validate(['recipient' => 'required|string|max:100', 'phone' => ['required', 'regex:/^\+?[0-9]{10,15}$/'],
+        if ($r->input('delivery_method') === 'lalamove') {
+            app(CustomerAddresses::class)->applySelected($r);
+        }
+        $data = $r->validate(['recipient' => 'required|string|max:100', 'phone' => ['required', new \App\Rules\PhilippineMobileNumber],
             'delivery_method' => 'required|in:pickup,lalamove',
             'lat' => 'nullable|numeric|between:-90,90', 'lng' => 'nullable|numeric|between:-180,180',
-            'payment_option' => 'nullable|in:full,partial', 'payment_amount' => 'required_if:payment_option,partial', 'payment_days' => 'nullable|integer|between:7,30']);
-        if ($data['delivery_method'] === 'lalamove' && Lalamove::internationalPhone($data['phone']) === null) {
-            throw ValidationException::withMessages(['phone' => 'Enter a Philippine mobile number (09… or +639…) or an international number with +country code for courier delivery.']);
+            'payment_option' => 'nullable|in:full', 'payment_amount' => 'prohibited', 'payment_days' => 'prohibited',
+            'terms' => 'required|accepted']);
+        if ($data['delivery_method'] === 'lalamove') {
+            $r->validate(['pin_confirmed' => 'required|accepted', 'lat' => 'required|numeric|between:-90,90', 'lng' => 'required|numeric|between:-180,180']);
+            $address = $addresses->validatedInput($r, true);
+        } else {
+            $address = array_fill_keys(StructuredAddress::FIELDS, null);
+            $data['lat'] = $data['lng'] = null;
         }
-        $address = $addresses->validatedInput($r, $data['delivery_method'] === 'lalamove');
         $data = array_merge($data, $address);
         $data['address'] = filled($data['street_address']) ? $addresses->format($data) : 'Store pickup';
         if ($data['delivery_method'] === 'lalamove' && strcasecmp($data['country'], 'Philippines') !== 0) {
@@ -253,30 +263,22 @@ class StoreController extends Controller
             }
             $data['delivery_quote'] = $saved['quote'];
         }
-        $partial = ($data['payment_option'] ?? 'full') === 'partial';
-        $amount = $partial ? InvoiceTerms::amount($data['payment_amount']) : null;
-        $data['payment_plan'] = $partial ? 'partial' : 'full';
+        $data['payment_plan'] = 'full';
+        $data += \App\Services\StoreTerms::acceptance();
         $data['creation_key'] = $checkoutKey;
-        if ($partial) {
-            $data['due_at'] = now()->addDays((int) ($data['payment_days'] ?? app(InvoiceTerms::class)->days()));
-        }
-        $order = DB::transaction(function () use ($flow, $r, $data, $partial, $amount) {
-            $invoice = $flow->reserve($r->session()->get('cart', []), $data, $r->user()->id);
-            if ($partial) {
-                app(InvoiceTerms::class)->validatePartialPayment($invoice, $amount, 'payment_amount');
-                if ($amount >= $invoice->total) {
-                    throw ValidationException::withMessages(['payment_amount' => 'A partial payment must be less than the original invoice total. Choose full payment to settle it now.']);
-                }
-            }
+        $orderedCart = $r->session()->get('cart', []);
+        // Reserve and consume the saved cart together, even if the provider response later times out.
+        $order = DB::transaction(function () use ($r, $flow, $orderedCart, $data) {
+            $order = $flow->reserve($orderedCart, $data, $r->user()->id);
+            app(SavedCart::class)->consume($r, $orderedCart);
 
-            return $invoice;
+            return $order;
         }, 3);
-        $r->session()->put(['pending_order' => $order->id, 'checkout_key' => $checkoutKey, 'checkout_cart_consumed' => false]);
+        $r->session()->put(['pending_order' => $order->id, 'checkout_key' => $checkoutKey, 'checkout_cart_consumed' => true]);
         ActivityRecorder::mark($r, 'order.created', $order, ['quantity' => $order->quantity, 'delivery_method' => $order->delivery_method, 'status' => $order->fresh()->status]);
         try {
-            $attempt = app(InvoicePayments::class)->start($order, $amount ?? $order->total, $r->user(), (string) Str::uuid());
-            $r->session()->forget(['cart', 'delivery_quote']);
-            $r->session()->put('checkout_cart_consumed', true);
+            $attempt = app(InvoicePayments::class)->start($order, $order->total, $r->user(), (string) Str::uuid());
+            $r->session()->forget('delivery_quote');
 
             return redirect()->away($attempt->checkout_url);
         } catch (\Throwable $e) {
@@ -314,7 +316,7 @@ class StoreController extends Controller
     private function activeCart(Request $r): array
     {
         $cart = $r->session()->get('cart', []);
-        $active = Variant::whereIn('id', array_keys($cart))->whereHas('product', fn ($q) => $q->where('active', true))->pluck('id')->all();
+        $active = Variant::sellable()->whereIn('id', array_keys($cart))->pluck('id')->all();
         $clean = array_intersect_key($cart, array_flip($active));
         if (count($clean) !== count($cart)) {
             $r->session()->put('cart', $clean);
@@ -326,9 +328,7 @@ class StoreController extends Controller
 
     public function orders(Request $r)
     {
-        $orders = Order::with('items')->where('user_id', $r->user()->id)->latest()->paginate(12);
-
-        return view('orders', compact('orders'));
+        return view('orders', app(\App\Services\CustomerPurchases::class)->page($r));
     }
 
     public function order(Request $r, Order $order)

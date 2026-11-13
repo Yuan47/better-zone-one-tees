@@ -176,7 +176,11 @@ class FaqAudienceSettingsTest extends TestCase
         foreach ($guides as $guide) {
             $this->assertMatchesRegularExpression('/^1\. .+\n2\. .+\n3\. .+\n4\. .+$/u', $guide->answer, $guide->question);
             $this->assertLessThanOrEqual(2500, mb_strlen($guide->answer));
-            $this->assertTrue($guide->active);
+            $retired = in_array($guide->question, [
+                'How do I choose partial payment and pay the balance later?',
+                'How do staff create a walk-in sale?',
+            ], true);
+            $this->assertSame(! $retired, $guide->active, $guide->question);
         }
         $this->assertStringContainsString('never', mb_strtolower($guides->firstWhere('question', 'How do I enter my email verification code?')->answer));
         $this->assertStringContainsString('only for this setup', $guides->firstWhere('question', 'How does the owner activate a staff account with its setup code?')->answer);

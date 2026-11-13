@@ -1,6 +1,7 @@
 @extends('layout')
 @section('title',$order->number)
 @section('content')
+@if(str_starts_with($order->number,'ZOT-DEMO-'))<div class="notice">SIMULATED / TEST ORDER · For demonstration. No real money or physical delivery is represented by this record.</div>@endif
 <div class="page-heading"><span class="eyebrow">ORDER DETAILS</span><h1>{{ $order->number }}</h1><span class="badge {{ $order->customerDeliveryBadgeClass() }}">{{ $order->payment_status==='paid' && $order->status!=='cancelled' ? $order->customerDeliveryLabel() : ucfirst(str_replace('_',' ',$order->status)) }}</span></div>
 <div class="checkout-grid"><div class="panel"><h2>Your order</h2><div class="table-scroll"><table @if(in_array(auth()->user()?->role,['staff','admin'])) data-sortable @endif><thead><tr><th data-sort-type="text">Product</th><th data-sort-type="number">Quantity</th><th data-sort-type="number">Amount</th></tr></thead><tbody>@foreach($order->items as $item)<tr data-sort-row><td data-sort-value="{{ $item->name }}">{{ $item->name }}<small>{{ $item->size }} / {{ $item->color }}</small></td><td data-sort-value="{{ $item->quantity }}">{{ $item->quantity }}</td><td data-sort-value="{{ $item->total }}">₱{{ number_format($item->total/100,2) }}</td></tr>@endforeach</tbody></table></div>
 <h3>Contact & delivery</h3><p>{{ $order->recipient }} · {{ $order->phone }}</p><p>{{ $order->address }}</p><p>{{ $order->delivery_method==='pickup'?'Store pickup':'Lalamove delivery' }}</p>
@@ -29,6 +30,7 @@
 @if($order->status==='delivery_booking' && !$order->delivery_id)<div class="notice">The delivery booking response is uncertain. Check the original booking in Lalamove before requesting another courier.</div><form class="stack" action="{{ route('admin.orders.delivery.recover',$order) }}" method="post">@csrf<label>Lalamove delivery ID<input name="delivery_id" required maxlength="100" pattern="[A-Za-z0-9_-]+"></label><button class="button">Verify and recover delivery</button></form>@endif
 @endif</aside></div>
 @include('partials.invoice-payments')
+@include('admin.partials.lalamove-demo-note')
 @include('admin.partials.invoice-reminders')
 @include('admin.partials.ready-notification')
 @if(!$order->user_id && auth()->user()->role!=='customer')

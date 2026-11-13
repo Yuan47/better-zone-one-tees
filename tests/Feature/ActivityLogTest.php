@@ -52,7 +52,7 @@ class ActivityLogTest extends TestCase
         $this->assertDatabaseHas('activity_logs', ['action' => 'auth.login', 'actor_id' => $staff->id, 'actor_name' => 'Staff Member', 'actor_role' => 'staff']);
         $this->post('/logout')->assertRedirect('/admin/login');
         $this->assertDatabaseHas('activity_logs', ['action' => 'auth.logout', 'actor_id' => $staff->id, 'actor_name' => 'Staff Member', 'actor_role' => 'staff']);
-        $this->post('/register', ['name' => 'New Customer', 'username' => 'new_customer', 'email' => 'newcustomer@example.com', 'password' => 'RegisterPassword!2026', 'password_confirmation' => 'RegisterPassword!2026'])
+        $this->post('/register', ['terms' => '1', 'name' => 'New Customer', 'username' => 'new_customer', 'email' => 'newcustomer@example.com', 'password' => 'RegisterPassword!2026', 'password_confirmation' => 'RegisterPassword!2026'])
             ->assertRedirect('/');
         $customer = User::where('email', 'newcustomer@example.com')->firstOrFail();
         $this->assertDatabaseHas('activity_logs', ['action' => 'auth.registered', 'actor_id' => $customer->id, 'actor_name' => 'New Customer', 'actor_role' => 'customer']);
@@ -120,7 +120,7 @@ class ActivityLogTest extends TestCase
             $mock->shouldReceive('ready')->andReturn(true);
             $mock->shouldReceive('create')->once()->andThrow(new \RuntimeException('Provider timeout'));
         });
-        $details = ['recipient' => 'Buyer', 'phone' => '09123456789', 'delivery_method' => 'pickup'];
+        $details = ['recipient' => 'Buyer', 'phone' => '09123456789', 'delivery_method' => 'pickup', 'terms' => '1'];
         $this->actingAs($user)->withSession(['cart' => [$variant->id => 2]])->post('/checkout', $details)->assertRedirect();
         $order = Order::sole();
         $this->assertDatabaseHas('activity_logs', ['action' => 'order.created', 'actor_id' => $user->id, 'target_type' => 'order', 'target_id' => $order->id]);

@@ -254,6 +254,7 @@ class StaffAccountTest extends TestCase
         return [
             [['name' => ''], 'name'], [['name' => str_repeat('n', 101)], 'name'], [['name' => ['bad']], 'name'],
             [['email' => 'invalid'], 'email'], [['email' => "hello@example.test\r\nBcc: bad@example.test"], 'email'],
+            [['email' => 'staff@gmial.com'], 'email'], [['email' => 'staff@yaho.com'], 'email'],
             [['email' => ['bad']], 'email'], [['password' => 'short', 'password_confirmation' => 'short'], 'password'],
             [['password_confirmation' => 'DoesNotMatch!2026'], 'password'],
             [['password' => str_repeat('a', 73), 'password_confirmation' => str_repeat('a', 73)], 'password'],

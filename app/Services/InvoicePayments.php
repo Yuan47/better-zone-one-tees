@@ -23,7 +23,6 @@ class InvoicePayments
             $this->fail('PayMongo checkout is not configured. No payment was started.');
         }
         $attempt = DB::transaction(function () use ($order, $amount, $actor, $requestKey) {
-            $this->creditCheck($order, $amount);
             $locked = Order::whereKey($order->id)->lockForUpdate()->firstOrFail();
             if ($old = $this->replay($locked, $requestKey, 'paymongo', $amount)) {
                 return $old;
@@ -69,7 +68,6 @@ class InvoicePayments
         }
 
         return DB::transaction(function () use ($order, $amount, $actor, $reason, $requestKey) {
-            $this->creditCheck($order, $amount);
             $locked = Order::whereKey($order->id)->lockForUpdate()->firstOrFail();
             if ($old = $this->replay($locked, $requestKey, 'cash', $amount)) {
                 return $old;
@@ -112,36 +110,14 @@ class InvoicePayments
         if ($order->inventory_released || $order->status === 'cancelled' || $order->outstandingBalance() === 0) {
             $this->fail('This invoice is closed or already paid.');
         }
-        if ($amount < 100 || $amount > $order->outstandingBalance()) {
-            $this->fail('Payment must be at least ₱1.00 and cannot exceed the remaining balance.');
+        if ($amount < 100 || $amount !== $order->outstandingBalance()) {
+            $this->fail('Pay the full outstanding invoice balance. Partial payments are no longer available.');
         }
         // Credit checks may have opened a repeatable-read snapshot before this
         // invoice lock. Current reads must see a checkout another request saved.
         if ($order->payments()->whereIn('status', PaymentAttempt::ACTIVE)->lockForUpdate()->first()
             || (! $order->payments()->lockForUpdate()->first() && $order->checkout_session_id)) {
             $this->fail('Check or close the existing online checkout before recording another payment. An uncertain checkout cannot be replaced.');
-        }
-        if ($amount < $order->outstandingBalance()) {
-            app(InvoiceTerms::class)->validatePartialPayment($order, $amount);
-            $order->update(['payment_plan' => 'partial']);
-            if (! $order->due_at) {
-                $due = $order->created_at->copy()->addDays(app(InvoiceTerms::class)->days());
-                if ($due->isPast()) {
-                    $this->fail('The original payment deadline has passed. The owner must log an agreed deadline before offering installments.');
-                }
-                $order->update(['payment_plan' => 'partial', 'due_at' => $due, 'original_due_at' => $due]);
-            }
-            if (! $order->credit_phone_hash) {
-                $order->update(['credit_phone_hash' => InstallmentCredit::phoneHash($order->phone)]);
-            }
-        }
-    }
-
-    private function creditCheck(Order $order, int $amount): void
-    {
-        $current = $order->fresh();
-        if ($current->payment_plan !== 'partial' && $amount > 0 && $amount < $current->outstandingBalance()) {
-            app(InstallmentCredit::class)->assertAvailable($current->user_id, $current->phone, $current->id);
         }
     }
 

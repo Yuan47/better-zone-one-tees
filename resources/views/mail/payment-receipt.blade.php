@@ -11,7 +11,7 @@
 <dt>Payment received</dt><dd style="margin:0 0 12px">{{ $notification->received_at->copy()->setTimezone('Asia/Manila')->format('F j, Y · g:i A') }} (Asia/Manila)</dd>
 <dt>Original invoice total</dt><dd style="margin:0 0 12px">₱{{ number_format($order->total/100,2) }}</dd>
 <dt>Balance after this payment</dt><dd style="margin:0 0 12px">₱{{ number_format($notification->balance_after/100,2) }}</dd></dl>
-<p>Each installment has its own receipt reference on the same original invoice. Receiving another payment does not extend its recorded deadline.</p>
+<p>Each confirmed payment has its own receipt reference linked to the original invoice. New orders require full payment.@if($order->due_at) This older invoice keeps its recorded balance deadline.@endif</p>
 <p>This is a store-issued payment acknowledgment. It is separate from PayMongo’s email and any tax invoice. Later payments, refunds and the latest invoice status remain available on your account or authorized invoice page.</p>
 <p><a href="{{ $invoiceUrl }}" style="display:inline-block;background:#941B0C;color:#ffffff;padding:12px 20px;border-radius:6px;text-decoration:none">View your invoice and payment history</a></p>
 <p>Thank you,<br>Zone One Tees</p>

@@ -362,7 +362,8 @@ class ReportsTest extends TestCase
         $this->assertSame(8, (int) $best[0]->units);
         $this->assertSame(40000, $response->viewData('salesChart')['total']);
         $this->get('/admin?period=monthly')->assertOk()->assertViewHas('revenue', 229000)->assertViewHas('ordersCount', 4)
-            ->assertSee('All-time units sold');
+            ->assertSee('Top 5 most bought items')->assertSee('Last 4 months');
+        $this->assertSame([199, 8], array_column($response->viewData('orderCharts')['series'], 'total'));
         $this->travelBack();
     }
 
@@ -401,7 +402,7 @@ class ReportsTest extends TestCase
         $this->assertCount(11, $report->chart('yearly', '2016-10-12', '2026-10-12')['rows']);
         $this->actingAs($this->user('admin'))->get('/admin?start_date=2026-10-01&end_date=2026-10-01')->assertOk()
             ->assertViewHas('revenue', 0)->assertViewHas('ordersCount', 0)
-            ->assertSee('No verified paid orders in this period yet.')->assertSee('No sales in selected dates')
+            ->assertSee('No verified paid orders in this period yet.')->assertSee('The top items will appear when fully paid orders are recorded in these four months.')
             ->assertDontSee('NaN')->assertDontSee('INF');
         $single = $report->chart('daily', '2026-10-01', '2026-10-01');
         $this->assertSame([0], array_column($single['rows'], 'amount'));

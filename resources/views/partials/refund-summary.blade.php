@@ -13,5 +13,5 @@
 @endif
 <p class="muted">A request or approval does not confirm that money has been returned. Online refunds require PayMongo verification; cash returns are recorded by the owner after handing back the money.</p>
 @if($order->payment_plan==='partial' || $order->payments->where('status','paid')->count()>1)
-<p class="mini-note">Installment refunds are processed against each payment receipt. After the current request is completed, you can request a review of any remaining paid amount. The store owner reviews each request.</p>
+<p class="mini-note">Refunds for this older invoice are checked against its original payment receipts. After the current request is completed, you can request a review of any remaining eligible paid amount. The store owner reviews each request.</p>
 @endif

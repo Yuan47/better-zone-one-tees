@@ -20,11 +20,11 @@ class StoreKnowledge
 
     public const QUANTITY_PRICING = 'Total pieces across the cart: 1–5 Retail/SRP, 6–50 Wholesale, 51–100 Re-seller, 101+ Bulk with 5% off the Re-seller clothing subtotal. Delivery is separate.';
 
-    public const PAYMENT_HELP = 'Online payments use PayMongo hosted checkout and require a verified PayMongo payment notification or provider reconciliation. Returning from checkout or a payment screenshot does not confirm payment. Partial payments are available only above ₱1,000 in discounted clothing, with a 7–30 day original deadline. A new first payment must cover at least 50% of the original invoice total including delivery, rounded up to the next centavo. Invoices with money already received keep their existing payments; later payments may be at least ₱1 up to the remaining balance. Every payment reduces the same invoice balance without moving its deadline; packing waits for full payment. Walk-in cash is recorded as received by staff. Fully paid walk-in sales are Delivered automatically; online orders still require customer receipt confirmation and a rating; a written review is optional.';
+    public const PAYMENT_HELP = 'New orders require full payment. Partial payments, installments and deposits are no longer offered. Online payments use PayMongo hosted checkout and require a verified PayMongo payment notification or provider reconciliation. Returning from checkout or a payment screenshot does not confirm payment. Review the clothing and delivery fee before paying. Existing invoices keep their original received payments and history; any remaining balance must be settled in full on that same invoice. Check a pending or uncertain payment before trying again. Packing waits for full payment. Walk-in cash is recorded as received by staff. Fully paid walk-in sales are Delivered automatically; online orders require customer receipt confirmation and a star rating. A written review is optional.';
 
     public const SIZE_HELP = 'Open a product to see its Size / Width (in.) / Length (in.) table. Sample reference charts are labeled; blank measurements need store confirmation. Reference-only sizes are not necessarily available to order.';
 
-    public const TRACK_HELP = 'Sign in and open My orders to see your order status, or share your full order number (ZOT-…). Customers can only access their own orders.';
+    public const TRACK_HELP = 'Sign in and open My Purchases to see your order status, or share your full order number (ZOT-…). Customers can only access their own orders.';
 
     public const REFUND_PHOTO_HELP = 'A new refund or return request requires a clear supporting photo of the clothing or issue, together with your reason. Upload a JPG, JPEG, PNG or WebP image up to 3 MB and no more than 6000 pixels on either side through the original fully paid, Delivered order or private guest invoice. The photo is private evidence for store review; it is not published in product reviews. A photo does not guarantee approval or prove that money has been returned. The owner still inspects the returned clothing and reviews eligibility. Never upload passwords, payment-card details, or verification codes.';
 
@@ -143,7 +143,7 @@ class StoreKnowledge
     {
         $message = $this->normalize($message);
         $matches = [];
-        foreach ($products as $product) {
+        foreach ($products->where('active', true)->whereNull('archived_at') as $product) {
             foreach ($this->productAliases($product) as $alias) {
                 if (preg_match_all('/(?<![\pL\pN])'.preg_quote($alias, '/').'(?![\pL\pN])/u', $message, $found, PREG_OFFSET_CAPTURE)) {
                     foreach ($found[0] as [$text, $offset]) {
@@ -172,11 +172,14 @@ class StoreKnowledge
             return 'Please specify one product name, one size, and one color so I can check its exact price and stock. Use the name shown on the product page.';
         }
         $product = $matches->first();
+        if (! $product->active || $product->archived_at) {
+            return 'This product is currently unavailable. Choose a product shown in the store catalog.';
+        }
         [$sizes, $colors] = $this->requestedOptions($message, $product);
         if (count($sizes) !== 1 || count($colors) !== 1 || preg_match('/\bor\b/i', $message)) {
             return $product->name.': please specify one size and one color from its product page. Prices and availability depend on that exact combination. '.self::QUANTITY_PRICING;
         }
-        $variant = $product->variants->first(fn ($variant) => strcasecmp($variant->size, $sizes[0]) === 0 && strcasecmp($variant->color, $colors[0]) === 0);
+        $variant = $product->variants->whereNull('archived_at')->first(fn ($variant) => strcasecmp($variant->size, $sizes[0]) === 0 && strcasecmp($variant->color, $colors[0]) === 0);
         $label = $product->name.' · '.$sizes[0].' / '.$colors[0];
         if (! $variant) {
             return $label.' is not an offered variant. Choose a size and color listed on its product page. Size chart references do not establish availability.';
@@ -202,9 +205,9 @@ class StoreKnowledge
     {
         $selected = $matches->isNotEmpty() ? $matches : $products->sortByDesc(fn ($product) => count(array_intersect($this->words($this->normalize($message)), $this->words($this->normalize($product->name)))));
 
-        return $selected->take(3)->map(function ($product) use ($message) {
+        return $selected->where('active', true)->whereNull('archived_at')->take(3)->map(function ($product) use ($message) {
             [$sizes, $colors] = $this->requestedOptions($message, $product);
-            $variants = $product->variants->filter(fn ($variant) => ($sizes === [] || in_array($variant->size, $sizes, true)) && ($colors === [] || in_array($variant->color, $colors, true)));
+            $variants = $product->variants->whereNull('archived_at')->filter(fn ($variant) => ($sizes === [] || in_array($variant->size, $sizes, true)) && ($colors === [] || in_array($variant->color, $colors, true)));
 
             return [
                 'name' => $product->name, 'size_chart' => $product->size_chart, 'size_chart_note' => $product->size_chart_note,
@@ -240,7 +243,7 @@ class StoreKnowledge
 
     private function requestedOptions(string $message, Product $product): array
     {
-        $knownSizes = $product->variants->pluck('size')->merge(collect($product->size_chart)->pluck('size'))
+        $knownSizes = $product->variants->whereNull('archived_at')->pluck('size')->merge(collect($product->size_chart)->pluck('size'))
             ->merge(['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL'])->unique()->all();
         $sizes = [];
         foreach ($knownSizes as $size) {
@@ -252,7 +255,7 @@ class StoreKnowledge
         }
         $colors = [];
         $remaining = ' '.$this->normalize($message).' ';
-        foreach ($product->variants->pluck('color')->push('White')->unique()->sortByDesc(fn ($color) => strlen($color)) as $color) {
+        foreach ($product->variants->whereNull('archived_at')->pluck('color')->push('White')->unique()->sortByDesc(fn ($color) => strlen($color)) as $color) {
             $phrase = ' '.$this->normalize($color).' ';
             if (str_contains($remaining, $phrase)) {
                 $colors[] = $color;

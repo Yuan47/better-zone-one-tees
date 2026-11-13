@@ -70,9 +70,11 @@ class BrevoDisplayNameTest extends TestCase
             $product = Product::create(['name' => 'Display name fixture', 'slug' => 'display-name-fixture', 'category' => '', 'description' => 'Isolated mail fixture']);
             $variant = $product->variants()->create(['sku' => 'DISPLAY-NAME-WHITE-M', 'size' => 'M', 'color' => 'White', 'stock' => 10,
                 'retail_price' => 25000, 'wholesale_price' => 20000, 'reseller_price' => 18000]);
-            app(OrderFlow::class)->reserve([$variant->id => 5], ['recipient' => 'Reminder buyer', 'phone' => '09123456789',
-                'address' => 'Store pickup', 'delivery_method' => 'pickup', 'shipping' => 0, 'payment_plan' => 'partial',
-                'due_at' => now()->addDays(3)->setTime(23, 59)], $user->id);
+            $order = app(OrderFlow::class)->reserve([$variant->id => 5], ['recipient' => 'Reminder buyer', 'phone' => '09123456789',
+                'address' => 'Store pickup', 'delivery_method' => 'pickup', 'shipping' => 0], $user->id);
+            // Existing legacy invoices retain their original reminder deadline.
+            $order->update(['payment_plan' => 'partial', 'due_at' => now()->addDays(3)->setTime(23, 59),
+                'original_due_at' => now()->addDays(3)->setTime(23, 59)]);
             $this->assertSame(1, app(InvoiceReminders::class)->run()['sent']);
         }
 

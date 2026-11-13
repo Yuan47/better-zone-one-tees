@@ -43,7 +43,7 @@ class DeliveryRecoveryController extends Controller
         $notice = match (true) {
             $result['status'] === 'ready' => 'Lalamove confirmed that the previous delivery ended. Its history was saved and the order is ready for a new booking.',
             $result['status'] === 'completed' => 'The customer has already confirmed receipt and submitted a rating.',
-            $result['provider_status'] === 'COMPLETED' => 'Lalamove reported the delivery complete. The order stays With courier until the customer confirms receipt and chooses a rating. A written review is optional.',
+            $result['provider_status'] === 'COMPLETED' => 'Lalamove reported the delivery complete. The order stays To Ship until the customer confirms receipt and chooses a rating. A written review is optional.',
             default => 'Lalamove confirmed the existing delivery. It remains attached to this order.',
         };
 

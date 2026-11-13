@@ -2,6 +2,7 @@
 @section('title', 'Sales & Growth Forecast')
 @section('crumb', 'Sales & Growth Forecast')
 @section('content')
+<div class="forecast-workspace">
 <style>
     .forecast-chart-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;margin:26px 0 30px}
     .forecast-chart-card{min-width:0;margin:0;padding:24px 20px;background:#fff;border:1px solid var(--border);border-radius:12px}
@@ -35,7 +36,7 @@
         $tickStep = ceil($rawStep / $stepMagnitude) * $stepMagnitude;
         $axisMin = floor(min($scaleValues) / $tickStep) * $tickStep;
         $axisMax = max($axisMin + $tickStep, ceil(max($scaleValues) / $tickStep) * $tickStep);
-        $plotLeft = 92; $plotRight = 526; $plotTop = 34; $plotBottom = 244;
+        $plotLeft = 110; $plotRight = 510; $plotTop = 34; $plotBottom = 244;
         $chartX = static fn ($i) => round($plotLeft + ($plotRight - $plotLeft) * $i / max(1, $historyCount), 2);
         $chartY = static fn ($value) => round($plotBottom - ($value - $axisMin) / ($axisMax - $axisMin) * ($plotBottom - $plotTop), 2);
         $actualPoints = [];
@@ -71,7 +72,7 @@
                     <text class="forecast-axis-title" x="{{ $plotLeft }}" y="17">Confirmed clothing sale (₱)</text>
                     @for($tick = $axisMin; $tick <= $axisMax; $tick += $tickStep)
                     <line x1="{{ $plotLeft }}" y1="{{ $chartY($tick) }}" x2="548" y2="{{ $chartY($tick) }}" stroke="#eadfd7" />
-                    <text x="{{ $plotLeft - 10 }}" y="{{ $chartY($tick) + 4 }}" text-anchor="end">₱{{ number_format($tick / 100, 0) }}</text>
+                    <text x="{{ $plotLeft - 10 }}" y="{{ $chartY($tick) + 4 }}" text-anchor="end">₱{{ number_format($tick / 100, 2) }}</text>
                     @endfor
                     <line x1="{{ $targetBoundary }}" y1="{{ $plotTop }}" x2="{{ $targetBoundary }}" y2="{{ $plotBottom }}" stroke="#d7b675" stroke-dasharray="4 5" />
                     @if($historyCount > 1)<polyline points="{{ implode(' ', $actualPoints) }}" fill="none" stroke="#941b0c" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />@endif
@@ -153,7 +154,7 @@
     <p class="muted">Historical units combine all sizes and colors for each product across its own completed months, up to 6 months. Product history starts in the month it was added, or an earlier verified paid-sale month for imported history. Months before that are excluded. Products without any completed-month paid sales need sales history before demand can be estimated.</p>
     <p class="muted">Click a table heading to sort Highest to Lowest, Lowest to Highest, then Default. Names use A to Z / Z to A; dates use newest / oldest. Sorting changes only the table display; chart dates and calculations stay in time order.</p>
     <div class="table-scroll"><table data-sortable><thead><tr><th data-sort-type="text">Product</th><th data-sort-type="number">Historical units</th><th data-sort-type="number">Growth forecast</th><th data-sort-type="number">Regression forecast</th><th data-sort-type="number">Available</th><th data-sort-type="number">Suggested reorder</th></tr></thead><tbody>
-        @forelse($forecasts as $row)<tr data-sort-row><td data-sort-value="{{ $row['name'] }}">{{ $row['name'] }}<small>{{ count($row['months']) }} completed {{ count($row['months']) === 1 ? 'month' : 'months' }}</small>@if(count($row['months']))<small>{{ $row['months'][0] }} to {{ $row['months'][count($row['months']) - 1] }}</small>@endif</td><td data-sort-value="{{ $row['sold'] }}">{{ $row['sold'] }}</td><td data-sort-value="{{ $row['growth']['prediction'] === null ? '' : ceil($row['growth']['prediction']) }}">{{ $row['growth']['prediction'] === null ? 'Needs history' : ceil($row['growth']['prediction']).' pcs' }}<small>{{ $row['growth']['rate'] === null ? '' : number_format($row['growth']['rate'] * 100, 1).'% growth' }}</small></td><td data-sort-value="{{ $row['forecast'] ?? '' }}">{{ $row['forecast'] === null ? 'Needs history' : $row['forecast'].' pcs' }}</td><td data-sort-value="{{ $row['available'] }}">{{ $row['available'] }}</td><td data-sort-value="{{ $row['reorder'] ?? '' }}">{{ $row['reorder'] ?? '—' }}</td></tr>
+        @forelse($forecasts as $row)<tr data-sort-row><td data-sort-value="{{ $row['name'] }}">{{ $row['name'] }}<small>{{ count($row['months']) }} completed {{ count($row['months']) === 1 ? 'month' : 'months' }}</small>@if(count($row['months']))<small>{{ $row['months'][0] }} to {{ $row['months'][count($row['months']) - 1] }}</small>@endif</td><td data-sort-value="{{ $row['sold'] }}">{{ $row['sold'] }}</td><td data-sort-value="{{ $row['growth']['prediction'] === null ? '' : ceil($row['growth']['prediction']) }}">{{ $row['growth']['prediction'] === null ? 'Needs history' : ceil($row['growth']['prediction']).' pcs' }}<small>{{ $row['growth']['rate'] === null ? '' : number_format($row['growth']['rate'] * 100, 2).'% growth' }}</small></td><td data-sort-value="{{ $row['forecast'] ?? '' }}">{{ $row['forecast'] === null ? 'Needs history' : $row['forecast'].' pcs' }}</td><td data-sort-value="{{ $row['available'] }}">{{ $row['available'] }}</td><td data-sort-value="{{ $row['reorder'] ?? '' }}">{{ $row['reorder'] ?? '—' }}</td></tr>
         @empty<tr><td colspan="6">Add active products to see demand estimates.</td></tr>@endforelse
     </tbody></table></div>
     @foreach($forecasts as $row)
@@ -170,4 +171,5 @@
     <details class="forecast-details"><summary>What do intercept, slope, and suggested reorder mean?</summary><p><b>Intercept (a)</b> anchors the fitted line at month 0; it is not a recorded sale. <b>Slope (b)</b> is the estimated change in sales for each additional month, expressed in pesos for the sales forecast.</p><p><b>Suggested reorder</b> = max(0, rounded-up regression demand − available stock). Available stock accounts for quantities held by pending orders. This compares the full target month with stock currently available; it does not account for this month’s sales, supplier lead times, incoming purchases, safety stock, or individual size and color needs.</p></details>
     <p class="muted">Negative regression estimates display as zero demand. Delivery charges are excluded from forecast sales.</p>
 </section>
+</div>
 @endsection

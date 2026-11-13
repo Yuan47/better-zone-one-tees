@@ -14,11 +14,10 @@ class OrderFlow
 {
     public function reserve(array $cart, array $details, ?int $userId): Order
     {
+        if (($details['payment_plan'] ?? 'full') !== 'full') {
+            throw ValidationException::withMessages(['payment_plan' => 'New orders require full payment.']);
+        }
         return DB::transaction(function () use ($cart, $details, $userId) {
-            if (($details['payment_plan'] ?? 'full') === 'partial') {
-                app(InstallmentCredit::class)->assertAvailable($userId, $details['phone'] ?? null);
-                $details['credit_phone_hash'] = InstallmentCredit::phoneHash($details['phone'] ?? null);
-            }
             // Stable locking order prevents overselling and limits deadlocks.
             $variants = Variant::whereIn('id', array_keys($cart))->orderBy('id')->lockForUpdate()->get();
             $price = app(Pricing::class)->cart($cart);
@@ -26,14 +25,13 @@ class OrderFlow
                 throw ValidationException::withMessages(['cart' => 'Your cart is empty.']);
             }
             foreach ($variants as $variant) {
-                if (! $variant->product->active || $variant->available() < $cart[$variant->id]) {
+                if (! $variant->product->active || $variant->product->archived_at || $variant->archived_at || $variant->available() < $cart[$variant->id]) {
                     throw ValidationException::withMessages(['cart' => $variant->product->name.' has insufficient available stock.']);
                 }
             }
-            $details = array_intersect_key($details, array_flip(['recipient', 'phone', 'address', 'delivery_method', 'lat', 'lng', 'delivery_quote', 'street_address', 'city', 'province', 'postal_code', 'country', 'shipping', 'sales_channel', 'payment_plan', 'due_at', 'creation_key', 'created_by', 'contact_email', 'credit_phone_hash']));
-            if (($details['payment_plan'] ?? 'full') === 'partial' && empty($details['due_at'])) {
-                $details['due_at'] = now()->addDays(app(InvoiceTerms::class)->days());
-            }
+            $details = array_intersect_key($details, array_flip(['recipient', 'phone', 'address', 'delivery_method', 'lat', 'lng', 'delivery_quote', 'street_address', 'city', 'province', 'postal_code', 'country', 'shipping', 'sales_channel', 'payment_plan', 'due_at', 'creation_key', 'created_by', 'contact_email', 'credit_phone_hash', 'terms_accepted_at', 'terms_version']));
+            $details['payment_plan'] = 'full';
+            $details['due_at'] = null;
             $details['original_due_at'] = $details['due_at'] ?? null;
             $order = Order::create(array_merge($details, ['number' => 'ZOT-'.now()->format('ymd').'-'.strtoupper(Str::random(8)), 'user_id' => $userId,
                 'tier' => $price['tier'], 'quantity' => $price['quantity'], 'subtotal' => $price['subtotal'], 'merchandise_base' => $price['base'], 'discount' => $price['discount'], 'total' => $price['subtotal'] + $details['shipping']]));

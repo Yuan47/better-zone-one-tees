@@ -40,9 +40,11 @@ class PaymentReceiptNotificationTest extends TestCase
         $variant = $product->variants()->create(['sku' => 'RECEIPT-'.Str::uuid(), 'size' => 'M', 'color' => 'White', 'stock' => 20,
             'retail_price' => 10000, 'wholesale_price' => 9000, 'reseller_price' => 8000]);
 
-        return app(OrderFlow::class)->reserve([$variant->id => 12], ['recipient' => 'Receipt buyer', 'phone' => '0912'.str_pad((string) $buyer->id, 7, '0', STR_PAD_LEFT),
-            'address' => 'Store pickup', 'delivery_method' => 'pickup', 'shipping' => 0, 'payment_plan' => 'partial',
-            'due_at' => now()->addDays(14)], $buyer->id)->fresh();
+        $order = app(OrderFlow::class)->reserve([$variant->id => 12], ['recipient' => 'Receipt buyer', 'phone' => '0912'.str_pad((string) $buyer->id, 7, '0', STR_PAD_LEFT),
+            'address' => 'Store pickup', 'delivery_method' => 'pickup', 'shipping' => 0], $buyer->id);
+        $order->update(['payment_plan' => 'partial', 'due_at' => now()->addDays(14), 'original_due_at' => now()->addDays(14)]);
+
+        return $order->fresh();
     }
 
     private function paid(Order $order, int $amount): PaymentAttempt

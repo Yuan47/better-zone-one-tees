@@ -7,10 +7,8 @@ use App\Models\User;
 use App\Models\Variant;
 use App\Services\ActivityRecorder;
 use App\Services\InvoicePayments;
-use App\Services\InvoiceTerms;
 use App\Services\OrderFlow;
 use App\Services\PayMongo;
-use Carbon\CarbonImmutable;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -23,7 +21,7 @@ class WalkInController extends Controller
     public function create(Request $request, PayMongo $pay)
     {
         $this->authorizeStaff($request);
-        $variants = Variant::with('product')->whereHas('product', fn ($query) => $query->where('active', true))
+        $variants = Variant::sellable()->with('product')
             ->orderBy('product_id')->orderBy('id')->get();
         $choices = $variants->map(fn ($variant) => ['id' => $variant->id,
             'label' => $variant->product->name.' · '.$variant->color.' · '.$variant->size,
@@ -32,7 +30,7 @@ class WalkInController extends Controller
         $customers = User::where('role', 'customer')->orderBy('name')->get(['id', 'name']);
 
         return view('admin.walk-in', ['variants' => $choices, 'customers' => $customers, 'payReady' => $pay->ready(),
-            'requestKey' => (string) Str::uuid(), 'minimumSubtotal' => app(InvoiceTerms::class)->minimumSubtotal()]);
+            'requestKey' => (string) Str::uuid()]);
     }
 
     public function store(Request $request, OrderFlow $flow, InvoicePayments $payments, PayMongo $pay)
@@ -46,25 +44,24 @@ class WalkInController extends Controller
             'customer_type' => 'required|in:guest,registered',
             'customer_id' => ['exclude_unless:customer_type,registered', 'required', 'integer', Rule::exists('users', 'id')->where('role', 'customer')],
             'recipient' => 'required_if:customer_type,guest|nullable|string|max:100',
-            'phone' => ['nullable', 'regex:/^\+?[0-9]{10,15}$/D'],
-            'contact_email' => 'nullable|email|max:254',
+            'phone' => ['nullable', new \App\Rules\PhilippineMobileNumber],
+            'contact_email' => ['nullable', 'email:rfc', 'max:254', new \App\Rules\EmailProviderAddress],
             'lines' => 'required|array|min:1|max:100', 'lines.*.variant_id' => 'required|integer|exists:variants,id',
             'lines.*.quantity' => 'required|integer|min:1|max:10000',
-            'payment_option' => 'required|in:full_cash,full_paymongo,partial_cash,partial_paymongo',
-            'amount' => ['exclude_unless:payment_option,partial_cash,partial_paymongo', 'required', 'regex:/^\d{1,8}(?:\.\d{1,2})?$/D', 'numeric', 'min:1'],
-            'due_at' => 'exclude_unless:payment_option,partial_cash,partial_paymongo|required|date_format:Y-m-d|after_or_equal:'.now()->addDays(7)->toDateString().'|before_or_equal:'.now()->addDays(30)->toDateString(),
-            'reason' => 'required_if:payment_option,full_cash,partial_cash|nullable|string|min:10|max:1000',
-            'payment_received' => 'exclude_unless:payment_option,full_cash,partial_cash|required|accepted',
+            'payment_option' => 'required|in:full_cash,full_paymongo',
+            'amount' => 'prohibited',
+            'due_at' => 'prohibited',
+            'reason' => 'required_if:payment_option,full_cash|nullable|string|min:10|max:1000',
+            'payment_received' => 'exclude_unless:payment_option,full_cash|required|accepted',
         ]);
         $online = str_ends_with($data['payment_option'], '_paymongo');
-        $partial = str_starts_with($data['payment_option'], 'partial_');
         if ($online && ! $pay->ready()) {
             throw ValidationException::withMessages(['payment' => 'Online payments are unavailable. Use cash or ask the owner to connect PayMongo.']);
         }
         $customer = $data['customer_type'] === 'registered' ? User::where('role', 'customer')->findOrFail($data['customer_id']) : null;
-        $phone = $data['phone'] ?? $customer?->phone ?? '';
-        if ($online && ! preg_match('/^\+?[0-9]{10,15}$/D', $phone)) {
-            throw ValidationException::withMessages(['phone' => 'A valid phone number is required for PayMongo checkout.']);
+        $phone = $data['phone'] ?? \App\Rules\PhilippineMobileNumber::local($customer?->phone);
+        if ($online && preg_match('/^09[0-9]{9}$/D', $phone) !== 1) {
+            throw ValidationException::withMessages(['phone' => 'Enter an 11-digit Philippine mobile number beginning with 09 for PayMongo checkout.']);
         }
         $cart = [];
         foreach ($data['lines'] as $line) {
@@ -75,23 +72,16 @@ class WalkInController extends Controller
             }
         }
         try {
-            [$order, $created] = DB::transaction(function () use ($request, $flow, $payments, $data, $key, $customer, $phone, $cart, $partial, $online) {
+            [$order, $created] = DB::transaction(function () use ($request, $flow, $payments, $data, $key, $customer, $phone, $cart, $online) {
                 if ($existing = Order::where('creation_key', $key)->lockForUpdate()->first()) {
                     return [$existing, false];
                 }
                 $order = $flow->reserve($cart, ['creation_key' => $key, 'created_by' => $request->user()->id, 'sales_channel' => 'walk_in',
-                    'payment_plan' => $partial ? 'partial' : 'full', 'due_at' => $partial ? CarbonImmutable::parse($data['due_at'])->endOfDay() : null,
+                    'payment_plan' => 'full', 'due_at' => null,
                     'recipient' => $customer?->name ?? $data['recipient'], 'phone' => $phone, 'contact_email' => $customer?->email ?? ($data['contact_email'] ?? null),
                     'address' => 'Store pickup', 'delivery_method' => 'pickup', 'shipping' => 0], $customer?->id);
-                $amount = $partial ? InvoiceTerms::amount($data['amount']) : (int) $order->total;
-                if ($partial) {
-                    app(InvoiceTerms::class)->validatePartialPayment($order, $amount);
-                }
-                if ($partial && $amount >= $order->total) {
-                    throw ValidationException::withMessages(['amount' => 'A partial payment must be less than the invoice total. Choose full payment to pay the whole invoice.']);
-                }
                 if (! $online) {
-                    $payments->recordCash($order, $amount, $request->user(), $data['reason'], $key);
+                    $payments->recordCash($order, (int) $order->total, $request->user(), $data['reason'], $key);
                 }
 
                 return [$order->fresh(), true];
@@ -110,8 +100,7 @@ class WalkInController extends Controller
         ActivityRecorder::mark($request, 'order.created', $order, ['quantity' => $order->quantity, 'delivery_method' => 'pickup', 'status' => $order->status]);
         if ($online) {
             try {
-                $amount = $partial ? InvoiceTerms::amount($data['amount']) : (int) $order->total;
-                $attempt = $payments->start($order, $amount, $request->user(), $key);
+                $attempt = $payments->start($order, (int) $order->total, $request->user(), $key);
                 if (is_string($attempt->checkout_url) && str_starts_with($attempt->checkout_url, 'https://checkout.paymongo.com/')) {
                     return redirect()->away($attempt->checkout_url);
                 }

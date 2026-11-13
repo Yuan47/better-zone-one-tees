@@ -198,8 +198,11 @@ class SalesReport
 
     private function plot(array $rows): array
     {
-        $width = max(760, count($rows) * 44 + 130);
-        $maximum = max(100, ...array_column($rows, 'amount'));
+        $width = max(760, min(1200, count($rows) * 44 + 130));
+        $rawStep = max(25, max(100, ...array_column($rows, 'amount')) / 4);
+        $magnitude = 10 ** floor(log10($rawStep));
+        $tickStep = ceil($rawStep / $magnitude) * $magnitude;
+        $maximum = $tickStep * 4;
         $points = [];
         foreach ($rows as $i => $row) {
             $x = count($rows) === 1 ? $width / 2 : 100 + $i * ($width - 125) / (count($rows) - 1);
@@ -210,8 +213,14 @@ class SalesReport
             $ticks[] = ['y' => 210 - $i * 45, 'amount' => (int) round($maximum * $i / 4)];
         }
 
+        $labelStep = max(1, (int) ceil((count($rows) - 1) / 10));
+        $labelIndices = range(0, count($rows) - 1, $labelStep);
+        $labelIndices[] = count($rows) - 1;
+        $line = implode(' ', array_map(fn ($point) => $point['x'].','.$point['y'], $points));
+
         return ['width' => $width, 'height' => 260, 'points' => $points, 'ticks' => $ticks,
-            'line' => implode(' ', array_map(fn ($point) => $point['x'].','.$point['y'], $points))];
+            'line' => $line, 'area' => '100,210 '.$line.' '.($width - 25).',210',
+            'label_indices' => array_values(array_unique($labelIndices))];
     }
 
     private function key(CarbonImmutable $date, string $period): string

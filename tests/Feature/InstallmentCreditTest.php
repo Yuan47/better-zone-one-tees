@@ -71,7 +71,7 @@ class InstallmentCreditTest extends TestCase
     private function checkout(array $extra = []): array
     {
         return $extra + ['recipient' => 'Credit Customer', 'phone' => '09123456789', 'delivery_method' => 'pickup',
-            'payment_option' => 'partial', 'payment_amount' => '600.00', 'payment_days' => 7];
+            'payment_option' => 'full', 'terms' => '1'];
     }
 
     private function provider(): void
@@ -232,7 +232,7 @@ class InstallmentCreditTest extends TestCase
         $old = $this->invoice($customer);
         $variant = $this->variant();
         $this->actingAs($customer)->withSession(['cart' => [$variant->id => 2], 'pending_order' => null])
-            ->post('/checkout', $this->checkout())->assertSessionHasErrors('payment_option');
+            ->post('/checkout', $this->checkout(['payment_option' => 'partial', 'payment_amount' => '600.00', 'payment_days' => 7]))->assertSessionHasErrors('payment_option');
         $this->assertSame([$old->id], Order::pluck('id')->all());
         $this->assertDatabaseCount('payment_attempts', 0);
         $this->assertSame(0, $variant->fresh()->reserved);
@@ -255,7 +255,7 @@ class InstallmentCreditTest extends TestCase
         Http::assertSentCount(1);
     }
 
-    public function test_settling_the_existing_invoice_restores_partial_checkout_eligibility(): void
+    public function test_settling_a_legacy_invoice_does_not_restore_the_removed_partial_checkout_option(): void
     {
         $customer = $this->customer();
         $old = $this->invoice($customer);
@@ -263,29 +263,35 @@ class InstallmentCreditTest extends TestCase
         $variant = $this->variant();
         $this->provider();
         $this->actingAs($customer)->withSession(['cart' => [$variant->id => 2], 'pending_order' => null])
-            ->post('/checkout', $this->checkout())->assertSessionHasNoErrors()->assertRedirect('https://checkout.paymongo.com/credit-test');
-        $new = Order::whereKeyNot($old->id)->sole();
-        $this->assertSame('partial', $new->payment_plan);
-        $this->assertSame(InstallmentCredit::phoneHash('09123456789'), $new->credit_phone_hash);
-        $this->assertSame(60000, $new->payments()->sole()->amount);
-        Http::assertSentCount(1);
+            ->post('/checkout', $this->checkout(['payment_option' => 'partial', 'payment_amount' => '600.00', 'payment_days' => 7]))
+            ->assertSessionHasErrors(['payment_option', 'payment_amount', 'payment_days']);
+        $this->assertSame([$old->id], Order::pluck('id')->all());
+        $this->assertDatabaseCount('payment_attempts', 0);
+        $this->assertSame(0, $variant->fresh()->reserved);
+        Http::assertNothingSent();
     }
 
-    public function test_existing_invoice_topups_are_allowed_but_another_full_invoice_cannot_be_converted_to_partial(): void
+    public function test_legacy_invoice_requires_full_settlement_and_another_full_invoice_cannot_be_converted_to_partial(): void
     {
         $customer = $this->customer();
         $old = $this->invoice($customer);
         $staff = User::factory()->create(['role' => 'staff']);
         $this->available($customer, $customer->phone, $old->id);
-        $receipt = app(InvoicePayments::class)->recordCash($old, 10000, $staff, 'Cash payment counted and received.', (string) Str::uuid());
+        try {
+            app(InvoicePayments::class)->recordCash($old, 10000, $staff, 'Cash payment counted and received.', (string) Str::uuid());
+            $this->fail('A new top-up must not be recorded.');
+        } catch (ValidationException $exception) {
+            $this->assertArrayHasKey('payment', $exception->errors());
+        }
+        $receipt = app(InvoicePayments::class)->recordCash($old, 95000, $staff, 'Cash payment counted and received.', (string) Str::uuid());
         $this->assertSame('paid', $receipt->status);
-        $this->assertSame(35000, $old->fresh()->amount_paid);
+        $this->assertSame(120000, $old->fresh()->amount_paid);
         $other = $this->invoice($customer, ['payment_plan' => 'full', 'payment_status' => 'pending', 'amount_paid' => 0]);
         try {
             app(InvoicePayments::class)->start($other, 60000, $customer, (string) Str::uuid());
             $this->fail('A second invoice cannot be converted to partial while the first is open.');
         } catch (ValidationException $exception) {
-            $this->assertArrayHasKey('payment_option', $exception->errors());
+            $this->assertArrayHasKey('payment', $exception->errors());
         }
         $this->assertSame('full', $other->fresh()->payment_plan);
         $this->assertDatabaseCount('payment_attempts', 1);
@@ -298,7 +304,7 @@ class InstallmentCreditTest extends TestCase
         $variant = $this->variant();
         $this->actingAs(User::factory()->create(['role' => 'staff']));
         $payload = ['request_key' => (string) Str::uuid(), 'customer_type' => 'guest', 'recipient' => 'Walk-in Customer',
-            'phone' => '+639123456789', 'lines' => [['variant_id' => $variant->id, 'quantity' => 2]],
+            'phone' => '09123456789', 'lines' => [['variant_id' => $variant->id, 'quantity' => 2]],
             'payment_option' => 'partial_cash', 'amount' => '600.00', 'due_at' => now()->addDays(7)->toDateString(),
             'reason' => 'Cash payment counted and received in store.', 'payment_received' => '1'];
         $this->post('/admin/walk-in', $payload)->assertSessionHasErrors('payment_option');
@@ -306,6 +312,7 @@ class InstallmentCreditTest extends TestCase
         $this->assertDatabaseCount('payment_attempts', 0);
         $this->assertSame(0, $variant->fresh()->reserved);
         $this->assertSame(30, $variant->fresh()->stock);
+        unset($payload['amount'], $payload['due_at']);
         $this->post('/admin/walk-in', array_replace($payload, ['payment_option' => 'full_cash', 'request_key' => (string) Str::uuid()]))
             ->assertSessionHasNoErrors()->assertRedirect();
         $new = Order::whereKeyNot($old->id)->sole();
@@ -318,20 +325,24 @@ class InstallmentCreditTest extends TestCase
         Http::assertNothingSent();
     }
 
-    public function test_online_conversion_of_an_existing_full_invoice_with_an_agreed_deadline_uses_the_credit_limit_immediately(): void
+    public function test_online_conversion_of_an_existing_full_invoice_is_rejected_without_touching_its_deadline(): void
     {
         $customer = $this->customer();
         $old = $this->invoice($customer, ['payment_plan' => 'full', 'payment_status' => 'pending', 'amount_paid' => 0]);
         $deadline = $old->getRawOriginal('due_at');
         $original = $old->getRawOriginal('original_due_at');
         $this->provider();
-        $attempt = app(InvoicePayments::class)->start($old, 60000, $customer, (string) Str::uuid());
-        $this->assertSame('pending', $attempt->status);
-        $this->assertSame('partial', $old->fresh()->payment_plan);
+        try {
+            app(InvoicePayments::class)->start($old, 60000, $customer, (string) Str::uuid());
+            $this->fail('A full invoice cannot be converted to a partial payment.');
+        } catch (ValidationException $exception) {
+            $this->assertArrayHasKey('payment', $exception->errors());
+        }
+        $this->assertSame('full', $old->fresh()->payment_plan);
         $this->assertSame($deadline, $old->fresh()->getRawOriginal('due_at'));
         $this->assertSame($original, $old->fresh()->getRawOriginal('original_due_at'));
-        $this->assertBlocked($customer);
-        Http::assertSentCount(1);
+        $this->assertDatabaseCount('payment_attempts', 0);
+        Http::assertNothingSent();
     }
 
     public function test_legacy_multiple_partial_invoices_do_not_prevent_a_customer_from_paying_toward_an_existing_invoice(): void
@@ -339,10 +350,10 @@ class InstallmentCreditTest extends TestCase
         $customer = $this->customer();
         $first = $this->invoice($customer);
         $second = $this->invoice($customer);
-        $receipt = app(InvoicePayments::class)->recordCash($first, 10000, User::factory()->create(['role' => 'staff']),
+        $receipt = app(InvoicePayments::class)->recordCash($first, 95000, User::factory()->create(['role' => 'staff']),
             'Cash payment received for the existing invoice.', (string) Str::uuid());
         $this->assertSame('paid', $receipt->status);
-        $this->assertSame(35000, $first->fresh()->amount_paid);
+        $this->assertSame(120000, $first->fresh()->amount_paid);
         $this->assertSame(25000, $second->fresh()->amount_paid);
         $this->assertBlocked($customer);
         Http::assertNothingSent();

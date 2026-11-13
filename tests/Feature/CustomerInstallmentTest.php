@@ -49,7 +49,8 @@ class CustomerInstallmentTest extends TestCase
     private function buyer(Variant $variant, int $quantity = 2): User
     {
         $customer = User::factory()->create(['role' => 'customer']);
-        $this->actingAs($customer)->withSession(['cart' => [$variant->id => $quantity], 'pending_order' => null]);
+        $this->actingAs($customer)->withSession(['pending_order' => null]);
+        $this->post('/cart', ['variant_id' => $variant->id, 'quantity' => $quantity])->assertSessionHasNoErrors();
 
         return $customer;
     }
@@ -57,7 +58,7 @@ class CustomerInstallmentTest extends TestCase
     private function details(array $extra = []): array
     {
         return $extra + ['recipient' => 'Installment Customer', 'phone' => '09123456789', 'delivery_method' => 'pickup',
-            'payment_option' => 'partial', 'payment_amount' => '650.25', 'payment_days' => 14];
+            'payment_option' => 'full', 'terms' => '1', 'pin_confirmed' => '1'];
     }
 
     private function provider(): void
@@ -90,44 +91,24 @@ class CustomerInstallmentTest extends TestCase
         Http::assertNothingSent();
     }
 
-    public function test_partial_checkout_payload_and_ledger_match_the_selected_amount_without_changing_the_invoice_or_confirming_payment(): void
+    public function test_removed_partial_checkout_cannot_create_an_invoice_hold_or_provider_session(): void
     {
         $variant = $this->variant();
-        $customer = $this->buyer($variant);
+        $this->buyer($variant);
         $this->provider();
-        $this->post('/checkout', $this->details())->assertRedirect('https://checkout.paymongo.com/cs_customer_installment_1')->assertSessionHasNoErrors();
-        $order = Order::sole();
-        $attempt = PaymentAttempt::sole();
-        $this->assertSame($customer->id, $order->user_id);
-        $this->assertSame('online', $order->sales_channel);
-        $this->assertSame('partial', $order->payment_plan);
-        $this->assertSame(120000, $order->total);
-        $this->assertSame(120000, $order->subtotal);
-        $this->assertSame(60000, $order->items()->sole()->unit_price);
-        $this->assertSame(65025, $attempt->amount);
-        $this->assertSame('pending', $attempt->status);
-        $this->assertSame(0, $order->paidAmount());
-        $this->assertSame(120000, $order->outstandingBalance());
-        $this->assertNull($order->paid_at);
-        $this->assertFalse($order->inventory_committed);
-        $this->assertSame(2, $variant->fresh()->reserved);
-        $this->assertSame(500, $variant->fresh()->stock);
-        $this->assertTrue($order->due_at->equalTo(now()->addDays(14)));
-        $this->assertSame($order->getRawOriginal('due_at'), $order->getRawOriginal('original_due_at'));
-        $this->get('/orders')->assertOk()->assertSee($order->number)->assertSee('Outstanding');
-        $this->get('/orders/'.$order->id)->assertOk()->assertSee($order->number)->assertSee('650.25');
-        Http::assertSentCount(1);
-        Http::assertSent(fn ($request) => array_sum(array_map(fn ($line) => $line['amount'] * $line['quantity'], $request['data']['attributes']['line_items'])) === 65025
-            && $request['data']['attributes']['reference_number'] === $order->number
-            && $request['data']['attributes']['metadata']['invoice_payment_reference'] === $attempt->reference);
+        $this->post('/checkout', $this->details(['payment_option' => 'partial', 'payment_amount' => '650.25', 'payment_days' => 14]))
+            ->assertSessionHasErrors(['payment_option', 'payment_amount', 'payment_days'])->assertSessionHas('cart', [$variant->id => 2]);
+        $this->assertNoInvoiceOrReservation($variant);
     }
 
-    public function test_full_checkout_ignores_client_payment_amount_invoice_totals_and_channel_flags(): void
+    public function test_full_checkout_rejects_custom_payment_amount_and_ignores_forged_totals_and_channel_flags(): void
     {
         $variant = $this->variant();
         $customer = $this->buyer($variant);
         $this->provider();
-        $this->post('/checkout', $this->details(['payment_option' => 'full', 'payment_amount' => '0.01', 'total' => 1, 'subtotal' => 1,
+        $this->post('/checkout', $this->details(['payment_amount' => '0.01']))->assertSessionHasErrors('payment_amount');
+        $this->assertNoInvoiceOrReservation($variant);
+        $this->post('/checkout', $this->details(['payment_option' => 'full', 'total' => 1, 'subtotal' => 1,
             'shipping' => 999999, 'discount' => 999999, 'quantity' => 1, 'unit_price' => 1, 'sales_channel' => 'walk_in',
             'user_id' => 999999, 'payment_status' => 'paid', 'customer_confirmed_at' => now()->toDateTimeString(), 'walk_in_received_at' => now()->toDateTimeString()]))
             ->assertRedirect('https://checkout.paymongo.com/cs_customer_installment_1')->assertSessionHasNoErrors();
@@ -157,6 +138,8 @@ class CustomerInstallmentTest extends TestCase
         $firstKey = $this->checkoutKey();
         $this->post('/checkout', $this->details(['checkout_key' => $firstKey]))->assertSessionHasNoErrors();
         $first = Order::sole();
+        // The old invoice is retained as a legacy unpaid installment record.
+        $first->update(['payment_plan' => 'partial', 'due_at' => now()->addDays(14), 'original_due_at' => now()->addDays(14)]);
         $before = $first->getAttributes();
         $this->post('/cart', ['variant_id' => $variant->id, 'quantity' => 2])->assertSessionHasNoErrors();
         $secondKey = $this->checkoutKey();
@@ -233,9 +216,8 @@ class CustomerInstallmentTest extends TestCase
         $this->post('/checkout', $details)->assertSessionHasErrors('payment');
         $order = Order::sole();
         $this->assertSame('unknown', $order->payments()->sole()->status);
-        $this->patch('/cart/'.$variant->id, ['quantity' => 2])->assertSessionHasNoErrors();
-        $this->assertSame($order->creation_key, $this->checkoutKey());
-        $this->post('/checkout', $details)->assertRedirect(route('orders.show', $order))->assertSessionHas('cart', [$variant->id => 2]);
+        $this->assertSame([], session('cart'));
+        $this->post('/checkout', $details)->assertRedirect(route('orders.show', $order))->assertSessionHas('cart', []);
         $this->assertDatabaseCount('orders', 1);
         $this->assertDatabaseCount('payment_attempts', 1);
         $this->assertSame(500, $variant->fresh()->stock);
@@ -274,6 +256,7 @@ class CustomerInstallmentTest extends TestCase
         $first->payments()->update(['status' => 'failed']);
         app(OrderFlow::class)->cancel($first);
         $this->assertSame(0, $variant->fresh()->reserved);
+        $this->post('/cart', ['variant_id' => $variant->id, 'quantity' => 2])->assertSessionHasNoErrors();
         $secondKey = $this->checkoutKey();
         $this->assertNotSame($firstKey, $secondKey);
         $this->post('/checkout', $details)->assertRedirect(route('orders.show', $first));
@@ -361,7 +344,7 @@ class CustomerInstallmentTest extends TestCase
     {
         $variant = $this->variant();
         $this->buyer($variant);
-        $this->post('/checkout', $this->details(['payment_amount' => $amount]))->assertSessionHasErrors()->assertSessionHas('cart', [$variant->id => 2]);
+        $this->post('/checkout', $this->details(['payment_option' => 'partial', 'payment_amount' => $amount]))->assertSessionHasErrors('payment_option')->assertSessionHas('cart', [$variant->id => 2]);
         $this->assertNoInvoiceOrReservation($variant);
     }
 
@@ -385,16 +368,13 @@ class CustomerInstallmentTest extends TestCase
     }
 
     #[DataProvider('allowedDays')]
-    public function test_customer_deadline_includes_seven_and_thirty_days_on_the_original_invoice(int $days): void
+    public function test_removed_customer_deadlines_are_rejected_even_at_previously_allowed_boundaries(int $days): void
     {
         $variant = $this->variant();
         $this->buyer($variant);
         $this->provider();
-        $this->post('/checkout', $this->details(['payment_days' => $days]))->assertSessionHasNoErrors();
-        $order = Order::sole();
-        $this->assertTrue($order->due_at->equalTo($order->created_at->copy()->addDays($days)));
-        $this->assertSame($order->getRawOriginal('due_at'), $order->getRawOriginal('original_due_at'));
-        $this->assertDatabaseCount('payment_attempts', 1);
+        $this->post('/checkout', $this->details(['payment_days' => $days]))->assertSessionHasErrors('payment_days');
+        $this->assertNoInvoiceOrReservation($variant);
     }
 
     public static function thresholdSubtotals(): array
@@ -403,17 +383,13 @@ class CustomerInstallmentTest extends TestCase
     }
 
     #[DataProvider('thresholdSubtotals')]
-    public function test_checkout_exposes_partial_payment_only_above_the_strict_discounted_clothing_threshold(int $subtotal, bool $eligible): void
+    public function test_checkout_never_exposes_partial_payment_at_any_former_threshold(int $subtotal, bool $eligible): void
     {
         $variant = $this->variant($subtotal);
         $this->buyer($variant, 1);
         $response = $this->get('/checkout')->assertOk()->assertViewHas('summary', fn ($summary) => $summary['subtotal'] === $subtotal);
-        if ($eligible) {
-            $response->assertSee('value="partial"', false)->assertSee('name="payment_amount"', false);
-        } else {
-            $response->assertDontSee('value="partial"', false)->assertDontSee('name="payment_amount"', false);
-            $this->post('/checkout', $this->details(['payment_amount' => '100']))->assertSessionHasErrors();
-        }
+        $response->assertDontSee('value="partial"', false)->assertDontSee('name="payment_amount"', false);
+        $this->post('/checkout', $this->details(['payment_option' => 'partial', 'payment_amount' => '100']))->assertSessionHasErrors(['payment_option', 'payment_amount']);
         $this->assertNoInvoiceOrReservation($variant);
     }
 
@@ -441,34 +417,33 @@ class CustomerInstallmentTest extends TestCase
         $this->assertNoInvoiceOrReservation($variant);
     }
 
-    public function test_owner_deadline_default_changes_new_invoices_only_and_records_the_agreement(): void
+    public function test_removed_owner_deadline_endpoint_cannot_reintroduce_installments_or_rewrite_a_legacy_deadline(): void
     {
         $variant = $this->variant();
         $firstCustomer = $this->buyer($variant);
         $this->provider();
         $firstPayload = $this->details();
-        unset($firstPayload['payment_days']);
         $this->post('/checkout', $firstPayload)->assertSessionHasNoErrors();
         $first = Order::sole();
+        $first->update(['payment_plan' => 'partial', 'due_at' => now()->addDays(7), 'original_due_at' => now()->addDays(7)]);
         $firstDeadline = $first->getRawOriginal('due_at');
         $firstOriginal = $first->getRawOriginal('original_due_at');
         $this->assertTrue($first->due_at->equalTo($first->created_at->copy()->addDays(7)));
         $owner = User::factory()->create(['role' => 'admin']);
         $reason = 'New installment invoices will use the agreed twenty-one day deadline.';
-        $this->actingAs($owner)->post('/admin/settings/payment-terms', ['days' => 21, 'reason' => $reason])->assertSessionHasNoErrors();
-        $this->assertSame('21', DB::table('shop_settings')->where('key', 'partial_payment_due_days')->value('value'));
-        $event = ActivityLog::where('action', 'invoice.terms_changed')->sole();
-        $this->assertSame($owner->id, $event->actor_id);
-        $this->assertSame(['reason' => $reason, 'days' => 21], $event->metadata);
+        $this->actingAs($owner)->post('/admin/settings/payment-terms', ['days' => 21, 'reason' => $reason])->assertNotFound();
+        $this->assertSame('7', DB::table('shop_settings')->where('key', 'partial_payment_due_days')->value('value'));
+        $this->assertFalse(ActivityLog::where('action', 'invoice.terms_changed')->exists());
         $this->assertSame($firstDeadline, $first->fresh()->getRawOriginal('due_at'));
         $this->assertSame($firstOriginal, $first->fresh()->getRawOriginal('original_due_at'));
         $secondVariant = $this->variant();
         $secondCustomer = $this->buyer($secondVariant);
-        $this->get('/checkout')->assertOk()->assertSee('value="21" selected', false);
+        $this->get('/checkout')->assertOk()->assertDontSee('name="payment_days"', false);
         $this->post('/checkout', array_replace($firstPayload, ['phone' => '09987654321']))->assertSessionHasNoErrors();
         $second = Order::where('user_id', $secondCustomer->id)->sole();
-        $this->assertTrue($second->due_at->equalTo($second->created_at->copy()->addDays(21)));
-        $this->assertSame($second->getRawOriginal('due_at'), $second->getRawOriginal('original_due_at'));
+        $this->assertSame('full', $second->payment_plan);
+        $this->assertNull($second->due_at);
+        $this->assertNull($second->original_due_at);
         $this->assertSame($firstCustomer->id, $first->user_id);
         $this->assertDatabaseCount('orders', 2);
         Http::assertSentCount(2);
@@ -483,7 +458,7 @@ class CustomerInstallmentTest extends TestCase
     public function test_owner_terms_require_a_reason_and_a_seven_to_thirty_day_default(int $days, string $reason): void
     {
         $this->actingAs(User::factory()->create(['role' => 'admin']))
-            ->post('/admin/settings/payment-terms', ['days' => $days, 'reason' => $reason])->assertSessionHasErrors();
+            ->post('/admin/settings/payment-terms', ['days' => $days, 'reason' => $reason])->assertNotFound();
         $this->assertSame('7', DB::table('shop_settings')->where('key', 'partial_payment_due_days')->value('value'));
         $this->assertDatabaseCount('activity_logs', 0);
         $this->assertDatabaseCount('orders', 0);
@@ -494,7 +469,7 @@ class CustomerInstallmentTest extends TestCase
     {
         foreach (['staff', 'customer'] as $role) {
             $this->actingAs(User::factory()->create(['role' => $role]))->post('/admin/settings/payment-terms',
-                ['days' => 21, 'reason' => 'Only the owner can change installment defaults.'])->assertForbidden();
+                ['days' => 21, 'reason' => 'Only the owner can change installment defaults.'])->assertNotFound();
         }
         $this->assertSame('7', DB::table('shop_settings')->where('key', 'partial_payment_due_days')->value('value'));
         $this->assertDatabaseCount('activity_logs', 0);

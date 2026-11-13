@@ -9,14 +9,14 @@ class Order extends Model
 {
     protected $guarded = ['id'];
 
-    public const DELIVERY_STAGES = ['packing' => 'Packing', 'ready' => 'Ready for delivery', 'courier' => 'With courier', 'delivered' => 'Delivered'];
+    public const DELIVERY_STAGES = ['packing' => 'Packing', 'ready' => 'Ready for delivery', 'courier' => 'To Ship', 'delivered' => 'Delivered'];
 
     public const DELIVERY_STAGE_COLORS = ['packing' => '#220901', 'ready' => '#F6AA1C', 'courier' => '#BC3908', 'delivered' => '#15803D'];
 
     protected function casts(): array
     {
         return ['delivery_quote' => 'array', 'delivery_booking_context' => 'array', 'paid_at' => 'datetime', 'provider_completed_at' => 'datetime',
-            'customer_confirmed_at' => 'datetime', 'walk_in_received_at' => 'datetime', 'due_at' => 'datetime', 'original_due_at' => 'datetime', 'amount_paid' => 'integer', 'inventory_committed' => 'boolean', 'inventory_released' => 'boolean'];
+            'customer_confirmed_at' => 'datetime', 'walk_in_received_at' => 'datetime', 'due_at' => 'datetime', 'original_due_at' => 'datetime', 'terms_accepted_at' => 'datetime', 'amount_paid' => 'integer', 'inventory_committed' => 'boolean', 'inventory_released' => 'boolean'];
     }
 
     public function items()

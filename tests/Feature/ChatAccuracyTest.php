@@ -33,6 +33,16 @@ class ChatAccuracyTest extends TestCase
         return Product::where('slug', $slug)->firstOrFail();
     }
 
+    public function test_half_and_percentage_payment_questions_cannot_revive_a_removed_offer_from_an_approved_faq(): void
+    {
+        foreach (['Can I pay half now and half next week?', 'Can I pay 50% now?', 'Can I split the payment?', 'Can I pay 25 percent upfront?'] as $question) {
+            $this->faq($question, 'Obsolete offer: pay a small amount and keep the rest for next week.');
+            $this->chat($question)->assertOk()->assertSee('New orders require full payment')->assertDontSee('Obsolete offer');
+        }
+        $this->chat('How much do I pay for 50 pieces of Dannon collar S White?')->assertOk()->assertDontSee('Partial payments, installments and deposits are no longer offered');
+        Http::assertNothingSent();
+    }
+
     private function faq(string $question, string $answer): void
     {
         ChatbotFaq::create(['question' => $question, 'answer' => $answer, 'active' => true]);

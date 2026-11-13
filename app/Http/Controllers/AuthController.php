@@ -81,6 +81,7 @@ class AuthController extends Controller
             'name' => ['bail', 'required', 'string', 'max:100'],
             'username' => ['bail', 'required', 'string', 'min:3', 'max:40', 'regex:/^[a-z0-9_.-]+$/', 'unique:users,username'],
             'email' => ['bail', 'required', 'email', 'max:254', 'unique:users,email',
+                new \App\Rules\EmailProviderAddress,
                 function (string $attribute, mixed $value, \Closure $fail): void {
                     // Match Google's canonical lookup, including older mixed-case accounts.
                     if (User::whereRaw('LOWER(email) = ?', [$value])->exists()
@@ -89,9 +90,12 @@ class AuthController extends Controller
                     }
                 }],
             'password' => ['required', 'string', 'confirmed', Password::min(10), new AccountPasswordSize],
+            'terms' => ['required', 'accepted'],
         ]);
+        unset($data['terms']);
         try {
-            $user = User::create($data);
+            $user = new User($data);
+            $user->forceFill(\App\Services\StoreTerms::acceptance())->save();
         } catch (UniqueConstraintViolationException $exception) {
             // The unique indexes also protect accounts created after validation finishes.
             $r->validate(['username' => 'unique:users,username', 'email' => 'unique:users,email']);

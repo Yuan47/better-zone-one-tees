@@ -27,7 +27,7 @@ class CheckoutAddressTest extends TestCase
     private function address(): array
     {
         return ['street_address' => '12 Example Street, Barangay Uno', 'city' => 'Quezon City', 'province' => 'Metro Manila',
-            'postal_code' => '1100', 'country' => 'Philippines', 'lat' => '14.676', 'lng' => '121.0437'];
+            'postal_code' => '1100', 'country' => 'Philippines', 'lat' => '14.676', 'lng' => '121.0437', 'pin_confirmed' => '1'];
     }
 
     private function canonicalAddress(): string
@@ -37,7 +37,7 @@ class CheckoutAddressTest extends TestCase
 
     private function details(string $method = 'pickup'): array
     {
-        return ['recipient' => 'Sample Recipient', 'phone' => '09123456789', 'delivery_method' => $method];
+        return ['recipient' => 'Sample Recipient', 'phone' => '09123456789', 'delivery_method' => $method, 'terms' => '1'];
     }
 
     private function payment(?callable $inspect = null): void
@@ -63,7 +63,9 @@ class CheckoutAddressTest extends TestCase
     public function test_saved_customer_address_prefills_checkout(): void
     {
         $variant = $this->variant();
-        $user = User::factory()->create($this->address() + ['name' => 'Saved Customer', 'phone' => '09123456789']);
+        $address = $this->address();
+        unset($address['pin_confirmed']);
+        $user = User::factory()->create($address + ['name' => 'Saved Customer', 'phone' => '09123456789']);
         $this->mock(PayMongo::class, fn (MockInterface $mock) => $mock->shouldReceive('ready')->andReturn(true));
         $this->mock(Lalamove::class, fn (MockInterface $mock) => $mock->shouldReceive('ready')->andReturn(true));
         $response = $this->actingAs($user)->withSession(['cart' => [$variant->id => 1]])->get('/checkout')->assertOk();
@@ -83,15 +85,18 @@ class CheckoutAddressTest extends TestCase
             $this->assertSame($this->canonicalAddress(), $order->address);
             $this->assertSame('Quezon City', $order->city);
         });
-        $this->actingAs($user)->withSession(['cart' => [$variant->id => 2]])
-            ->post('/checkout', $this->details() + $this->address() + ['address' => 'Injected untrusted destination'])
+        $address = $this->address();
+        unset($address['pin_confirmed']);
+        $this->actingAs($user)->withSession(['cart' => [$variant->id => 2], 'delivery_quote' => [
+            'quote' => $this->quote(), 'address' => $this->canonicalAddress(), 'lat' => $address['lat'], 'lng' => $address['lng']]])
+            ->post('/checkout', $this->details('lalamove') + $this->address() + ['address' => 'Injected untrusted destination'])
             ->assertRedirect('https://checkout.paymongo.com/address-test');
         $order = Order::sole();
-        foreach ($this->address() as $field => $value) {
+        foreach ($address as $field => $value) {
             $this->assertSame($value, $order->getAttribute($field));
         }
         $this->assertSame($this->canonicalAddress(), $order->address);
-        $this->assertSame(0, $order->shipping);
+        $this->assertSame(12550, $order->shipping);
         $user->update(['street_address' => 'New saved address', 'city' => 'New City']);
         $this->assertSame('12 Example Street, Barangay Uno', $order->fresh()->street_address);
         $this->assertSame('Quezon City', $order->fresh()->city);
@@ -109,7 +114,7 @@ class CheckoutAddressTest extends TestCase
         $this->assertSame('pickup', $order->delivery_method);
         $this->assertNull($order->street_address);
         $this->assertNull($order->city);
-        $this->assertSame('Philippines', $order->country);
+        $this->assertNull($order->country);
         $this->assertSame(0, $order->shipping);
     }
 

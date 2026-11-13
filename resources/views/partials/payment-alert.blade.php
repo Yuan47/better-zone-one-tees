@@ -8,7 +8,7 @@
 <section id="payment-alert" class="notice stack" aria-label="Outstanding payments">
     <strong>{{ $openPaymentAlerts->count() === 1 ? 'You have an outstanding payment.' : 'You have outstanding payments.' }}</strong>
     @if($openPaymentAlerts->contains('payment_plan', 'partial'))
-    <p>Settle your current installment before opening another partial-payment order. You can still place a new order and pay in full.</p>
+    <p>This older invoice keeps its recorded payments. Settle its full remaining balance on the same invoice. New orders require full payment.</p>
     @endif
     <ul>
         @foreach($openPaymentAlerts as $paymentAlert)

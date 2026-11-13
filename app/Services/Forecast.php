@@ -154,7 +154,7 @@ class Forecast
                 }
             }, 'order_items.id', 'id');
 
-        return Product::with('variants')->where('active', true)->get()->map(function ($product) use ($end, $firstSales, $monthlyUnits) {
+        return Product::with(['variants' => fn ($query) => $query->sellable()])->published()->get()->map(function ($product) use ($end, $firstSales, $monthlyUnits) {
             $firstSale = isset($firstSales[$product->id]) ? CarbonImmutable::parse($firstSales[$product->id], 'Asia/Manila')->startOfMonth() : null;
             $created = $product->created_at ? CarbonImmutable::instance($product->created_at)->setTimezone('Asia/Manila')->startOfMonth() : $end;
             // Imported orders may legitimately predate the product's local creation date.

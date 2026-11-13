@@ -1,6 +1,6 @@
 # Customer and workspace assistance
 
-The assistant includes 29 editable how-to guides: 13 for customers, 9 for staff and owners, and 7 for owners. They explain account creation, verification, recovery, shopping, invoices, installments, receipt/review, returns, counter sales, fulfillment, reporting, forecasts and owner tools in short numbered steps. The missing-receipt guide directs customers to the original invoice and warns against paying again to obtain an email. Matched approved guides work without GroqCloud credentials.
+The assistant includes editable how-to guides for customers, staff and owners. They explain account creation, verification, recovery, shopping, full-payment invoices, receipt/review, returns, counter sales, fulfillment, reporting, forecasts and owner tools in short numbered steps. The missing-receipt guide directs customers to the original invoice and warns against paying again to obtain an email. Matched approved guides work without GroqCloud credentials.
 
 The chat panel offers three quick questions appropriate to the page and signed-in workspace role. Answers preserve line breaks so steps remain readable on mobile. The assistant explains actions; it cannot perform payments, refunds, stock changes, staff activation or other management actions.
 
@@ -11,6 +11,10 @@ The default account-creation guide includes full name, unique username, email, m
 New refund requests require a private supporting photo. The assistant's controlled refund-photo answer states the allowed image types, 3 MB limit, 6000-pixel side limit, and that evidence is not published as a product review. The additional product-review guide explains that existing ratings belong to completed orders containing an item, written comments remain optional, and buyer identities are masked. The migration refreshes only exact untouched refund defaults and preserves owner edits, audiences, inactive entries and sort order.
 
 The simplified catalog guides explain separate adult/kids Dannon Round Neck and V-Neck products, White as an ordinary color, and copying a selected color's sizes/prices without copying stock. A staff/owner-only guide explains the read-only Customer reviews workspace and its order links. Catalog context supplies actual color names and no longer supplies a White/Colored grouping control. Existing owner-edited answers and audience decisions remain preserved.
+
+The November major-revision guides explain full payment only, signup Terms and Conditions, required delivery pins with optional device GPS, saved/default addresses, carts that survive sign-out, the compact My Purchases view, generated demo photo limits, a simple dashboard and archive-before-delete product management. Obsolete installment-offering guides remain in the library as inactive history. New payment-policy questions use the full-payment rule even if someone reactivates an older installment guide. Existing recorded payments and outstanding invoice balances remain truthful; an older balance must be settled in full on the same invoice.
+
+The [Lalamove demonstration note](lalamove-demonstration.md) is also a Staff FAQ and a collapsed note on Sandbox order pages. It separates virtual test-driver steps from a real courier delivery and explains reconciliation before retrying a booking. To Ship is the displayed name for an active courier booking; the stored status keys and order history are preserved.
 
 ## FAQ audiences
 
@@ -26,7 +30,7 @@ Workspace chat also has access to customer FAQs. Choosing customer mode keeps th
 
 Inactive FAQs are excluded from both direct answers and AI context. Customer AI requests contain only public catalog/store information and permitted customer FAQs; internal FAQ answers and forecast data are excluded. Explicit internal-data requests receive customer-safe guidance without an AI request. Requested order records remain limited to the customer's own account. Staff order queries use existing workspace permissions. Forecast context is considered only for authenticated workspace questions about forecasting.
 
-The new migration preserves existing FAQ answers, keywords, active flags and order. Older custom entries start as Customer because the previous library was public. Review their audience before adding internal instructions. The known legacy staff-account setup guide is moved to Owner without changing its text or active flag.
+FAQ additions preserve existing answers, keywords, order and audience. Exact untouched default answers can receive targeted corrections, and the major-revision migration deliberately deactivates obsolete installment-offering guides without deleting their wording. Older custom entries started as Customer because the previous library was public. Review their audience before adding internal instructions. The known legacy staff-account setup guide was moved to Owner without changing its text or active flag.
 
 CSV import accepts an optional `audience` column with `customer`, `staff` or `owner`. Missing or blank CSV audiences default to public Customer. Invalid audiences reject the whole import. Older edit forms without the audience field retain the saved scope, so they cannot accidentally publish an internal answer. Audience changes are recorded in the activity log.
 

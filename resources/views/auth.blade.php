@@ -12,10 +12,17 @@
 <form method="post" class="stack" action="{{ $mode==='register'?route('register'):route($workspace?'admin.login.submit':'login.submit') }}">@csrf
 @if($mode==='register')<label>Username<input name="username" autocomplete="username" required minlength="3" maxlength="40" pattern="[A-Za-z0-9_.\-]+" autocapitalize="none" spellcheck="false" aria-describedby="signup-username-hint" value="{{ old('username') }}"><small id="signup-username-hint" class="muted">3–40 letters, numbers, dots, underscores, or hyphens. Saved in lowercase.</small></label><label>Full name<input name="name" autocomplete="name" required maxlength="100" value="{{ old('name') }}"></label>@endif
 <label>Email address<input name="email" type="email" autocomplete="email" required value="{{ old('email') }}"></label><label>Password<input name="password" type="password" autocomplete="{{ $mode==='login'?'current-password':'new-password' }}" required @if($mode==='register') minlength="10" @endif></label>
-@if($mode==='register')<label>Confirm password<input name="password_confirmation" type="password" autocomplete="new-password" required minlength="10"></label>@if(config('auth.email_verification.required'))<p class="muted">We’ll email a six-digit verification code after you create your account.</p>@endif @endif<button class="button dark">{{ $mode==='login'?'Sign in →':'Create account →' }}</button></form>
+@if($mode==='register')
+<label>Confirm password<input name="password_confirmation" type="password" autocomplete="new-password" required minlength="10"></label>
+<label class="checkbox-label terms-acceptance"><input type="checkbox" name="terms" value="1" required @checked(old('terms'))><span>I agree to the <a class="text-link" href="{{ route('terms') }}" target="_blank" rel="noopener">Terms and Conditions</a>, including the payment, delivery and return/refund process. <span class="required-mark" aria-hidden="true">*</span></span></label>
+@if(config('auth.email_verification.required'))<p class="muted">We’ll email a six-digit verification code after you create your account.</p>@endif
+@endif
+<button class="button dark">{{ $mode==='login'?'Sign in →':'Create account →' }}</button></form>
 @if($mode==='login')<p><a class="text-link" href="{{ route('password.request') }}">Forgot your password?</a></p>@endif
 @if(!$workspace && app(\App\Services\GoogleSignIn::class)->ready())
-<form method="post" action="{{ route('google.start') }}" class="stack">@csrf<button class="button" type="submit">Continue with Google</button><small class="muted">Sign in or create your customer account with Google.</small></form>
+<form method="post" action="{{ route('google.start') }}" class="stack">@csrf
+<label class="checkbox-label terms-acceptance"><input type="checkbox" name="terms" value="1" @if($mode==='register') required @endif @checked(old('terms'))><span>{{ $mode==='register'?'I agree to the':'For a new Google account, I agree to the' }} <a class="text-link" href="{{ route('terms') }}" target="_blank" rel="noopener">Terms and Conditions</a>.@if($mode==='register') <span class="required-mark" aria-hidden="true">*</span>@else <small>Required for a new customer account. Existing Google customers can sign in without selecting this.</small>@endif</span></label>
+<button class="button" type="submit">Continue with Google</button><small class="muted">Sign in or create your customer account with Google.</small></form>
 @endif
 @if(!$workspace)<p>{{ $mode==='login'?'New here?':'Already have an account?' }} <a class="text-link" href="{{ $mode==='login'?route('register'):route('login') }}">{{ $mode==='login'?'Create an account':'Sign in' }}</a></p>@endif
 @if(config('shop.demo') && app()->environment('local','testing'))<details class="demo-accounts"><summary>Local demo accounts</summary><p>@if($workspace)admin@zoneone.test<br>staff@zoneone.test @else customer@zoneone.test @endif</p><p>Password: <code>ZoneOneDemo!2026</code></p></details>@endif

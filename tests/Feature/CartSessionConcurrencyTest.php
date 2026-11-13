@@ -23,10 +23,10 @@ class CartSessionConcurrencyTest extends TestCase
             mkdir($this->directory.'/'.$child, 0777, true);
         }
         $database = new PDO('sqlite:'.$this->directory.'/fixture.sqlite');
-        $database->exec('CREATE TABLE products (id INTEGER PRIMARY KEY, name TEXT, slug TEXT, active INTEGER)');
-        $database->exec("INSERT INTO products VALUES (1, 'Cart fixture', 'cart-fixture', 1), (2, 'Hidden fixture', 'hidden-fixture', 0)");
-        $database->exec('CREATE TABLE variants (id INTEGER PRIMARY KEY, product_id INTEGER, stock INTEGER, reserved INTEGER, retail_price INTEGER, wholesale_price INTEGER, reseller_price INTEGER)');
-        $database->exec('INSERT INTO variants VALUES (1, 1, 100, 0, 20000, 18000, 16000), (2, 1, 100, 0, 25000, 22000, 20000), (3, 2, 100, 0, 20000, 18000, 16000)');
+        $database->exec('CREATE TABLE products (id INTEGER PRIMARY KEY, name TEXT, slug TEXT, active INTEGER, archived_at TEXT NULL)');
+        $database->exec("INSERT INTO products (id, name, slug, active) VALUES (1, 'Cart fixture', 'cart-fixture', 1), (2, 'Hidden fixture', 'hidden-fixture', 0)");
+        $database->exec('CREATE TABLE variants (id INTEGER PRIMARY KEY, product_id INTEGER, stock INTEGER, reserved INTEGER, retail_price INTEGER, wholesale_price INTEGER, reseller_price INTEGER, archived_at TEXT NULL)');
+        $database->exec('INSERT INTO variants (id, product_id, stock, reserved, retail_price, wholesale_price, reseller_price) VALUES (1, 1, 100, 0, 20000, 18000, 16000), (2, 1, 100, 0, 25000, 22000, 20000), (3, 2, 100, 0, 20000, 18000, 16000)');
     }
 
     protected function tearDown(): void

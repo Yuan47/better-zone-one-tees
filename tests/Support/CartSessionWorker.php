@@ -43,6 +43,9 @@ $path = $operation === 'status' ? '/session/status' : ($operation === 'update' ?
 $request = Request::create($path, $method, ['variant_id' => (int) $variantId, 'quantity' => (int) $quantity],
     ['cart_test_session' => $sessionId], [], ['HTTP_ACCEPT' => $argv[8] ?? 'text/html', 'HTTP_REFERER' => 'http://localhost/cart']);
 $route = $app['router']->getRoutes()->match($request);
+if (isset($argv[7])) {
+    $route->block(20, (int) $argv[7]);
+}
 $request->setRouteResolver(fn () => $route);
 $app->instance('request', $request);
 $request->setUserResolver(fn () => (new User)->forceFill(['id' => 1, 'role' => 'customer']));

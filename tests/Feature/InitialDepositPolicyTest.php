@@ -42,9 +42,22 @@ class InitialDepositPolicyTest extends TestCase
         $buyer = $guest ? null : User::factory()->create(['role' => 'customer']);
         $variant = $this->variant($total);
 
-        return app(OrderFlow::class)->reserve([$variant->id => 1], ['recipient' => 'Deposit fixture buyer', 'phone' => '09123456789',
+        $order = app(OrderFlow::class)->reserve([$variant->id => 1], ['recipient' => 'Deposit fixture buyer', 'phone' => '09123456789',
             'address' => 'Store pickup', 'delivery_method' => 'pickup', 'shipping' => 0, 'sales_channel' => $guest ? 'walk_in' : 'online',
-            'payment_plan' => 'partial', 'due_at' => now()->addDays(14)], $buyer?->id)->fresh();
+            'payment_plan' => 'full'], $buyer?->id);
+        // Older invoices can still be reconciled; new checkout cannot create this plan.
+        $order->update(['payment_plan' => 'partial', 'due_at' => now()->addDays(14), 'original_due_at' => now()->addDays(14)]);
+
+        return $order->fresh();
+    }
+
+    private function legacyPayment(Order $order, int $amount): PaymentAttempt
+    {
+        $attempt = $order->payments()->create(['reference' => (string) Str::uuid(), 'method' => 'paymongo', 'status' => 'pending', 'amount' => $amount]);
+        app(InvoicePayments::class)->receiveProvider($attempt, ['id' => 'pay_legacy_deposit_'.$attempt->id,
+            'attributes' => ['status' => 'paid', 'amount' => $amount, 'currency' => 'PHP', 'livemode' => false, 'paid_at' => now()->timestamp]]);
+
+        return $attempt->fresh();
     }
 
     private function provider(): void
@@ -65,12 +78,12 @@ class InitialDepositPolicyTest extends TestCase
 
     public static function firstCashAmounts(): array
     {
-        return [['600.00', false], ['600.01', true], ['600.02', true], ['1199.01', true],
+        return [['600.00', false], ['600.01', false], ['600.02', false], ['1199.01', false],
             ['1199.02', false], ['1200.00', false], ['1200.01', true]];
     }
 
     #[DataProvider('firstCashAmounts')]
-    public function test_first_cash_payment_requires_rounded_up_half_and_cannot_leave_a_sub_peso_balance(string $amount, bool $valid): void
+    public function test_cash_payment_requires_the_exact_full_balance_even_for_legacy_installment_invoices(string $amount, bool $valid): void
     {
         $order = $this->invoice();
         $before = $order->getAttributes();
@@ -81,7 +94,7 @@ class InitialDepositPolicyTest extends TestCase
             $this->assertSame(InvoiceTerms::amount($amount), $order->fresh()->amount_paid);
             $this->assertDatabaseCount('payment_attempts', 1);
         } else {
-            $response->assertUnprocessable()->assertJsonValidationErrors('amount');
+            $response->assertUnprocessable()->assertJsonValidationErrors('payment');
             $this->assertSame($before, $order->fresh()->getAttributes());
             $this->assertDatabaseCount('payment_attempts', 0);
             $this->assertDatabaseCount('activity_logs', 0);
@@ -93,11 +106,11 @@ class InitialDepositPolicyTest extends TestCase
 
     public static function customerDeliveryDeposits(): array
     {
-        return [['700.00', false], ['700.01', true]];
+        return [['700.00'], ['700.01']];
     }
 
     #[DataProvider('customerDeliveryDeposits')]
-    public function test_customer_initial_deposit_includes_delivery_and_rejected_creation_rolls_back_stock(string $amount, bool $valid): void
+    public function test_customer_deposit_creation_is_rejected_including_delivery_and_reserves_nothing(string $amount): void
     {
         $variant = $this->variant();
         $this->actingAs(User::factory()->create(['role' => 'customer']));
@@ -109,22 +122,13 @@ class InitialDepositPolicyTest extends TestCase
         $response = $this->withSession(['cart' => [$variant->id => 1], 'delivery_quote' => ['quote' => $quote,
             'address' => '12 Example Street, Imus, Cavite, 4103, Philippines', 'lat' => $address['lat'], 'lng' => $address['lng']]])
             ->post('/checkout', $address + ['recipient' => 'Deposit fixture buyer', 'phone' => '09123456789', 'delivery_method' => 'lalamove',
-                'payment_option' => 'partial', 'payment_amount' => $amount, 'payment_days' => 14]);
-        if ($valid) {
-            $response->assertSessionHasNoErrors()->assertRedirect('https://checkout.paymongo.com/cs_deposit_fixture_1');
-            $this->assertSame(140001, Order::sole()->total);
-            $this->assertSame(20000, Order::sole()->shipping);
-            $this->assertSame(70001, PaymentAttempt::sole()->amount);
-            $this->assertSame(0, Order::sole()->amount_paid);
-            Http::assertSentCount(1);
-        } else {
-            $response->assertSessionHasErrors('payment_amount');
-            $this->assertDatabaseCount('orders', 0);
-            $this->assertDatabaseCount('order_items', 0);
-            $this->assertDatabaseCount('payment_attempts', 0);
-            $this->assertSame(0, $variant->fresh()->reserved);
-            Http::assertNothingSent();
-        }
+                'payment_option' => 'partial', 'payment_amount' => $amount, 'payment_days' => 14, 'terms' => '1', 'pin_confirmed' => '1']);
+        $response->assertSessionHasErrors(['payment_option', 'payment_amount', 'payment_days']);
+        $this->assertDatabaseCount('orders', 0);
+        $this->assertDatabaseCount('order_items', 0);
+        $this->assertDatabaseCount('payment_attempts', 0);
+        $this->assertSame(0, $variant->fresh()->reserved);
+        Http::assertNothingSent();
     }
 
     public static function walkInPaths(): array
@@ -133,7 +137,7 @@ class InitialDepositPolicyTest extends TestCase
     }
 
     #[DataProvider('walkInPaths')]
-    public function test_new_walk_in_initial_partial_payment_is_atomic_for_guests_and_registered_customers(string $customerType, string $option): void
+    public function test_removed_walk_in_partial_choices_cannot_create_invoices_for_guests_or_registered_customers(string $customerType, string $option): void
     {
         $variant = $this->variant();
         $customer = $customerType === 'registered' ? User::factory()->create(['role' => 'customer']) : null;
@@ -143,7 +147,7 @@ class InitialDepositPolicyTest extends TestCase
             'recipient' => 'Deposit fixture guest', 'phone' => '09123456789', 'lines' => [['variant_id' => $variant->id, 'quantity' => 1]],
             'payment_option' => $option, 'amount' => '600.00', 'due_at' => now()->addDays(14)->toDateString(),
             'payment_received' => '1', 'reason' => 'Cash counted and received for isolated fixture.'];
-        $this->post('/admin/walk-in', $payload)->assertSessionHasErrors('amount');
+        $this->post('/admin/walk-in', $payload)->assertSessionHasErrors(['payment_option', 'amount', 'due_at']);
         $this->assertDatabaseCount('orders', 0);
         $this->assertDatabaseCount('order_items', 0);
         $this->assertDatabaseCount('payment_attempts', 0);
@@ -151,21 +155,13 @@ class InitialDepositPolicyTest extends TestCase
         Http::assertNothingSent();
 
         $payload['amount'] = '600.01';
-        $this->post('/admin/walk-in', $payload)->assertSessionHasNoErrors()->assertRedirect();
-        $this->assertSame(120001, Order::sole()->total);
-        $this->assertSame(60001, PaymentAttempt::sole()->amount);
-        $this->assertSame($customer?->id, Order::sole()->user_id);
-        $this->assertFalse(Order::sole()->inventory_committed);
-        $this->assertSame(1, $variant->fresh()->reserved);
-        if ($option === 'partial_cash') {
-            $this->assertSame(60001, Order::sole()->amount_paid);
-            $this->assertSame('partially_paid', Order::sole()->payment_status);
-            Http::assertNothingSent();
-        } else {
-            $this->assertSame(0, Order::sole()->amount_paid);
-            $this->assertSame('pending', PaymentAttempt::sole()->status);
-            Http::assertSentCount(1);
-        }
+        $this->post('/admin/walk-in', $payload)->assertSessionHasErrors(['payment_option', 'amount', 'due_at']);
+        $this->assertDatabaseCount('orders', 0);
+        $this->assertDatabaseCount('order_items', 0);
+        $this->assertDatabaseCount('payment_attempts', 0);
+        $this->assertSame(0, $variant->fresh()->reserved);
+        $this->assertSame(10, $variant->fresh()->stock);
+        Http::assertNothingSent();
     }
 
     public function test_guest_signed_payment_cannot_bypass_the_first_deposit_minimum(): void
@@ -174,7 +170,7 @@ class InitialDepositPolicyTest extends TestCase
         $this->provider();
         $url = URL::temporarySignedRoute('guest.orders.pay', now()->addHour(), ['order' => $order->id]);
         $this->postJson($url, ['amount' => '600.00', 'request_key' => (string) Str::uuid()])
-            ->assertUnprocessable()->assertJsonValidationErrors('amount');
+            ->assertUnprocessable()->assertJsonValidationErrors('payment');
         $this->assertDatabaseCount('payment_attempts', 0);
         Http::assertNothingSent();
     }
@@ -185,8 +181,8 @@ class InitialDepositPolicyTest extends TestCase
         $staff = User::factory()->create(['role' => 'staff']);
         $this->actingAs($staff);
         $original = array_intersect_key($order->getAttributes(), array_flip(['number', 'total', 'subtotal', 'due_at', 'original_due_at']));
-        $this->post('/admin/orders/'.$order->id.'/payments/cash', $this->cash(60001))->assertSessionHasNoErrors();
-        $this->post('/admin/orders/'.$order->id.'/payments/cash', $this->cash(100))->assertSessionHasNoErrors();
+        $this->legacyPayment($order, 60001);
+        $this->legacyPayment($order->fresh(), 100);
         $final = $this->cash(59900);
         $this->post('/admin/orders/'.$order->id.'/payments/cash', $final)->assertSessionHasNoErrors();
         $this->post('/admin/orders/'.$order->id.'/payments/cash', $final)->assertSessionHasNoErrors();
@@ -212,8 +208,10 @@ class InitialDepositPolicyTest extends TestCase
             'attributes' => ['status' => 'paid', 'amount' => 10050, 'currency' => 'PHP', 'livemode' => false, 'paid_at' => now()->timestamp]]));
         $this->assertSame(10050, $order->fresh()->amount_paid);
         $this->actingAs(User::factory()->create(['role' => 'staff']));
-        $this->post('/admin/orders/'.$order->id.'/payments/cash', $this->cash(100))->assertSessionHasNoErrors();
-        $this->assertSame(10150, $order->fresh()->amount_paid);
+        $this->post('/admin/orders/'.$order->id.'/payments/cash', $this->cash(100))->assertSessionHasErrors('payment');
+        $this->assertSame(10050, $order->fresh()->amount_paid);
+        $this->post('/admin/orders/'.$order->id.'/payments/cash', $this->cash(109951))->assertSessionHasNoErrors();
+        $this->assertSame(120001, $order->fresh()->amount_paid);
         $this->assertSame($deadline, $order->fresh()->getRawOriginal('due_at'));
         $this->assertDatabaseCount('payment_attempts', 2);
         Http::assertNothingSent();
@@ -223,12 +221,12 @@ class InitialDepositPolicyTest extends TestCase
     {
         $order = $this->invoice();
         $staff = User::factory()->create(['role' => 'staff']);
-        app(InvoicePayments::class)->recordCash($order, 60001, $staff, 'Cash counted and received for isolated fixture.', (string) Str::uuid());
+        $this->legacyPayment($order, 60001);
         $before = $order->fresh()->getAttributes();
         $this->actingAs($staff)->postJson('/admin/orders/'.$order->id.'/payments/cash', $this->cash(59999))
-            ->assertUnprocessable()->assertJsonValidationErrors('amount');
+            ->assertUnprocessable()->assertJsonValidationErrors('payment');
         $this->actingAs($order->user)->postJson('/orders/'.$order->id.'/payments', ['amount' => '599.99', 'request_key' => (string) Str::uuid()])
-            ->assertUnprocessable()->assertJsonValidationErrors('amount');
+            ->assertUnprocessable()->assertJsonValidationErrors('payment');
         $this->assertSame($before, $order->fresh()->getAttributes());
         $this->assertDatabaseCount('payment_attempts', 1);
         Http::assertNothingSent();
@@ -249,14 +247,17 @@ class InitialDepositPolicyTest extends TestCase
         Http::assertNothingSent();
     }
 
-    public function test_exact_half_of_an_even_invoice_is_accepted_without_rounding_up_an_extra_centavo(): void
+    public function test_even_an_exact_half_payment_is_rejected_without_mutating_a_legacy_invoice(): void
     {
         $order = $this->invoice(false, 120000);
         $this->actingAs(User::factory()->create(['role' => 'staff']));
-        $this->post('/admin/orders/'.$order->id.'/payments/cash', $this->cash(60000))->assertSessionHasNoErrors();
-        $this->assertSame(60000, $order->fresh()->amount_paid);
-        $this->assertSame(60000, $order->fresh()->outstandingBalance());
-        $this->assertSame('partially_paid', $order->fresh()->payment_status);
+        $this->post('/admin/orders/'.$order->id.'/payments/cash', $this->cash(60000))->assertSessionHasErrors('payment');
+        $this->assertSame(0, $order->fresh()->amount_paid);
+        $this->assertSame(120000, $order->fresh()->outstandingBalance());
+        $this->assertSame('pending', $order->fresh()->payment_status);
+        $this->assertDatabaseCount('payment_attempts', 0);
+        $this->assertSame(1, Variant::sole()->reserved);
+        $this->assertSame(10, Variant::sole()->stock);
         Http::assertNothingSent();
     }
 }

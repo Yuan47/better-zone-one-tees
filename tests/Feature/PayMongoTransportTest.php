@@ -39,9 +39,13 @@ class PayMongoTransportTest extends TestCase
         $variant = $product->variants()->create(['sku' => 'TRANSPORT-'.Str::uuid(), 'size' => 'M', 'color' => 'White', 'stock' => 20,
             'retail_price' => 10000, 'wholesale_price' => 9000, 'reseller_price' => 8000]);
 
-        return app(OrderFlow::class)->reserve([$variant->id => $partial ? 12 : 1], ['recipient' => 'Transport test buyer',
-            'phone' => '09123456789', 'address' => 'Store pickup', 'delivery_method' => 'pickup', 'shipping' => 0,
-            'payment_plan' => $partial ? 'partial' : 'full', 'due_at' => $partial ? now()->addDays(14) : null], $buyer->id)->fresh();
+        $order = app(OrderFlow::class)->reserve([$variant->id => $partial ? 12 : 1], ['recipient' => 'Transport test buyer',
+            'phone' => '09123456789', 'address' => 'Store pickup', 'delivery_method' => 'pickup', 'shipping' => 0], $buyer->id);
+        if ($partial) {
+            $order->update(['payment_plan' => 'partial', 'due_at' => now()->addDays(14), 'original_due_at' => now()->addDays(14)]);
+        }
+
+        return $order->fresh();
     }
 
     private function attempt(Order $order, ?int $amount = null): PaymentAttempt
@@ -143,12 +147,12 @@ class PayMongoTransportTest extends TestCase
             return Http::response(['data' => ['id' => 'cs_forged_redirect', 'attributes' => ['checkout_url' => 'https://checkout.paymongo.com/forged']]], $status,
                 ['Location' => 'https://other.example.test/collect-credentials']);
         }]);
-        $error = $this->runCatching(fn () => app(InvoicePayments::class)->start($order, 60000, $order->user, (string) Str::uuid()));
+        $error = $this->runCatching(fn () => app(InvoicePayments::class)->start($order, $order->outstandingBalance(), $order->user, (string) Str::uuid()));
         $this->assertSame($before['invoice'], $order->fresh()->getAttributes());
         $this->assertSame($before['variants'], Variant::orderBy('id')->get()->map->getAttributes()->all());
         $attempt = $order->payments()->sole();
         $this->assertSame('unknown', $attempt->status);
-        $this->assertSame(60000, $attempt->amount);
+        $this->assertSame($order->total, $attempt->amount);
         $this->assertNull($attempt->checkout_session_id);
         $this->assertNull($attempt->payment_id);
         $this->assertInstanceOf(\RuntimeException::class, $error);

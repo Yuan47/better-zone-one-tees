@@ -74,7 +74,7 @@ class ActivityRecorder
         if ($target) {
             return match (class_basename($target)) {
                 'User' => 'account', 'Product' => 'product', 'Variant' => 'variant', 'Order' => 'order', 'ChatbotFaq' => 'faq', 'Refund' => 'refund',
-                'StaffInvitation' => 'staff_invitation', default => null,
+                'StaffInvitation' => 'staff_invitation', 'CustomerAddress' => 'address', default => null,
             };
         }
 
@@ -91,6 +91,7 @@ class ActivityRecorder
             'order.created' => ['quantity', 'delivery_method', 'status'],
             'order.status_changed', 'order.received' => ['previous_status', 'status', 'reason'],
             'order.ready_email_retried' => ['reason'],
+            'product.archived', 'product.restored', 'product.deleted', 'variant.archived', 'variant.restored', 'variant.deleted' => ['reason'],
             'invoice.payment_received', 'refund.cash_recorded' => ['amount', 'method', 'reason'],
             'refund.inspected', 'refund.policy_updated' => ['reason'],
             'invoice.due_changed' => ['reason', 'previous_due_at', 'due_at'],

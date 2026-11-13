@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Rules\AccountPasswordSize;
+use App\Rules\PhilippineMobileNumber;
 use App\Services\ActivityRecorder;
 use App\Services\ImageUploads;
 use App\Services\StructuredAddress;
@@ -39,7 +40,7 @@ class AccountController extends Controller
             'password' => ['prohibited'],
         ];
         if ($user->role === 'customer') {
-            $rules['phone'] = ['nullable', 'regex:/^\+?[0-9]{10,15}$/'];
+            $rules['phone'] = ['nullable', new PhilippineMobileNumber];
         } else {
             foreach ([...StructuredAddress::FIELDS, 'phone', 'lat', 'lng'] as $field) {
                 $rules[$field] = ['prohibited'];

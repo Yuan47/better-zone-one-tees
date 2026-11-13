@@ -29,7 +29,7 @@ class RegistrationIdentityTest extends TestCase
 
     private function registration(array $extra = []): array
     {
-        return $extra + ['name' => 'New Customer', 'username' => 'new_customer', 'email' => 'registration@example.test',
+        return $extra + ['terms' => '1', 'name' => 'New Customer', 'username' => 'new_customer', 'email' => 'registration@example.test',
             'password' => 'RegistrationPassword!2026', 'password_confirmation' => 'RegistrationPassword!2026'];
     }
 

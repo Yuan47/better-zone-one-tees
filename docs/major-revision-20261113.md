@@ -1,0 +1,21 @@
+# Revised store workflow
+
+This revision simplifies new purchases to full payment, keeps the original quantity pricing, and makes customer selection and staff actions clearer.
+
+- **Customer:** select the actual product, color and size; save the cart; choose store pickup or a saved delivery address; confirm the delivery entrance and fee; review the full total; pay through PayMongo; follow the compact My Purchases list. GPS permission is an optional shortcut to choosing the required delivery pin.
+- **Registration:** full name, username, email, password confirmation and Terms and Conditions acceptance. Email ownership is verified by the configured verification flow. Google verifies its customer identity; creating a new Google customer account also requires agreement to the store terms. Existing matching accounts remain linked rather than duplicated.
+- **Contact details:** customer mobile inputs require eleven digits beginning with 09. Obvious email-domain typos are rejected; the email code proves inbox ownership. Required delivery inputs show an asterisk.
+- **Staff:** use the simple Needs attention counts, record full walk-in cash only after receipt, or prepare a full PayMongo payment. Pack fully paid orders, mark them ready with a reason, arrange the sandbox demonstration courier, and check its latest status. The customer confirms an online order’s receipt with stars; a written review is optional.
+- **Owner:** manage actual sizes/colors and photographs, archive unwanted products or variants, restore them, or permanently delete an archived record that has no protected transaction or reservation references. Items linked to old invoices remain archived so history is traceable. New adult sizes use XS through 5XL; existing kids and other saved sizes are retained.
+- **Dashboard:** the original four sales cards remain above the main sales chart. Walk-in versus online orders replaces the former payment-status comparison. The Top 5 most bought items graph uses the current month and previous three calendar months, grouped by product identity across its sizes/colors. Both new graphs count fully paid purchases by payment date; the current month is incomplete. Chart values display two decimal places. Sales date filters still control the main sales report.
+- **Forecasts and reports:** clearer axes, fewer date labels, two-decimal financial values, and compact size/pricing tables. Forecast formulas remain the established historical growth and linear regression formulas. Forecasts are estimates; no new accuracy claim follows from a cleaner graph.
+- **Assistance:** the approved FAQ library includes the current full-payment policy, registration terms, saved addresses, persistent carts, To Ship, the simple dashboard and a sandbox Lalamove demonstration guide. Customer chat does not expose internal staff or owner instructions.
+- **Photographs:** the banner and catalog use generated photorealistic demonstration previews. Actual owner uploads keep priority. Preview colors and garment styling are examples; supplier details and fit require store confirmation.
+
+Older partial-payment invoices retain their actual payments, original deadlines and receipts. They may settle their entire remaining balance on the original invoice. New partial-payment orders, amounts and deadline-setting actions are rejected. This preserves financial history while removing the feature from new purchases.
+
+## Additional demonstration orders
+
+The separately prepared research batch covers October 30 through November 13, 2026: one registered online purchase and one guest walk-in sale per day, or 30 invoices in total. Eight online examples include a separately displayed simulated PHP 44.00 delivery fee. These are labeled research demonstrations, use no real payment or courier request, and suppress automated receipt emails for the imported records.
+
+The importer is private and separate from application publication. It first saves a plan and backup, checks current prices and stock, then creates the batch in one database transaction. It deducts the 120 planned pieces once, preserves existing accounts and financial rows, and detects a repeated batch without adding duplicate orders. The isolated preview verification is separate evidence from a hosted import; record the hosted result before saying these examples are on the public defense site.

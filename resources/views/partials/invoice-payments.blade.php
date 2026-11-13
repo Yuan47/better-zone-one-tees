@@ -4,15 +4,13 @@
     $invoiceClosed = $order->status === 'cancelled' || $order->inventory_released;
     $balance = $order->outstandingBalance();
     $balanceDue = !$invoiceClosed && $balance > 0;
-    $minimumPayment = app(\App\Services\InvoiceTerms::class)->minimumPayment($order);
-    $firstPartialPayment = $order->paidAmount()===0 && app(\App\Services\InvoiceTerms::class)->eligible($order);
     $activePayment = $order->payments->whereIn('status',\App\Models\PaymentAttempt::ACTIVE)->sortByDesc('id')->first();
     $sign = fn($name) => \Illuminate\Support\Facades\URL::temporarySignedRoute($name,\Carbon\Carbon::createFromTimestamp((int)request('expires')),['order'=>$order->id]);
     $payUrl = $guest ? $sign('guest.orders.pay') : route('orders.payments.store',$order);
     $checkUrl = $guest ? $sign('guest.orders.check') : route('orders.payment.check',$order);
 @endphp
 <section class="panel invoice-payments" aria-labelledby="invoice-payments-heading">
-<div class="section-heading"><div><span class="eyebrow">SAME INVOICE · EVERY PAYMENT</span><h2 id="invoice-payments-heading">Invoice payments</h2></div><span class="badge">{{ $invoiceClosed ? 'Closed invoice' : ($order->payment_status==='partially_paid'?'Partially paid':ucfirst($order->payment_status)) }}</span></div>
+<div class="section-heading"><div><span class="eyebrow">PAYMENT RECORD</span><h2 id="invoice-payments-heading">Invoice payments</h2></div><span class="badge">{{ $invoiceClosed ? 'Closed invoice' : ($order->payment_status==='partially_paid'?'Partially paid':ucfirst($order->payment_status)) }}</span></div>
 <p class="muted">Each received payment below is a payment receipt with its own reference. Pending attempts are not receipts.</p>
 @if($invoiceClosed)<p class="notice">No payment due. This invoice is closed; the amounts below are retained for its history.</p>@endif
 <div class="invoice-totals"><div><span>Original invoice</span><strong>₱{{ number_format($order->total/100,2) }}</strong></div><div><span>Payment received</span><strong>₱{{ number_format($order->paidAmount()/100,2) }}</strong></div><div><span>{{ $invoiceClosed ? 'Uncollected at closure' : 'Remaining balance' }}</span><strong>₱{{ number_format($balance/100,2) }}</strong></div></div>
@@ -23,8 +21,8 @@
 @if($activePayment)
     @if($activePayment->status==='pending' && $activePayment->checkout_url)<a class="button dark" href="{{ $activePayment->checkout_url }}">Continue saved PayMongo payment →</a>@else<p class="notice">A checkout response is being checked. Another online or cash payment cannot be recorded until this request is reconciled.</p>@endif
     @if($activePayment->checkout_session_id)<form action="{{ $checkUrl }}" method="post">@csrf<button class="button">Check payment with PayMongo</button></form>
-    @if(!$guest)<details><summary>Close this online checkout</summary><p>The provider must first verify that no payment is processing. Deposits already received remain on this invoice; its balance and deadline stay unchanged.</p><form action="{{ route('orders.payment.close',$order) }}" method="post">@csrf<button class="button">Verify and close checkout</button></form></details>@endif
-    @elseif($staff && auth()->user()->role==='admin')<details><summary>Recover uncertain checkout</summary><p>Find the checkout in PayMongo using invoice {{ $order->number }} and installment reference <strong>{{ $activePayment->reference }}</strong>. Both must match.</p><form class="stack" method="post" action="{{ route('admin.orders.payment.recover',$order) }}">@csrf<label>Checkout ID<input name="checkout_session_id" required pattern="cs_[A-Za-z0-9_]+" maxlength="123"></label><button class="button">Verify checkout reference</button></form></details>@endif
+    @if(!$guest)<details><summary>Close this online checkout</summary><p>The provider must first verify that no payment is processing. Previously received payments remain on this invoice; no receipt is removed.</p><form action="{{ route('orders.payment.close',$order) }}" method="post">@csrf<button class="button">Verify and close checkout</button></form></details>@endif
+    @elseif($staff && auth()->user()->role==='admin')<details><summary>Recover uncertain checkout</summary><p>Find the checkout in PayMongo using invoice {{ $order->number }} and payment reference <strong>{{ $activePayment->reference }}</strong>. Both must match.</p><form class="stack" method="post" action="{{ route('admin.orders.payment.recover',$order) }}">@csrf<label>Checkout ID<input name="checkout_session_id" required pattern="cs_[A-Za-z0-9_]+" maxlength="123"></label><button class="button">Verify checkout reference</button></form></details>@endif
 @elseif($order->payments->isEmpty() && $order->checkout_session_id)
     @if($order->checkout_url)<a class="button dark" href="{{ $order->checkout_url }}">Continue payment →</a>@endif
     <form action="{{ $checkUrl }}" method="post">@csrf<button class="button">Check payment with PayMongo</button></form>
@@ -34,10 +32,29 @@
     <p class="notice">The remaining balance is below ₱1.00 and needs owner reconciliation. No amount has been written off. Check the existing receipts before collecting or changing anything.</p>
     @else
     @if(!$guest && $order->paidAmount()===0 && !$order->checkout_session_id && $order->payments->contains(fn($payment)=>$payment->method==='paymongo' && $payment->status==='failed'))<p class="notice">PayMongo rejected the checkout before creating a payment session. No money was confirmed. You can try again or close this unpaid invoice.</p><form action="{{ route('orders.payment.close',$order) }}" method="post">@csrf<button class="button">Close unpaid invoice</button></form>@endif
-    <div class="invoice-actions"><form class="stack" action="{{ $payUrl }}" method="post">@csrf<input type="hidden" name="request_key" value="{{ \Illuminate\Support\Str::uuid() }}"><h3>Pay this invoice online</h3><label>Amount to pay (₱)<input name="amount" type="number" min="{{ number_format($minimumPayment/100,2,'.','') }}" step="0.01" max="{{ number_format($balance/100,2,'.','') }}" value="{{ number_format($balance/100,2,'.','') }}" required></label><p class="muted">@if($firstPartialPayment)The first payment must cover at least 50% of the original invoice total including delivery (₱{{ number_format($minimumPayment/100,2) }}).@else Pay the balance, or another installment of at least ₱1 if the discounted clothing subtotal is more than ₱1,000.@endif Existing received payments and the original deadline stay unchanged.</p><button class="button dark" @disabled(!app(\App\Services\PayMongo::class)->ready())>Continue to PayMongo →</button>@if(!app(\App\Services\PayMongo::class)->ready())<small>Online payment awaits PayMongo configuration. Your invoice is saved.</small>@endif</form>
-    @if($staff)<form class="stack" action="{{ route('admin.orders.payments.cash',$order) }}" method="post">@csrf<input type="hidden" name="request_key" value="{{ \Illuminate\Support\Str::uuid() }}"><h3>Record cash received</h3><label>Amount received (₱)<input name="amount" type="number" min="{{ number_format($minimumPayment/100,2,'.','') }}" step="0.01" max="{{ number_format($balance/100,2,'.','') }}" required></label>@if($firstPartialPayment)<small>The first payment must be at least ₱{{ number_format($minimumPayment/100,2) }} (50% including delivery).</small>@endif<label>Receipt note / reason<textarea name="reason" required minlength="10" maxlength="1000" rows="2"></textarea></label><label class="receipt-check"><input type="checkbox" name="payment_received" value="1" required>I confirm this cash payment has been received.</label><button class="button">Record payment received</button></form>@endif</div>
+    <div class="invoice-actions">
+        <form class="stack" action="{{ $payUrl }}" method="post">
+            @csrf
+            <input type="hidden" name="request_key" value="{{ \Illuminate\Support\Str::uuid() }}">
+            <h3>Pay this invoice online</h3>
+            <label>Full amount to pay (₱)<input name="amount" type="number" step="0.01" value="{{ number_format($balance/100,2,'.','') }}" readonly required></label>
+            <p class="muted">Pay the full outstanding balance. Previous receipts are kept on this same invoice.</p>
+            <button class="button dark" @disabled(!app(\App\Services\PayMongo::class)->ready())>Continue to PayMongo →</button>
+            @if(!app(\App\Services\PayMongo::class)->ready())<small>Online payment awaits PayMongo configuration. Your invoice is saved.</small>@endif
+        </form>
+        @if($staff)
+        <form class="stack" action="{{ route('admin.orders.payments.cash',$order) }}" method="post">
+            @csrf
+            <input type="hidden" name="request_key" value="{{ \Illuminate\Support\Str::uuid() }}">
+            <h3>Record cash received</h3>
+            <label>Full amount received (₱)<input name="amount" type="number" step="0.01" value="{{ number_format($balance/100,2,'.','') }}" readonly required></label>
+            <label>Receipt note / reason<textarea name="reason" required minlength="10" maxlength="1000" rows="2"></textarea></label>
+            <label class="receipt-check"><input type="checkbox" name="payment_received" value="1" required>I confirm this cash payment has been received.</label>
+            <button class="button">Record payment received</button>
+        </form>
+        @endif
+    </div>
     @endif
 @endif
-@if($staff && auth()->user()->role==='admin')<details class="invoice-agreement"><summary>Record an agreed deadline change</summary><p>Only an agreed change with a recorded reason can extend the deadline, up to 30 days from the original invoice date.</p><form class="stack" action="{{ route('admin.orders.due',$order) }}" method="post">@csrf<label>New agreed deadline<input name="due_at" type="date" min="{{ $order->created_at->copy()->addDays(7)->toDateString() }}" max="{{ $order->created_at->copy()->addDays(30)->toDateString() }}" required></label><label>Agreement / reason<textarea name="reason" minlength="10" maxlength="1000" rows="2" required></textarea></label><button class="button">Save agreement</button></form></details>@endif
 @endif
 </section>

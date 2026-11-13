@@ -78,7 +78,9 @@ class DannonProductImagesTest extends TestCase
             $data = json_decode($matches[1], true, 512, JSON_THROW_ON_ERROR);
             $this->assertCount(14, $data);
             foreach ($data as $variant) {
-                $this->assertSame(asset('catalog-previews/dannon/'.$style.'/'.strtolower(str_replace(' ', '-', $variant['color'])).'.svg'), $variant['photo']);
+                $this->assertSame(asset('catalog-photos/'.$style.'.png'), $variant['photo']);
+                $this->assertTrue($variant['demo_photo']);
+                $this->assertSame(\App\Services\CatalogPhotoPreview::namedColor($variant['color']), $variant['photo_color']);
                 $this->assertSame([14200, 13200, 12700, 21], [$variant['retail'], $variant['wholesale'], $variant['reseller'], $variant['stock']]);
             }
             $this->assertSame($beforeProduct, $product->fresh()->getAttributes());
@@ -99,15 +101,15 @@ class DannonProductImagesTest extends TestCase
         $this->assertSame('https://example.test/old.jpg', $product->photoUrl());
         $this->assertSame('https://example.test/old.jpg', $variant->photoUrl($product));
         $product->image_url = null;
-        $this->assertNull($variant->photoUrl($product));
+        $this->assertSame(asset('catalog-photos/v-neck.png'), $variant->photoUrl($product));
         $this->assertNull((new Product())->photoUrl());
         $legacy = $this->originalPhoto(11, 'Red');
         $other = $this->product('lucky-hanna-v-neck', ['image_path' => $legacy]);
-        $this->assertSame(asset($legacy), $other->photoUrl());
+        $this->assertSame(asset('catalog-photos/v-neck.png'), $other->photoUrl());
         $variant->image_path = $legacy;
         $variant->product_id = $other->id;
         $variant->setRelation('product', $other);
-        $this->assertSame(asset($legacy), $variant->photoUrl($other));
+        $this->assertSame(asset('catalog-photos/v-neck.png'), $variant->photoUrl($other));
     }
 
     public function test_lookalike_or_unrecognized_paths_cannot_select_a_controlled_preview(): void

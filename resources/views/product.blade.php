@@ -2,11 +2,11 @@
 @section('title',$product->name)
 @section('content')
 <div class="breadcrumb"><a href="{{ route('store') }}">Shop all</a> / {{ $product->name }}</div>
-@php($variantData=$product->variants->map(fn($v)=>['id'=>$v->id,'size'=>$v->size,'color'=>$v->color,'stock'=>$v->available(),'retail'=>$v->retail_price,'wholesale'=>$v->wholesale_price,'reseller'=>$v->reseller_price,'photo'=>$v->photoUrl($product),'sku'=>$v->sku])->values())
+@php($variantData=$product->variants->map(fn($v)=>['id'=>$v->id,'size'=>$v->size,'color'=>$v->color,'stock'=>$v->available(),'retail'=>$v->retail_price,'wholesale'=>$v->wholesale_price,'reseller'=>$v->reseller_price,'photo'=>$v->photoUrl($product),'demo_photo'=>$v->usesDemoPhoto($product),'photo_color'=>$v->photoColor(),'sku'=>$v->sku])->values())
 @php($styleOptions=$product->variants->isNotEmpty() && $product->variants->every(fn($variant)=>in_array($variant->color,['Plain','Reflector'],true)))
 <div class="product-detail"><div class="detail-art">
-<img id="selected-product-photo" src="{{ $product->photoUrl()??'' }}" alt="{{ $product->name }}" @if(!$product->photoUrl()) hidden @endif>
-<div id="product-photo-placeholder" @if($product->photoUrl()) hidden @endif><x-shirt :color="$product->art_color" :polo="$product->isPolo()"/><span class="art-caption">PHOTO PENDING · SAMPLE ILLUSTRATION</span></div>
+<x-catalog-photo :product="$product" image-id="selected-product-photo" loading="eager"/>
+<div id="product-photo-placeholder" @if($product->photoUrl()) hidden @endif><span class="photo-pending">Photo to follow</span></div>
 </div><div class="detail-copy"><span class="eyebrow">{{ $styleOptions?'CHOOSE YOUR STYLE AND SIZE':'CHOOSE YOUR COLOR AND SIZE' }}</span><h1>{{ $product->name }}</h1><p class="detail-price" id="selected-price">From ₱{{ number_format(($product->variants->min('retail_price')??0)/100,2) }}<small> / piece · SRP</small></p><p>{{ $product->description }}</p>
 <form action="{{ route('cart.add') }}" method="post" class="stack" id="product-cart-form">@csrf
 <label>{{ $styleOptions?'Style':'Color' }}<select id="variant-color"></select></label>
@@ -16,10 +16,13 @@
 <noscript><p>Enable JavaScript to select your size and color.</p></noscript></form>
 <script type="application/json" id="product-variants">{!! json_encode($variantData,JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT) !!}</script>
 <div class="mini-note">↘ Your entire cart gets the matching quantity price.</div>
-<div class="panel selected-pricing"><b>Prices for your selected variant</b><table><thead><tr><th>Retail / SRP</th><th>Wholesale · 6–50</th><th>Re-seller · 51–100</th></tr></thead><tbody><tr><td id="price-retail">—</td><td id="price-wholesale">—</td><td id="price-reseller">—</td></tr></tbody></table><small>101+ pieces receive 5% off the Re-seller clothing subtotal. Delivery is separate.</small></div>
+<p class="demo-photo-note" id="product-demo-photo-note" @if(!$product->usesDemoPhoto()) hidden @endif>Photorealistic demo preview. Actual shade, fabric and details may vary; check with the store.</p>
 </div></div>
+<div class="product-information-tables">
+<div class="panel selected-pricing"><b>Prices for your selected variant</b><table><thead><tr><th>Retail / SRP</th><th>Wholesale · 6–50</th><th>Re-seller · 51–100</th></tr></thead><tbody><tr><td id="price-retail">—</td><td id="price-wholesale">—</td><td id="price-reseller">—</td></tr></tbody></table><small>101+ pieces receive 5% off the Re-seller clothing subtotal. Delivery is separate.</small></div>
 <section class="panel size-chart-panel"><div class="section-heading"><div><span class="eyebrow">FIND YOUR FIT</span><h2>Size chart</h2></div><span class="muted">Measurements in inches</span></div>
 <div class="table-scroll"><table><thead><tr><th>Size</th><th>Width (in.)</th><th>Length (in.)</th></tr></thead><tbody>@forelse($product->size_chart??[] as $row)<tr><td>{{ $row['size'] }}</td><td>{{ $row['width']??'To be confirmed' }}</td><td>{{ $row['length']??'To be confirmed' }}</td></tr>@empty<tr><td colspan="3">Measurements will be added by the store.</td></tr>@endforelse</tbody></table></div>@if($product->size_chart_note)<p class="muted chart-note">{{ $product->size_chart_note }}</p>@endif</section>
+</div>
 <section class="panel product-reviews" id="product-reviews" aria-labelledby="product-reviews-title">
     <div class="section-heading"><div><span class="eyebrow">FROM OUR CUSTOMERS</span><h2 id="product-reviews-title">Customer reviews</h2></div><span class="muted">{{ number_format($reviewCount) }} {{ $reviewCount===1?'rating':'ratings' }}</span></div>
     <p class="product-review-guide">Ratings are from confirmed purchases containing this item. Each rating covers the whole order; a written review is optional.</p>

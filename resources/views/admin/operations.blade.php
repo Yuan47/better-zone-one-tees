@@ -26,7 +26,7 @@
     <div class="section-heading"><div><h2 id="operations-payment-heading">Invoice payments &amp; delivery methods</h2><p class="muted">Current payment status of orders placed from {{ $startDate }} through {{ $endDate }}. Cancelled and released invoices are excluded from these comparisons.</p></div></div>
     <div class="report-count-grid">
         <section class="panel report-count-panel" aria-labelledby="operations-payment-chart-heading">
-            <div class="section-heading"><div><h3 id="operations-payment-chart-heading">Fully paid vs outstanding invoices</h3><p class="muted">{{ number_format($paymentTotal) }} invoices · outstanding means partially paid or unpaid</p></div></div>
+            <div class="section-heading"><div><h3 id="operations-payment-chart-heading">Fully paid vs outstanding invoices</h3><p class="muted">{{ number_format($paymentTotal) }} invoices · outstanding means payment is still due</p></div></div>
             <ul class="report-count-chart" aria-label="Invoice payment status counts and order links">
                 @foreach($paymentRows as $row)
                     <li class="report-count-row">
@@ -36,9 +36,9 @@
                     </li>
                 @endforeach
             </ul>
-            @if(!$paymentTotal)<p class="empty-note">No paid, partially paid or unpaid invoices in these placed dates.</p>@endif
+            @if(!$paymentTotal)<p class="empty-note">No paid or outstanding invoices in these placed dates.</p>@endif
             @if($otherPaymentCount)<p class="muted">{{ number_format($otherPaymentCount) }} invoices with other unconfirmed payment statuses are excluded from this comparison.</p>@endif
-            <p class="muted">Deposits remain outstanding until full settlement. They are excluded from confirmed clothing sales and delivery counts.</p>
+            <p class="muted">Only fully settled invoices count as confirmed clothing sales and delivery orders. New orders require full payment.</p>
         </section>
         <section class="panel report-count-panel" aria-labelledby="operations-method-chart-heading">
             <div class="section-heading"><div><h3 id="operations-method-chart-heading">Confirmed paid orders by delivery method</h3><p class="muted">{{ number_format($methodTotal) }} fully paid pickup / Lalamove orders</p></div></div>
@@ -83,9 +83,9 @@
     <section class="panel">
         <div class="section-heading"><h3>Payment & refund queues</h3></div>
         <div class="rank-row"><b>Awaiting payment<small>Unpaid orders placed in range · excludes cancellations</small></b><span>{{ number_format($stats['unpaid_pending']) }}</span></div>
-        <div class="rank-row"><b>Partially paid invoices<small>Deposits do not count as confirmed clothing sales or delivery orders</small></b><span>{{ number_format($stats['partially_paid']) }}</span></div>
-        <div class="rank-row"><b>Outstanding invoices<small>{{ number_format($stats['outstanding_invoices']) }} pending / partially paid invoices placed in these dates · excludes cancellations</small></b><span>₱{{ number_format($stats['outstanding_amount']/100, 2) }}</span></div>
-        <div class="rank-row"><b>Received deposits on these invoices<small>Current deposits on partially paid invoices placed in these dates; not receipts grouped by payment date</small></b><span>₱{{ number_format($stats['received_deposits']/100, 2) }}</span></div>
+        @if($stats['partially_paid'])<div class="rank-row"><b>Older invoices with a balance<small>Historical received payments are retained. The balance must be settled in full.</small></b><span>{{ number_format($stats['partially_paid']) }}</span></div>@endif
+        <div class="rank-row"><b>Outstanding invoices<small>{{ number_format($stats['outstanding_invoices']) }} invoices with payment due in these dates · excludes cancellations</small></b><span>₱{{ number_format($stats['outstanding_amount']/100, 2) }}</span></div>
+        @if($stats['received_deposits'])<div class="rank-row"><b>Received on older unpaid invoices<small>Current received amounts on older invoices with a balance; not grouped by payment date</small></b><span>₱{{ number_format($stats['received_deposits']/100, 2) }}</span></div>@endif
         <p><a class="text-link" href="{{ route('admin.orders', $filters + ['outstanding' => 1]) }}">View outstanding invoices →</a> · <a class="text-link" href="{{ route('admin.orders', $filters + ['overdue' => 1]) }}">{{ number_format($stats['overdue_invoices']) }} overdue invoices →</a></p>
         <div class="rank-row"><b>Cancelled unconfirmed invoices<small>Excluded from every confirmed paid-order card and chart</small></b><span>{{ number_format($stats['cancelled_unpaid']) }}</span></div>
         <div class="rank-row"><b>Open refund requests<small>Requested, approved or provider processing · request placed in range</small></b><span>{{ number_format($stats['open_refund_requests']) }}</span></div>
@@ -94,7 +94,7 @@
         <p class="muted">Refund requests are available after delivery is confirmed. Online orders require the customer's receipt confirmation and star rating. A written review is optional.</p>
         <a class="text-link" href="{{ route('admin.refunds.index') }}">View refund request queue →</a>
         @if($stats['other_unpaid'])<div class="rank-row"><b>Other unconfirmed payments</b><span>{{ number_format($stats['other_unpaid']) }}</span></div>@endif
-        <p class="muted">{{ number_format($stats['placed_orders']) }} total orders were placed in this range, including paid, partially paid, unpaid and cancelled orders. Pending and partial payments are excluded from confirmed order counts. Fully settled walk-in cash invoices are included.</p>
+        <p class="muted">{{ number_format($stats['placed_orders']) }} total orders were placed in this range, including paid, outstanding and cancelled orders. Orders with a balance are excluded from confirmed paid-order counts. Fully settled walk-in cash invoices are included.</p>
         <p class="muted">Provider-confirmed and owner-recorded cash refunds are separate financial events. An order with a refund remains in its current fulfillment status, and may have been placed before this range.</p>
         <p class="muted">Confirmed Clothing sale shows original paid clothing sales before refunds. Refunds appear separately, including their recorded clothing and delivery allocations.</p>
     </section>

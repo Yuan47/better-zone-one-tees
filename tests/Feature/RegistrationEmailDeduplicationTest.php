@@ -30,7 +30,7 @@ class RegistrationEmailDeduplicationTest extends TestCase
 
     private function registration(string $email): array
     {
-        return ['name' => 'New Customer', 'username' => 'new_customer', 'email' => $email,
+        return ['terms' => '1', 'name' => 'New Customer', 'username' => 'new_customer', 'email' => $email,
             'password' => 'RegistrationPassword!2026', 'password_confirmation' => 'RegistrationPassword!2026'];
     }
 

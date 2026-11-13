@@ -1,0 +1,130 @@
+.catalog-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.catalog-tabs a {
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 10px 16px;
+}
+
+.catalog-tabs a.active {
+    color: #941b0c;
+    background: #fff3e9;
+    font-weight: 600;
+}
+
+.catalog-lifecycle {
+    margin-bottom: 22px;
+}
+
+.catalog-lifecycle summary,
+.catalog-variant-actions summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: #941b0c;
+}
+
+.catalog-lifecycle details > p,
+.catalog-lifecycle details > form {
+    margin-top: 16px;
+}
+
+.catalog-lifecycle-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 28px;
+    margin-top: 18px;
+}
+
+.catalog-delete {
+    color: #941b0c;
+    border-color: #d8a39b;
+}
+
+.catalog-variant-actions {
+    min-width: 170px;
+    white-space: normal;
+    margin-top: 8px;
+}
+
+.catalog-variant-actions form {
+    margin-top: 14px;
+}
+
+.catalog-variant-actions label {
+    font-size: 11px;
+}
+
+.catalog-variant-actions .check,
+.catalog-lifecycle .check {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.product-information-tables {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    gap: 24px;
+    align-items: start;
+    margin: 24px 20px 0;
+}
+
+.product-information-tables > .panel {
+    margin: 0;
+    min-width: 0;
+    padding: 20px;
+}
+
+.product-information-tables .size-chart-panel h2 {
+    font-size: 19px;
+}
+
+.product-information-tables .size-chart-panel .section-heading {
+    margin-bottom: 10px;
+    gap: 10px;
+}
+
+.product-information-tables .size-chart-panel th,
+.product-information-tables .size-chart-panel td {
+    padding: 7px 10px;
+    font-size: 12px;
+}
+
+.product-information-tables .size-chart-panel .eyebrow {
+    display: none;
+}
+
+.product-information-tables .chart-note {
+    margin-top: 12px;
+    font-size: 11px;
+    line-height: 1.6;
+}
+
+@media (max-width: 850px) {
+    .product-information-tables {
+        margin-inline: 0;
+        gap: 16px;
+    }
+}
+
+@media (max-width: 600px) {
+    .catalog-lifecycle-grid,
+    .product-information-tables {
+        grid-template-columns: 1fr;
+    }
+
+    .product-information-tables .selected-pricing table {
+        font-size: 11px;
+    }
+
+    .product-information-tables .selected-pricing th,
+    .product-information-tables .selected-pricing td {
+        padding: 9px 6px;
+    }
+}

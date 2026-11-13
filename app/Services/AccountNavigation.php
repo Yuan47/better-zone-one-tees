@@ -58,7 +58,7 @@ class AccountNavigation
                 $allowed = false;
             }
         } else {
-            $allowed = $route->named('store', 'product', 'cart', 'dashboard', 'account', 'orders', 'orders.show', 'checkout');
+            $allowed = $route->named('store', 'product', 'cart', 'dashboard', 'account', 'account.addresses.index', 'account.addresses.create', 'account.addresses.edit', 'orders', 'orders.show', 'checkout');
         }
 
         return $allowed ? $target : null;

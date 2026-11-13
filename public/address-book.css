@@ -1,0 +1,59 @@
+.customer-account-shell{display:grid;grid-template-columns:210px minmax(0,1fr);gap:28px;align-items:start}
+.customer-account-nav{padding:12px 0;font-size:14px}
+.customer-account-identity{display:flex;align-items:center;gap:12px;padding:0 0 22px;margin-bottom:16px;border-bottom:1px solid var(--border)}
+.customer-account-identity img,.customer-account-initial{width:48px;height:48px;border-radius:50%;object-fit:cover;flex-shrink:0}
+.customer-account-initial{display:grid;place-items:center;background:var(--brand-tint);color:var(--brand-primary);font-size:22px}
+.customer-account-identity strong{display:block;overflow-wrap:anywhere}
+.customer-account-identity small{display:block;color:var(--muted);font-size:12px}
+.customer-account-nav nav{display:flex;flex-direction:column;gap:5px}
+.customer-account-nav nav a{padding:10px 12px;border-radius:7px}
+.customer-account-nav nav a:hover,.customer-account-nav nav a[aria-current=page]{background:var(--brand-tint);color:var(--brand-primary)}
+.customer-account-main{min-width:0}
+.address-book{min-width:0;padding:28px}
+.address-book .section-heading{align-items:center;flex-wrap:wrap;border-bottom:1px solid var(--border);padding-bottom:20px;margin-bottom:20px}
+.address-book h1{font-size:25px;letter-spacing:-.5px}
+.saved-address{border-bottom:1px solid var(--border);padding:20px 0}
+.saved-address:last-child{border-bottom:0;padding-bottom:0}
+.saved-address-heading{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:8px}
+.saved-address-heading h2{font-size:17px;margin:0}
+.saved-address-heading>span,.saved-address>p{font-size:14px;color:var(--muted);overflow-wrap:anywhere}
+.saved-address-tags,.saved-address-actions{display:flex;align-items:center;flex-wrap:wrap;gap:10px}
+.saved-address-tags{margin:10px 0}
+.saved-address-actions form{margin:0}
+.saved-address-actions .text-button{padding:10px;color:var(--brand-primary)}
+.address-default{border:1px solid var(--brand-primary);color:var(--brand-primary);background:#fff}
+.address-pin-warning{color:#941b0c!important;font-size:13px!important;margin:12px 0}
+.required-mark{color:#941b0c}
+.address-book .stack label,.address-book .two-col label{display:block;font-size:14px;font-weight:600}
+.address-book label>input:not([type=checkbox]),.address-book label>select{display:block;width:100%;margin-top:7px}
+.address-book label>small{display:block;margin-top:5px;font-weight:400}
+.address-pin-picker{border:1px solid var(--border);border-radius:10px;padding:20px}
+.address-pin-picker h2{font-size:18px}
+.address-pin-picker p{font-size:14px}
+#address-book-map{height:320px;min-width:0;border-radius:8px;background:#f6eee7;margin:16px 0;z-index:0}
+.address-book .address-pin-confirmation{display:flex;flex-direction:row;align-items:flex-start;gap:10px;margin:18px 0;font-weight:400}
+.address-pin-confirmation input{width:20px;height:20px;flex-shrink:0;margin:2px 0 0}
+.address-book .address-default-option{align-self:center;font-weight:400}
+.address-default-option input{width:18px;height:18px;vertical-align:middle;margin-right:6px}
+.address-book details summary{cursor:pointer;color:var(--brand-primary);font-size:13px}
+.address-book details .two-col{margin-top:12px}
+.address-book .stack>.button{min-width:160px;align-self:flex-end}
+.checkout-saved-addresses{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap}
+.checkout-saved-addresses>label{flex:1;min-width:200px}
+.checkout-saved-addresses>.text-link{padding-bottom:12px}
+@media(max-width:1000px){.customer-account-shell{grid-template-columns:180px minmax(0,1fr);gap:20px}.address-book{padding:22px}}
+@media(max-width:700px){
+    .customer-account-shell{grid-template-columns:minmax(0,1fr);gap:18px}
+    .customer-account-nav{padding:0}
+    .customer-account-identity{padding-bottom:12px;margin-bottom:12px}
+    .customer-account-nav nav{flex-direction:row;overflow:auto;padding-bottom:6px;gap:4px}
+    .customer-account-nav nav a{flex-shrink:0;font-size:13px;padding:9px 11px}
+    .address-book{padding:20px}
+    .address-book .section-heading{align-items:flex-start}
+    .address-book .section-heading>.button{min-height:44px}
+    .saved-address-actions .button,.saved-address-actions .text-button{min-height:44px}
+    .address-pin-picker{padding:15px}
+    #address-book-map{height:300px}
+    .address-book .stack>.button{width:100%}
+    .checkout-saved-addresses{gap:8px}
+}

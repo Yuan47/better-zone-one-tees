@@ -161,7 +161,7 @@ class OperationsTest extends TestCase
             ->assertDontSee('Other status')->assertDontSee('Being packed')->assertDontSee('Booking being checked')
             ->assertSee('Customer confirmed receipt and submitted a rating');
         $rows = collect($response->viewData('deliveryRows'))->keyBy('status');
-        $this->assertSame(['Packing', 'Ready for delivery', 'With courier', 'Delivered'], $rows->pluck('label')->all());
+        $this->assertSame(['Packing', 'Ready for delivery', 'To Ship', 'Delivered'], $rows->pluck('label')->all());
         $this->assertSame([
             'Payment is confirmed. Pack the clothing before arranging a courier.',
             'Packing is complete. Arrange a courier booking for this order.',

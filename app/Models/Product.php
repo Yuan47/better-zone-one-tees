@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Services\DannonProductImages;
+use App\Services\CatalogPhotoPreview;
 use Illuminate\Database\Eloquent\Model;
 
 class Product extends Model
@@ -11,13 +12,23 @@ class Product extends Model
 
     protected function casts(): array
     {
-        return ['active' => 'boolean', 'size_chart' => 'array'];
+        return ['active' => 'boolean', 'size_chart' => 'array', 'archived_at' => 'datetime', 'archive_was_active' => 'boolean'];
     }
 
     public function photoUrl(): ?string
     {
-        return DannonProductImages::url($this->slug, $this->image_path)
+        return CatalogPhotoPreview::product($this) ?? DannonProductImages::url($this->slug, $this->image_path)
             ?? ($this->image_path ? asset($this->image_path) : ($this->image_url ?: null));
+    }
+
+    public function usesDemoPhoto(): bool
+    {
+        return CatalogPhotoPreview::product($this) !== null;
+    }
+
+    public function photoColor(): string
+    {
+        return CatalogPhotoPreview::color($this->art_color);
     }
 
     public function isPolo(): bool
@@ -28,5 +39,10 @@ class Product extends Model
     public function variants()
     {
         return $this->hasMany(Variant::class);
+    }
+
+    public function scopePublished($query)
+    {
+        return $query->where('active', true)->whereNull('archived_at');
     }
 }

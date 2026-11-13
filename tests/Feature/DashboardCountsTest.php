@@ -73,9 +73,8 @@ class DashboardCountsTest extends TestCase
         $response = $this->get(route('admin.dashboard', $filters))->assertOk()
             ->assertViewHas('paymentTotal', 4)->assertViewHas('methodTotal', 2)->assertViewHas('otherPaymentCount', 1)
             ->assertViewHas('ordersCount', 3)->assertViewHas('revenue', 110000)
-            ->assertSee('Fully paid vs outstanding invoices')->assertSee('Confirmed paid orders by delivery method')
-            ->assertSee('this comparison uses the date the order was placed')
-            ->assertSee('Deposits remain outstanding until full settlement');
+            ->assertSee('Walk-in &amp; online orders', false)->assertSee('Confirmed paid orders by delivery method')
+            ->assertSee('Counts fully paid invoices by payment date');
         $this->assertDrilldowns($response->viewData('paymentRows'), [
             'paid' => [$pickup->id, $courier->id], 'partially_paid' => [$partial->id], 'pending' => [$pending->id],
         ]);
@@ -142,7 +141,7 @@ class DashboardCountsTest extends TestCase
     {
         foreach (['admin.dashboard', 'admin.operations'] as $route) {
             $response = $this->get(route($route))->assertOk()->assertViewHas('paymentTotal', 0)->assertViewHas('methodTotal', 0)
-                ->assertSee('No paid, partially paid or unpaid invoices in these placed dates')
+                ->assertSee($route === 'admin.dashboard' ? 'No confirmed walk-in or online orders in the last 4 months.' : 'No paid or outstanding invoices in these placed dates')
                 ->assertSee('No fully paid pickup or Lalamove orders in these placed dates');
             foreach (array_merge($response->viewData('paymentRows'), $response->viewData('methodRows')) as $row) {
                 $this->assertSame(0, $row['count']);

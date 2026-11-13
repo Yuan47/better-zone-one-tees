@@ -166,8 +166,8 @@ class CommerceTest extends TestCase
         config(['shop.paymongo.secret' => null]);
         $v = $this->variant();
         $this->actingAs($this->user())->withSession(['cart' => [$v->id => 1]]);
-        $this->get('/checkout')->assertOk()->assertSee('awaiting configuration');
-        $this->post('/checkout', ['recipient' => 'Buyer', 'phone' => '09123456789', 'address' => 'Pickup', 'delivery_method' => 'pickup'])->assertSessionHasErrors('payment');
+        $this->get('/checkout')->assertOk()->assertSee('Online payment is temporarily unavailable');
+        $this->post('/checkout', ['recipient' => 'Buyer', 'phone' => '09123456789', 'address' => 'Pickup', 'delivery_method' => 'pickup', 'terms' => '1'])->assertSessionHasErrors('payment');
         $this->assertDatabaseCount('orders', 0);
     }
 
@@ -320,7 +320,7 @@ class CommerceTest extends TestCase
         $u = $this->user();
         Http::fake(['api.paymongo.com/*' => Http::response(['data' => ['id' => 'cs_new', 'attributes' => ['checkout_url' => 'https://checkout.paymongo.com/cs_new']]])]);
         $this->actingAs($u)->withSession(['cart' => [$v->id => 101]]);
-        $details = ['recipient' => 'Buyer', 'phone' => '09123456789', 'address' => 'Pickup', 'delivery_method' => 'pickup', 'total' => 1];
+        $details = ['recipient' => 'Buyer', 'phone' => '09123456789', 'address' => 'Pickup', 'delivery_method' => 'pickup', 'total' => 1, 'terms' => '1'];
         $this->post('/checkout', $details)->assertRedirect('https://checkout.paymongo.com/cs_new');
         $o = Order::firstOrFail();
         $this->assertSame(1727100, $o->total);
@@ -333,7 +333,7 @@ class CommerceTest extends TestCase
 
     public function test_registration_does_not_accept_admin_role_and_sales_export_works(): void
     {
-        $this->post('/register', ['name' => 'Buyer', 'username' => 'buyer', 'email' => 'buyer@example.test', 'password' => 'LongPassword!2026', 'password_confirmation' => 'LongPassword!2026', 'role' => 'admin'])->assertRedirect();
+        $this->post('/register', ['terms' => '1', 'name' => 'Buyer', 'username' => 'buyer', 'email' => 'buyer@example.test', 'password' => 'LongPassword!2026', 'password_confirmation' => 'LongPassword!2026', 'role' => 'admin'])->assertRedirect();
         $this->assertSame('customer', User::where('email', 'buyer@example.test')->firstOrFail()->role);
         $this->actingAs($this->user('admin'));
         $response = $this->get('/admin/reports/export')->assertOk();

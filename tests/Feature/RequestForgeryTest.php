@@ -158,8 +158,10 @@ class RequestForgeryTest extends TestCase
         }
         $cart = [$variant->id => 1];
         $before = $this->snapshot();
+        // Removed installment routes have no handler to reach, even with a forged token.
+        $status = in_array($operation, ['invoice_due', 'invoice_terms'], true) ? 404 : 419;
         $this->actingAs($actor)->withSession(['_token' => self::SESSION_TOKEN, 'cart' => $cart])
-            ->json($method, $url, $payload, self::CROSS_SITE)->assertStatus(419)->assertSessionHas('cart', $cart);
+            ->json($method, $url, $payload, self::CROSS_SITE)->assertStatus($status)->assertSessionHas('cart', $cart);
         $this->assertSame($before, $this->snapshot());
         Http::assertNothingSent();
     }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
+use App\Models\Refund;
 use App\Models\User;
 use App\Models\Variant;
 use App\Services\Forecast;
@@ -31,7 +32,6 @@ class ReportsController extends Controller
         $invoiceSummary = $report->invoiceSummary($startDate, $endDate);
         $salesScope = $salesChart['custom_range'] ? $salesChart['history'] : 'All time';
         $customers = User::where('role', 'customer')->count();
-        $toPack = Order::whereDeliveryStage('packing')->count();
         $attention = $this->inventoryQuery();
         $lowStockCount = (clone $attention)->count();
         $lowStock = $this->urgentFirst($attention)->limit(6)->get();
@@ -43,12 +43,14 @@ class ReportsController extends Controller
             ->groupBy('products.id')->groupByRaw('COALESCE(products.name, order_items.name)')
             ->orderByDesc('units')->orderBy('name')->orderBy('product_id')->limit(5)->get();
         $recent = Order::with('user')->latest()->limit(5)->get();
+        $orderCharts = app(\App\Services\StoreOrderCharts::class)->snapshot();
 
         // Operational cards show the current store position, independently of
         // the selected sales-chart period. Monthly sales retain paid-date scope.
         $now = CarbonImmutable::now('Asia/Manila');
         $activeInvoices = Order::where('status', '!=', 'cancelled')->where('inventory_released', false)
             ->where('created_at', '<=', $now->toDateTimeString());
+        $toPack = (clone $activeInvoices)->whereDeliveryStage('packing')->count();
         $openInvoices = (clone $activeInvoices)->whereIn('payment_status', ['pending', 'partially_paid'])
             ->where('total', '>', 0)->whereColumn('total', '>', 'amount_paid');
         $monthStart = $now->startOfMonth()->toDateString();
@@ -70,6 +72,12 @@ class ReportsController extends Controller
             'outstanding_payment' => route('admin.orders', ['outstanding' => 1, 'exclude_cancelled' => 1]),
             'month_sales' => route('admin.dashboard', ['period' => 'daily', 'start_date' => $monthStart, 'end_date' => $now->toDateString()]).'#reports',
         ];
+        $taskCards = [
+            ['label' => 'To pack', 'count' => $toPack, 'url' => route('admin.orders', ['fulfillment' => 'packing', 'exclude_cancelled' => 1]), 'tone' => 'packing'],
+            ['label' => 'Ready for delivery', 'count' => (clone $activeInvoices)->whereDeliveryStage('ready')->count(), 'url' => route('admin.orders', ['fulfillment' => 'ready', 'exclude_cancelled' => 1]), 'tone' => 'ready'],
+            ['label' => 'Returns to review', 'count' => Refund::where('status', 'requested')->where('created_at', '<=', $now)->count(), 'url' => route('admin.refunds.index', ['status' => 'requested']), 'tone' => 'returns'],
+            ['label' => 'Low-stock variants', 'count' => $lowStockCount, 'url' => route('admin.inventory-attention'), 'tone' => 'stock'],
+        ];
 
         // Unpaid invoices have no paid_at. These two count charts use the
         // placed-order cohort, while the sales cards above retain paid_at.
@@ -83,7 +91,7 @@ class ReportsController extends Controller
             ->groupBy('payment_status', 'delivery_method')->get();
         $paymentTotal = 0;
         $paymentRows = [];
-        foreach (['paid' => ['Fully paid', '#621708'], 'partially_paid' => ['Partially paid', '#BC3908'], 'pending' => ['Unpaid', '#F6AA1C']] as $status => [$label, $color]) {
+        foreach (['paid' => ['Fully paid', '#621708'], 'partially_paid' => ['Balance due', '#BC3908'], 'pending' => ['Unpaid', '#F6AA1C']] as $status => [$label, $color]) {
             $count = (int) $invoiceCounts->where('payment_status', $status)->sum('invoice_count');
             $paymentTotal += $count;
             $paymentRows[] = ['status' => $status, 'label' => $label, 'count' => $count, 'color' => $color,
@@ -109,7 +117,7 @@ class ReportsController extends Controller
         $otherMethodCount = (int) $invoiceCounts->where('payment_status', 'paid')->whereNotIn('delivery_method', ['pickup', 'lalamove'])->sum('invoice_count');
 
         return view('admin.dashboard', compact('revenue', 'ordersCount', 'invoiceSummary', 'customers', 'toPack', 'lowStock', 'lowStockCount', 'chart', 'best', 'recent', 'period', 'salesChart', 'salesScope',
-            'invoiceFilters', 'invoiceScope', 'paymentRows', 'paymentTotal', 'otherPaymentCount', 'methodRows', 'methodTotal', 'otherMethodCount', 'widgetStats', 'widgetLinks'));
+            'invoiceFilters', 'invoiceScope', 'paymentRows', 'paymentTotal', 'otherPaymentCount', 'methodRows', 'methodTotal', 'otherMethodCount', 'widgetStats', 'widgetLinks', 'taskCards', 'orderCharts'));
     }
 
     public function forecast(Forecast $forecast)
@@ -121,7 +129,7 @@ class ReportsController extends Controller
     {
         $filters = $request->validate([
             'q' => 'nullable|string|max:100',
-            'product' => ['nullable', 'integer', Rule::exists('products', 'id')->where('active', true)],
+            'product' => ['nullable', 'integer', Rule::exists('products', 'id')->where('active', true)->whereNull('archived_at')],
             'availability' => ['nullable', Rule::in(['all', 'out_of_stock'])],
         ]);
         $query = $this->inventoryQuery();
@@ -139,14 +147,14 @@ class ReportsController extends Controller
             $query->whereRaw('stock - reserved <= 0');
         }
         $shortages = $this->urgentFirst($query)->paginate(30)->withQueryString();
-        $products = Product::where('active', true)->orderBy('name')->get(['id', 'name']);
+        $products = Product::published()->orderBy('name')->get(['id', 'name']);
 
         return view('admin.inventory-attention', compact('shortages', 'products', 'filters'));
     }
 
     private function inventoryQuery(): Builder
     {
-        return Variant::with('product')->whereHas('product', fn ($q) => $q->where('active', true))
+        return Variant::sellable()->with('product')->whereHas('product', fn ($q) => $q->published())
             ->whereRaw('stock - reserved <= reorder_level');
     }
 

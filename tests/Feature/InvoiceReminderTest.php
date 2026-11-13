@@ -47,8 +47,9 @@ class InvoiceReminderTest extends TestCase
             'retail_price' => 25000, 'wholesale_price' => 20000, 'reseller_price' => 18000]);
         $due = now()->addDays(3)->setTime(23, 59);
         $order = app(OrderFlow::class)->reserve([$variant->id => 5], ['recipient' => 'Reminder buyer', 'phone' => '09'.str_pad((string) random_int(0, 999999999), 9, '0', STR_PAD_LEFT), 'address' => 'Store pickup',
-            'delivery_method' => 'pickup', 'shipping' => 0, 'sales_channel' => $guest ? 'walk_in' : 'online', 'payment_plan' => 'partial', 'due_at' => $due], $buyer?->id);
-        $order->update($attributes + ['created_at' => now()->subDays(4), 'contact_email' => $guest ? 'guest@example.test' : null]);
+            'delivery_method' => 'pickup', 'shipping' => 0, 'sales_channel' => $guest ? 'walk_in' : 'online'], $buyer?->id);
+        $order->update($attributes + ['payment_plan' => 'partial', 'due_at' => $due, 'original_due_at' => $due,
+            'created_at' => now()->subDays(4), 'contact_email' => $guest ? 'guest@example.test' : null]);
 
         return $order->fresh();
     }

@@ -50,7 +50,7 @@ class GuestInvoiceController extends Controller
         try {
             $result = $payments->check($order);
 
-            return back()->with('notice', $result === 'paid' ? 'Payment received. This walk-in invoice is fully paid and Delivered.' : ($result === 'partially_paid' ? 'Your partial payment is recorded. The remaining balance stays on this invoice.' : 'Payment has not been confirmed yet.'));
+            return back()->with('notice', $result === 'paid' ? 'Payment received. This walk-in invoice is fully paid and Delivered.' : ($result === 'partially_paid' ? 'The recorded payment is retained. Settle the full remaining balance on this same invoice.' : 'Payment has not been confirmed yet.'));
         } catch (ValidationException $e) {
             throw $e;
         } catch (\Throwable $e) {

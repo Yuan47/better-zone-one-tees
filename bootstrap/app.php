@@ -6,6 +6,7 @@ use App\Http\Middleware\CustomerIdleTimeout;
 use App\Http\Middleware\GoogleCallbackPrivacy;
 use App\Http\Middleware\RecordActivity;
 use App\Http\Middleware\RequireVerifiedEmail;
+use App\Http\Middleware\RestoreShoppingCart;
 use App\Http\Middleware\StaffAccess;
 use App\Services\AccountNavigation;
 use Illuminate\Contracts\Cache\LockTimeoutException;
@@ -26,7 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->redirectUsersTo(fn (Request $request) => route(AccountNavigation::homeRoute($request->user())));
         $middleware->trustProxies(headers: Request::HEADER_X_FORWARDED_FOR | Request::HEADER_X_FORWARDED_HOST
             | Request::HEADER_X_FORWARDED_PORT | Request::HEADER_X_FORWARDED_PROTO);
-        $middleware->web(append: [AuthenticateSession::class, RecordActivity::class, CustomerIdleTimeout::class, RequireVerifiedEmail::class]);
+        $middleware->web(append: [AuthenticateSession::class, RecordActivity::class, CustomerIdleTimeout::class, RestoreShoppingCart::class, RequireVerifiedEmail::class]);
         $middleware->alias(['staff' => StaffAccess::class]);
         $middleware->prependToPriorityList(ThrottleRequests::class, GoogleCallbackPrivacy::class);
         $middleware->preventRequestForgery(except: ['webhooks/paymongo']);

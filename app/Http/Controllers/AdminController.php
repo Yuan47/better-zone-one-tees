@@ -20,6 +20,7 @@ use App\Services\ReadyOrderNotifications;
 use App\Services\SalesReport;
 use App\Services\Sku;
 use App\Services\StoreKnowledge;
+use App\Services\VariantSizes;
 use App\Support\WorkspaceTableSort;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
@@ -32,7 +33,10 @@ class AdminController extends Controller
 {
     public function products(Request $r)
     {
-        $products = Product::with('variants')->when(! $r->boolean('hidden'), fn ($q) => $q->where('active', true))->when($r->filled('q'), fn ($q) => $q->where('name', 'like', '%'.$r->string('q').'%'))->get();
+        $products = Product::with('variants')
+            ->when($r->boolean('archived'), fn ($query) => $query->whereNotNull('archived_at'), fn ($query) => $query->whereNull('archived_at'))
+            ->when(! $r->boolean('archived') && ! $r->boolean('hidden'), fn ($query) => $query->where('active', true))
+            ->when($r->filled('q'), fn ($query) => $query->where('name', 'like', '%'.$r->string('q').'%'))->get();
 
         return view('admin.products', compact('products'));
     }
@@ -53,6 +57,9 @@ class AdminController extends Controller
 
     public function save(Request $r, ImageUploads $uploads, ?Product $product = null)
     {
+        if ($product?->archived_at) {
+            throw ValidationException::withMessages(['catalog' => 'Restore this product before editing it.']);
+        }
         $data = $r->validate([
             'name' => 'required|string|max:150', 'description' => 'required|string|max:2000', 'active' => 'required|boolean',
             'photo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120', 'remove_photo' => 'nullable|boolean',
@@ -102,6 +109,9 @@ class AdminController extends Controller
 
     public function variant(Request $r, Product $product, ImageUploads $uploads, ?Variant $variant = null)
     {
+        if ($product->archived_at || $variant?->archived_at) {
+            throw ValidationException::withMessages(['catalog' => 'Restore the product and variant before editing.']);
+        }
         if ($variant) {
             abort_unless($variant->product_id === $product->id, 404);
         }
@@ -113,7 +123,7 @@ class AdminController extends Controller
         $size = $r->input('size');
         $r->merge(['size' => is_string($size) ? strtoupper(trim($size)) : $size, 'color' => $color]);
         $data = $r->validate([
-            'size' => 'required|string|max:40',
+            'size' => ['required', 'string', Rule::in(VariantSizes::choices($product, $variant))],
             'color' => ['required', 'string', 'max:80', Rule::unique('variants', 'color')->where(fn ($q) => $q->where('product_id', $product->id)->where('size', $r->input('size')))->ignore($variant?->id)],
             'stock' => 'required|integer|min:0|max:1000000', 'reorder_level' => 'required|integer|min:0|max:1000000',
             'expected_stock' => [Rule::requiredIf($variant !== null), 'nullable', 'integer', 'min:0', 'max:1000000'],
@@ -132,12 +142,18 @@ class AdminController extends Controller
         $oldPhoto = $variant?->image_path;
         $savedVariant = null;
         DB::transaction(function () use ($r, $product, $variant, $uploads, &$data, &$savedVariant) {
-            Product::whereKey($product->id)->lockForUpdate()->firstOrFail();
+            $lockedProduct = Product::whereKey($product->id)->lockForUpdate()->firstOrFail();
+            if ($lockedProduct->archived_at) {
+                throw ValidationException::withMessages(['catalog' => 'Restore this product before editing its variants.']);
+            }
             if ($product->variants()->where('size', $data['size'])->whereRaw('LOWER(color) = ?', [mb_strtolower($data['color'])])
                 ->when($variant, fn ($query) => $query->whereKeyNot($variant->id))->exists()) {
                 throw ValidationException::withMessages(['color' => 'This size and color already exist. Edit the existing variant.']);
             }
             $locked = $variant ? Variant::whereKey($variant->id)->lockForUpdate()->firstOrFail() : null;
+            if ($locked?->archived_at) {
+                throw ValidationException::withMessages(['catalog' => 'Restore this variant before editing it.']);
+            }
             if ($locked && $r->integer('expected_stock') !== (int) $locked->stock) {
                 throw ValidationException::withMessages(['stock' => 'Stock changed while this page was open. The current count is '.$locked->stock.'. Review the refreshed count before saving again.']);
             }
@@ -169,6 +185,9 @@ class AdminController extends Controller
 
     public function color(Request $r, Product $product, ImageUploads $uploads)
     {
+        if ($product->archived_at) {
+            throw ValidationException::withMessages(['catalog' => 'Restore this product before adding colors.']);
+        }
         $data = $r->validate(['color' => 'required|string|max:80', 'template_color' => 'nullable|string|max:80', 'photo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120']);
         $color = trim($data['color']);
         $color = strcasecmp($color, 'white') === 0 ? 'White' : $color;
@@ -176,14 +195,17 @@ class AdminController extends Controller
         $templates = collect();
         try {
             DB::transaction(function () use ($r, $data, $color, $product, $uploads, &$photo, &$templates) {
-                Product::whereKey($product->id)->lockForUpdate()->firstOrFail();
+                $lockedProduct = Product::whereKey($product->id)->lockForUpdate()->firstOrFail();
+                if ($lockedProduct->archived_at) {
+                    throw ValidationException::withMessages(['catalog' => 'Restore this product before adding colors.']);
+                }
                 if ($product->variants()->whereRaw('LOWER(color) = ?', [mb_strtolower($color)])->exists()) {
                     throw ValidationException::withMessages(['color' => 'This color already exists. Edit its variants below.']);
                 }
-                $colors = $product->variants()->orderBy('id')->pluck('color')->unique()->values();
+                $colors = $product->variants()->whereNull('archived_at')->orderBy('id')->pluck('color')->unique()->values();
                 $source = filled($data['template_color'] ?? null) ? trim($data['template_color'])
                     : ($colors->first(fn ($name) => strcasecmp($name, 'white') !== 0) ?? $colors->first());
-                $templates = $product->variants()->whereRaw('LOWER(color) = ?', [mb_strtolower($source ?? '')])->orderBy('id')->get()->unique('size');
+                $templates = $product->variants()->whereNull('archived_at')->whereRaw('LOWER(color) = ?', [mb_strtolower($source ?? '')])->orderBy('id')->get()->unique('size');
                 if ($templates->isEmpty()) {
                     throw ValidationException::withMessages(['template_color' => 'Choose an existing color to copy, or add the first size and color variant below.']);
                 }
@@ -241,7 +263,7 @@ class AdminController extends Controller
             WHEN orders.payment_status != 'paid' THEN 'Awaiting full payment'
             WHEN orders.status = 'completed' AND (orders.customer_confirmed_at IS NOT NULL OR (orders.sales_channel = 'walk_in' AND orders.walk_in_received_at IS NOT NULL)) THEN 'Delivered'
             WHEN orders.status IN ('to_pack', 'packing') THEN 'Packing'
-            WHEN orders.status = 'out_for_delivery' OR (orders.status = 'completed' AND orders.delivery_method = 'lalamove') THEN 'With courier'
+            WHEN orders.status = 'out_for_delivery' OR (orders.status = 'completed' AND orders.delivery_method = 'lalamove') THEN 'To Ship'
             ELSE 'Ready for delivery' END";
         $orders = WorkspaceTableSort::apply($orders, $r, [
             'number' => 'orders.number', 'customer' => 'COALESCE((SELECT users.name FROM users WHERE users.id = orders.user_id), orders.recipient)',

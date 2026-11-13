@@ -39,7 +39,7 @@ class LalamoveQuotationValidationTest extends TestCase
     private function address(): array
     {
         return ['street_address' => '12 Example Street', 'city' => 'Quezon City', 'province' => 'Metro Manila',
-            'postal_code' => '1100', 'country' => 'Philippines', 'lat' => '14.6', 'lng' => '121.1'];
+            'postal_code' => '1100', 'country' => 'Philippines', 'lat' => '14.6', 'lng' => '121.1', 'pin_confirmed' => '1', 'terms' => '1'];
     }
 
     private function quotation(): array

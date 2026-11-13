@@ -336,7 +336,7 @@ class DeliveryRecoveryTest extends TestCase
         $this->actingAs($this->user())->post('/admin/orders/'.$order->id.'/delivery/refresh')->assertSessionHasNoErrors();
         $order->refresh();
         $this->assertSame('out_for_delivery', $order->status);
-        $this->assertSame('With courier', $order->customerDeliveryLabel());
+        $this->assertSame('To Ship', $order->customerDeliveryLabel());
         $this->assertSame('COMPLETED', $order->delivery_last_status);
         $this->assertNotNull($order->provider_completed_at);
         $this->assertNull($order->customer_confirmed_at);
@@ -373,7 +373,7 @@ class DeliveryRecoveryTest extends TestCase
         $this->assertSame('out_for_delivery', $order->status);
         $this->assertNotNull($order->provider_completed_at);
         $this->assertNull($order->customer_confirmed_at);
-        $this->assertSame('With courier', $order->customerDeliveryLabel());
+        $this->assertSame('To Ship', $order->customerDeliveryLabel());
         $this->assertDatabaseHas('delivery_attempts', ['provider_status' => 'COMPLETED', 'cleared_at' => null]);
         Http::assertNothingSent();
     }
@@ -477,7 +477,7 @@ class DeliveryRecoveryTest extends TestCase
         foreach ($expected as $stage => $ids) {
             $this->assertSame($ids, Order::whereDeliveryStage($stage)->orderBy('id')->pluck('id')->all());
         }
-        $this->assertSame(['Packing', 'Ready for delivery', 'With courier', 'Delivered'], array_values(Order::DELIVERY_STAGES));
+        $this->assertSame(['Packing', 'Ready for delivery', 'To Ship', 'Delivered'], array_values(Order::DELIVERY_STAGES));
     }
 
     public function test_legacy_approval_does_not_prevent_shipping_before_customer_can_confirm_receipt(): void

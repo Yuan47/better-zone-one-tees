@@ -28,7 +28,7 @@ class StaffAccounts
         $data['name'] = is_string($data['name'] ?? null) ? trim($data['name']) : ($data['name'] ?? null);
         $validated = Validator::make($data, [
             'name' => ['required', 'string', 'max:100'],
-            'email' => ['required', 'email:rfc', 'max:254', 'not_regex:/[\r\n]/'],
+            'email' => ['required', 'email:rfc', 'max:254', 'not_regex:/[\r\n]/', new \App\Rules\EmailProviderAddress],
             'password' => ['required', 'string', 'confirmed', 'max:255', Password::min(10), new AccountPasswordSize],
         ])->validate();
         $passwordHash = Hash::make($validated['password']);

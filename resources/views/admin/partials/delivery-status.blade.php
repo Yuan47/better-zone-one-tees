@@ -52,5 +52,5 @@
             </div>
         </section>
     </div>
-    <p class="delivery-snapshot-note">These charts show the current stage of orders placed in the selected dates, as of {{ $now->format('M j, Y · g:i A') }}. They do not show when a delivery changed stage. Canceled bookings return to “Ready for delivery” only after provider verification. A courier completion stays With courier until the customer confirms receipt and chooses a rating. A written review is optional.</p>
+    <p class="delivery-snapshot-note">These charts show the current stage of orders placed in the selected dates, as of {{ $now->format('M j, Y · g:i A') }}. They do not show when a delivery changed stage. Canceled bookings return to “Ready for delivery” only after provider verification. A courier completion stays To Ship until the customer confirms receipt and chooses a rating. A written review is optional.</p>
 </section>

@@ -8,6 +8,7 @@ use App\Models\StaffInvitation;
 use App\Models\User;
 use App\Services\GoogleOAuthProvider;
 use App\Services\GoogleSignIn;
+use App\Services\StoreTerms;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Handler\MockHandler;
@@ -77,9 +78,9 @@ class GoogleSignInTest extends TestCase
         ])), new Response(200, ['Content-Type' => 'application/json'], json_encode($this->profile($profile))));
     }
 
-    private function begin(): array
+    private function begin(bool $acceptTerms = true): array
     {
-        $response = $this->post(route('google.start'))->assertRedirect();
+        $response = $this->post(route('google.start'), $acceptTerms ? ['terms' => '1'] : [])->assertRedirect();
         parse_str(parse_url($response->headers->get('Location'), PHP_URL_QUERY), $parameters);
         $this->withCookie(config('session.cookie'), session()->getId());
 
@@ -117,6 +118,8 @@ class GoogleSignInTest extends TestCase
         $this->assertSame(40, strlen($parameters['state']));
         $this->assertSame(rtrim(strtr(base64_encode(hash('sha256', session('code_verifier'), true)), '+/', '-_'), '='), $parameters['code_challenge']);
         $this->assertSame(now()->addMinutes(10)->timestamp, session('google_oauth.expires_at'));
+        $this->assertTrue(session('google_oauth.terms_accepted'));
+        $this->assertSame(StoreTerms::VERSION, session('google_oauth.terms_version'));
         $this->assertSame([], $this->requests);
     }
 
@@ -159,6 +162,8 @@ class GoogleSignInTest extends TestCase
         $this->assertAuthenticatedAs($user);
         $this->assertSame('customer', $user->role);
         $this->assertNotNull($user->email_verified_at);
+        $this->assertNotNull($user->terms_accepted_at);
+        $this->assertSame(StoreTerms::VERSION, $user->terms_version);
         $this->assertNull($user->avatar_path);
         $this->assertSame('Google Customer', $user->name);
         $this->assertNotSame($oldSession, session()->getId());
@@ -188,12 +193,13 @@ class GoogleSignInTest extends TestCase
     {
         $user = $this->customer(['name' => 'Keep My Profile']);
         GoogleIdentity::create(['user_id' => $user->id, 'subject' => 'google-fixture-10001']);
-        $parameters = $this->begin();
+        $parameters = $this->begin(false);
         $this->providerResponds(['name' => 'Different Google Name']);
         $this->completeCallback($parameters['state'])->assertRedirect('/');
         $this->assertAuthenticatedAs($user);
         $this->assertDatabaseCount('users', 1);
         $this->assertSame('Keep My Profile', $user->fresh()->name);
+        $this->assertNull($user->fresh()->terms_accepted_at);
         $this->assertDatabaseHas('activity_logs', ['action' => 'auth.login', 'actor_id' => $user->id]);
     }
 
@@ -202,10 +208,33 @@ class GoogleSignInTest extends TestCase
         return [['customer'], ['staff'], ['admin']];
     }
 
+    public function test_new_google_customer_cannot_be_created_without_explicit_store_terms_consent(): void
+    {
+        $parameters = $this->begin(false);
+        $this->providerResponds();
+        $this->completeCallback($parameters['state'])->assertRedirect('/login')->assertSessionHasErrors('google');
+        $this->assertGuest();
+        $this->assertDatabaseCount('users', 0);
+        $this->assertDatabaseCount('google_identities', 0);
+        $this->assertNull(session('google_oauth'));
+    }
+
+    public function test_changed_terms_version_during_google_sign_in_requires_new_consent(): void
+    {
+        $parameters = $this->begin();
+        $this->withSession(['google_oauth' => array_replace(session('google_oauth'), ['terms_version' => 'older-terms'])]);
+        session()->save();
+        $this->providerResponds();
+        $this->completeCallback($parameters['state'])->assertRedirect('/login')->assertSessionHasErrors('google');
+        $this->assertGuest();
+        $this->assertDatabaseCount('users', 0);
+        $this->assertDatabaseCount('google_identities', 0);
+    }
+
     public function test_manual_registration_then_google_signup_keeps_one_account_and_requires_explicit_linking(): void
     {
         config(['auth.email_verification.required' => false]);
-        $this->post('/register', ['name' => 'Original Manual Customer', 'username' => 'manual_customer',
+        $this->post('/register', ['terms' => '1', 'name' => 'Original Manual Customer', 'username' => 'manual_customer',
             'email' => ' GOOGLE.Customer@Example.Test ', 'password' => 'OriginalPassword!2026',
             'password_confirmation' => 'OriginalPassword!2026'])->assertRedirect('/');
         $user = User::sole();
@@ -232,7 +261,7 @@ class GoogleSignInTest extends TestCase
         $before = $user->getAttributes();
         $this->post('/logout')->assertRedirect('/');
 
-        $this->post('/register', ['name' => 'Replacement Attempt', 'username' => 'replacement_customer',
+        $this->post('/register', ['terms' => '1', 'name' => 'Replacement Attempt', 'username' => 'replacement_customer',
             'email' => ' GOOGLE.Customer@Example.Test ', 'password' => 'ReplacementPassword!2026',
             'password_confirmation' => 'ReplacementPassword!2026'])->assertSessionHasErrors('email');
 

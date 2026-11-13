@@ -166,7 +166,7 @@ class OperationsController extends Controller
         $deliveryStages = [
             'packing' => ['Packing', 'Payment is confirmed. Pack the clothing before arranging a courier.'],
             'ready' => ['Ready for delivery', 'Packing is complete. Arrange a courier booking for this order.'],
-            'courier' => ['With courier', 'A courier booking is active. Open the order to check its latest Lalamove status.'],
+            'courier' => ['To Ship', 'A courier booking is active. Open the order to check its latest Lalamove status.'],
             'delivered' => ['Delivered', 'The order is marked delivered. Open it to review the delivery details.'],
         ];
         $deliveryTotal = array_sum($deliveryCounts);

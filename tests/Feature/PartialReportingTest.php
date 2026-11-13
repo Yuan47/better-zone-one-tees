@@ -159,7 +159,7 @@ class PartialReportingTest extends TestCase
             ->assertViewHas('deliveryTotals', ['total' => 1, 'completed' => 0, 'active' => 1, 'attention' => 0, 'ready' => 1])
             ->assertViewHas('statusRows', fn ($rows) => count($rows) === 4 && array_column($rows, 'count') === [0, 1, 0, 1])
             ->assertViewHas('chart', fn ($rows) => array_sum(array_column($rows, 'orders')) === 2)
-            ->assertSee('Received deposits on these invoices')->assertSee('not receipts grouped by payment date')
+            ->assertSee('Received on older unpaid invoices')->assertSee('not grouped by payment date')
             ->assertSee('₱1,480.00')->assertSee('₱420.00');
         $this->get(route('admin.orders', $filters + ['outstanding' => 1]))->assertOk()
             ->assertViewHas('orders', fn ($orders) => $orders->total() === 4
@@ -207,8 +207,8 @@ class PartialReportingTest extends TestCase
         $guest = $this->invoice();
         $other = $this->invoice(['user_id' => User::factory()->create()->id]);
         $this->actingAs($buyer)->get(route('orders'))->assertOk()->assertSee($walkIn->number)->assertSee($online->number)
-            ->assertDontSee($guest->number)->assertDontSee($other->number)->assertSee('Walk-in')->assertSee('Partially paid')
-            ->assertSee('Received: ₱50.00')->assertSee('Outstanding: ₱250.00')->assertSee('Overdue')
+            ->assertDontSee($guest->number)->assertDontSee($other->number)->assertSee('Walk-in')->assertSee('Payment due')
+            ->assertSee('Payment received ₱50.00')->assertSee('Outstanding: ₱250.00')->assertSee('Overdue')
             ->assertViewHas('orders', fn ($orders) => $orders->total() === 2);
         Http::assertNothingSent();
     }

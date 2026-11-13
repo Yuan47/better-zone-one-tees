@@ -19,7 +19,7 @@ class CustomerDashboardController extends Controller
 
         $ownedOrders = Order::where('user_id', $user->id);
         $orderCount = (clone $ownedOrders)->count();
-        $recentOrders = (clone $ownedOrders)->with('items')->latest('id')->limit(4)->get();
+        $recentOrders = (clone $ownedOrders)->with('items')->withCount('refunds')->latest('id')->limit(4)->get();
         $openInvoices = (clone $ownedOrders)->where('status', '!=', 'cancelled')
             ->where('inventory_released', false)->whereIn('payment_status', ['pending', 'partially_paid'])
             ->whereColumn('total', '>', 'amount_paid');

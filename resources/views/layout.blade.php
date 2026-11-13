@@ -1,8 +1,13 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content"><meta name="csrf-token" content="{{ csrf_token() }}"><meta name="theme-color" content="#941B0C"><link rel="icon" type="image/png" href="{{ asset('brand/zone-one-tees-logo-transparent.png') }}">
 <title>@yield('title','Zone One Tee’s') · 2.0</title>
-@if(request()->routeIs('checkout'))<link rel="stylesheet" href="{{ asset('vendor/leaflet/leaflet.css') }}"><script src="{{ asset('vendor/leaflet/leaflet.js') }}" defer></script>@endif
+@if(request()->routeIs('checkout','account.addresses.create','account.addresses.edit'))<link rel="stylesheet" href="{{ asset('vendor/leaflet/leaflet.css') }}"><script src="{{ asset('vendor/leaflet/leaflet.js') }}" defer></script>@endif
 <link rel="stylesheet" href="{{ asset('shop.css') }}?v={{ filemtime(public_path('shop.css')) }}"><script src="{{ asset('shop.js') }}?v={{ filemtime(public_path('shop.js')) }}" defer></script>
+<link rel="stylesheet" href="{{ asset('workspace-revision.css') }}?v={{ filemtime(public_path('workspace-revision.css')) }}">
+<link rel="stylesheet" href="{{ asset('catalog-management.css') }}?v={{ filemtime(public_path('catalog-management.css')) }}">
+<link rel="stylesheet" href="{{ asset('catalog-photos.css') }}?v={{ filemtime(public_path('catalog-photos.css')) }}">
+<link rel="stylesheet" href="{{ asset('checkout-revision.css') }}?v={{ filemtime(public_path('checkout-revision.css')) }}">
+@if(request()->routeIs('checkout'))<script src="{{ asset('checkout.js') }}?v={{ filemtime(public_path('checkout.js')) }}" defer></script>@endif
 <link rel="stylesheet" href="{{ asset('password-visibility.css') }}?v={{ filemtime(public_path('password-visibility.css')) }}"><script src="{{ asset('password-visibility.js') }}?v={{ filemtime(public_path('password-visibility.js')) }}" defer></script>
 @if(\App\Services\AccountNavigation::workspace(auth()->user()) && ((request()->routeIs('admin.*') && !request()->routeIs('admin.login','admin.login.submit')) || request()->routeIs('account*','orders.show')))
 <link rel="stylesheet" href="{{ asset('table-sort.css') }}?v={{ filemtime(public_path('table-sort.css')) }}"><script src="{{ asset('table-sort.js') }}?v={{ filemtime(public_path('table-sort.js')) }}" defer></script>
@@ -43,11 +48,11 @@
 @if(auth()->user()->role==='customer')
 <a href="{{ route('dashboard') }}">My dashboard</a>
 @endif
-<a href="{{ route('orders') }}">My orders</a><details class="account-menu"><summary aria-label="Account menu for {{ auth()->user()->name }}">{{ explode(' ',auth()->user()->name)[0] }} ▾</summary><div>
+<a href="{{ route('orders') }}">My Purchases</a><details class="account-menu"><summary aria-label="Account menu for {{ auth()->user()->name }}">{{ explode(' ',auth()->user()->name)[0] }} ▾</summary><div>
 @if(auth()->user()->role==='customer')
 <a href="{{ route('dashboard') }}">My dashboard</a>
 @endif
-<a href="{{ route('account') }}">My Account</a><a href="{{ route('orders') }}">My orders · History</a><a href="{{ route('store',['wishlist'=>1]) }}">Favorites / wishlist</a>
+<a href="{{ route('account') }}">My Account</a>@if(auth()->user()->role==='customer')<a href="{{ route('account.addresses.index') }}">My addresses</a>@endif<a href="{{ route('orders') }}">My Purchases · History</a><a href="{{ route('store',['wishlist'=>1]) }}">Favorites / wishlist</a>
 @if(auth()->user()->role!=='customer')
 <a href="{{ route('admin.dashboard') }}">Store workspace</a>
 @endif
@@ -65,7 +70,7 @@
 @endif
 @endif
 @yield('content')</main>
-@if($isAdmin)</div>@else<footer class="footer"><a class="brand" href="{{ route('store') }}"><img class="brand-logo" src="{{ asset('brand/zone-one-tees-logo-transparent.png') }}" alt="Zone One Tee’s logo">Zone One Tee’s<span class="muted">2.0</span></a><span>Good clothes. Thoughtful service. Everyday value.</span><a href="{{ route('store') }}#quantity">Quantity pricing</a></footer>@endif
+@if($isAdmin)</div>@else<footer class="footer"><a class="brand" href="{{ route('store') }}"><img class="brand-logo" src="{{ asset('brand/zone-one-tees-logo-transparent.png') }}" alt="Zone One Tee’s logo">Zone One Tee’s<span class="muted">2.0</span></a><span>Good clothes. Thoughtful service. Everyday value.</span><a href="{{ route('store') }}#quantity">Quantity pricing</a><a href="{{ route('terms') }}">Terms & Conditions</a></footer>@endif
 <button id="chat-toggle" class="chat-launcher" aria-controls="chat-panel" aria-expanded="false">✧ <span>{{ $isAdmin?'Staff assistant':'Ask Zone One' }}</span></button>
 <section id="chat-panel" class="chat-panel" hidden aria-label="Store assistant"><header><div><b>{{ $isAdmin?'Store assistant':'Hey, welcome to Zone One.' }}</b><small>{{ (filled(config('shop.groq.key')) && filled(config('shop.groq.model')))?'Powered by GroqCloud':'Basic help · GroqCloud not connected' }}</small></div><button id="chat-close" class="icon-btn" aria-label="Close chat">×</button></header>
 <div id="chat-messages" class="chat-messages" role="log" aria-live="polite"><p class="assistant-message">{{ $isAdmin?'Ask how to use your workspace. I can explain the steps allowed for your role.':'Need a hand? Ask how to create an account, shop, or find your own orders.' }}</p></div>

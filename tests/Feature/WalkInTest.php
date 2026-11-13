@@ -45,7 +45,7 @@ class WalkInTest extends TestCase
     {
         return $extra + ['request_key' => (string) Str::uuid(), 'customer_type' => 'guest', 'recipient' => 'Walk-in Guest',
             'phone' => '09123456789', 'lines' => [['variant_id' => $variant->id, 'quantity' => 2]],
-            'payment_option' => $option, 'amount' => '700.50', 'due_at' => now()->addDays(14)->toDateString(),
+            'payment_option' => $option,
             'reason' => 'Cash was counted and received at the store.', 'payment_received' => '1'];
     }
 
@@ -189,42 +189,32 @@ class WalkInTest extends TestCase
         $this->assertSame(494, $variant->fresh()->stock);
     }
 
-    public function test_partial_cash_keeps_invoice_total_and_original_due_date_and_does_not_close_sale(): void
+    public function test_partial_cash_is_rejected_without_an_invoice_receipt_or_reservation(): void
     {
         $variant = $this->variant();
         $this->staff();
-        $due = now()->addDays(14)->toDateString();
-        $this->post('/admin/walk-in', $this->payload($variant, 'partial_cash', ['due_at' => $due]))->assertSessionHasNoErrors();
-        $order = Order::sole();
-        $this->assertSame('partial', $order->payment_plan);
-        $this->assertSame('partially_paid', $order->payment_status);
-        $this->assertSame(120000, $order->total);
-        $this->assertSame(70050, $order->paidAmount());
-        $this->assertSame(49950, $order->outstandingBalance());
-        $this->assertSame($due, $order->due_at->toDateString());
-        $this->assertSame('23:59:59', $order->due_at->format('H:i:s'));
-        $this->assertSame($order->getRawOriginal('due_at'), $order->getRawOriginal('original_due_at'));
-        $this->assertNotSame('completed', $order->status);
-        $this->assertNull($order->walk_in_received_at);
-        $this->assertFalse($order->inventory_committed);
+        $this->post('/admin/walk-in', $this->payload($variant, 'partial_cash', ['amount' => '700.50', 'due_at' => now()->addDays(14)->toDateString()]))
+            ->assertSessionHasErrors(['payment_option', 'amount', 'due_at']);
+        $this->assertDatabaseCount('orders', 0);
+        $this->assertDatabaseCount('order_items', 0);
+        $this->assertDatabaseCount('payment_attempts', 0);
         $this->assertSame(500, $variant->fresh()->stock);
-        $this->assertSame(2, $variant->fresh()->reserved);
-        $this->assertSame(70050, PaymentAttempt::sole()->amount);
+        $this->assertSame(0, $variant->fresh()->reserved);
         Http::assertNothingSent();
     }
 
     public static function onlineOptions(): array
     {
-        return [['full_paymongo', 120000], ['partial_paymongo', 70050]];
+        return [['full_paymongo', 120000]];
     }
 
     public static function onlinePaymentModes(): array
     {
-        return [['full_paymongo'], ['partial_paymongo']];
+        return [['full_paymongo']];
     }
 
     #[DataProvider('onlineOptions')]
-    public function test_online_checkout_collects_only_selected_amount_and_never_confirms_a_redirect_as_payment(string $option, int $amount): void
+    public function test_online_checkout_collects_the_full_total_and_never_confirms_a_redirect_as_payment(string $option, int $amount): void
     {
         $variant = $this->variant();
         $this->staff();
@@ -281,7 +271,7 @@ class WalkInTest extends TestCase
 
     public static function cashOptions(): array
     {
-        return [['full_cash'], ['partial_cash']];
+        return [['full_cash']];
     }
 
     #[DataProvider('cashOptions')]
@@ -311,16 +301,17 @@ class WalkInTest extends TestCase
     }
 
     #[DataProvider('allowedPartialDueDates')]
-    public function test_partial_due_date_includes_both_calendar_boundaries_and_is_saved_at_day_end(int $days): void
+    public function test_legacy_partial_due_date_boundaries_do_not_enable_new_partial_orders(int $days): void
     {
         $variant = $this->variant();
         $this->staff();
         $due = now()->addDays($days)->toDateString();
-        $this->post('/admin/walk-in', $this->payload($variant, 'partial_cash', ['due_at' => $due]))->assertSessionHasNoErrors();
-        $order = Order::sole();
-        $this->assertSame($due, $order->due_at->toDateString());
-        $this->assertSame('23:59:59', $order->due_at->format('H:i:s'));
-        $this->assertSame($order->getRawOriginal('due_at'), $order->getRawOriginal('original_due_at'));
+        $this->post('/admin/walk-in', $this->payload($variant, 'partial_cash', ['due_at' => $due]))->assertSessionHasErrors(['payment_option', 'due_at']);
+        $this->assertDatabaseCount('orders', 0);
+        $this->assertDatabaseCount('payment_attempts', 0);
+        $this->assertSame(500, $variant->fresh()->stock);
+        $this->assertSame(0, $variant->fresh()->reserved);
+        Http::assertNothingSent();
     }
 
     #[DataProvider('invalidPartialDueDates')]
@@ -373,6 +364,18 @@ class WalkInTest extends TestCase
         $this->assertDatabaseCount('order_items', 0);
         $this->assertDatabaseCount('payment_attempts', 0);
         $this->assertSame(0, $variant->fresh()->reserved);
+    }
+
+    public function test_forged_amount_or_due_date_cannot_change_a_full_walk_in_sale(): void
+    {
+        $variant = $this->variant();
+        $this->staff();
+        $this->post('/admin/walk-in', $this->payload($variant, 'full_cash', ['amount' => '1', 'due_at' => now()->addDays(14)->toDateString()]))
+            ->assertSessionHasErrors(['amount', 'due_at']);
+        $this->assertDatabaseCount('orders', 0);
+        $this->assertDatabaseCount('payment_attempts', 0);
+        $this->assertSame(0, $variant->fresh()->reserved);
+        Http::assertNothingSent();
     }
 
     public function test_insufficient_or_inactive_stock_creates_no_invoice_or_cash_receipt(): void

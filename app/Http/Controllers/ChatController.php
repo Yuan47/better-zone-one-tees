@@ -24,7 +24,7 @@ class ChatController extends Controller
             return response()->json(['reply' => StoreKnowledge::CUSTOMER_PRIVACY_HELP, 'mode' => $aiReady ? 'store' : 'basic']);
         }
         $audiences = $staff ? ($r->user()->role === 'admin' ? ['customer', 'staff', 'owner'] : ['customer', 'staff']) : ['customer'];
-        $products = Product::with('variants')->where('active', true)->orderBy('id')->get();
+        $products = Product::published()->with(['variants' => fn ($query) => $query->whereNull('archived_at')])->orderBy('id')->get();
         $productMatches = $knowledge->matchingProducts($message, $products);
         $catalog = $knowledge->catalogContext($message, $products, $productMatches);
         $orders = collect();
@@ -76,7 +76,15 @@ class ChatController extends Controller
             && preg_match('/\b(?:order\s+history|track(?:ing)?\s+(?:an?|my|the)\s+order)\b/i', $message)) {
             $orderIntent = $balanceIntent;
         }
-        if ($orderIntent) {
+        // The current payment rule also overrides older, owner-edited FAQ text.
+        // A private request for an actual invoice balance keeps its record lookup.
+        $partialPaymentPolicy = preg_match('/\b(?:partial[ -]+payments?|installments?|instalments?|down[ -]+payments?|deposits?)\b/i', $message);
+        $splitPayment = preg_match('/\b(?:pay|payment|settle)\b/i', $message)
+            && preg_match('/\b(?:pay|settle)\s+(?:only\s+)?half\b|\bhalf\s+(?:now|today|first|upfront|payments?)\b|\b(?:split|divid(?:e|ed))\b|\b(?:two|three|[2-9])\s+payments?\b|\b(?:[1-9][0-9]?)\s*(?:%|percent)\s*(?:now|first|today|initially|upfront)|\bnothing\s+(?:now|upfront)\b/i', $message);
+        if (($partialPaymentPolicy || $splitPayment) && ! $balanceIntent) {
+            $protectedReply = true;
+            $reply = StoreKnowledge::PAYMENT_HELP;
+        } elseif ($orderIntent) {
             $protectedReply = true;
             $reply = $orders->isNotEmpty() ? $orders->map(function ($order) use ($balanceIntent) {
                 if ($balanceIntent) {
