@@ -1,12 +1,14 @@
 (() => {
     'use strict';
 
-    document.querySelectorAll('table[data-sortable]:not([data-server-sort])').forEach((table) => {
+    function initialize() {
+    document.querySelectorAll('table[data-sortable]:not([data-server-sort]):not([data-sort-initialized])').forEach((table) => {
         if (table.closest('form') || table.querySelector('input, select, textarea, [contenteditable="true"]')) return;
         const body = table.tBodies[0];
         const original = body ? Array.from(body.rows) : [];
         const sortable = original.filter((row) => row.hasAttribute('data-sort-row'));
         if (!body || sortable.length < 2) return;
+        table.dataset.sortInitialized = 'true';
 
         const positions = new Map(original.map((row, index) => [row, index]));
         const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
@@ -55,26 +57,32 @@
                 const second = first === 'ascending' ? 'descending' : 'ascending';
                 direction = active !== column ? first : direction === first ? second : 'default';
                 active = direction === 'default' ? null : column;
-                let ordered = [...sortable];
-                if (direction !== 'default') {
-                    ordered.sort((left, right) => {
-                        const a = valueFor(left, column, type);
-                        const b = valueFor(right, column, type);
-                        if (a === null || b === null) {
-                            return a === b ? positions.get(left) - positions.get(right) : a === null ? 1 : -1;
-                        }
-                        const compared = type === 'number' ? a - b : type === 'date' ? (a < b ? -1 : a > b ? 1 : 0) : collator.compare(a, b);
-                        return compared === 0 ? positions.get(left) - positions.get(right) : compared * (direction === 'descending' ? -1 : 1);
-                    });
-                }
-                let index = 0;
-                // Keep explanatory/empty rows in place and restore the exact initial order on Default.
-                original.forEach((row) => body.append(row.hasAttribute('data-sort-row') ? ordered[index++] : row));
+                orderRows(column, type);
                 update();
             });
         });
 
+        function orderRows(column, type) {
+            let ordered = [...sortable];
+            if (direction !== 'default') {
+                ordered.sort((left, right) => {
+                    const a = valueFor(left, column, type);
+                    const b = valueFor(right, column, type);
+                    if (a === null || b === null) {
+                        return a === b ? positions.get(left) - positions.get(right) : a === null ? 1 : -1;
+                    }
+                    const compared = type === 'number' ? a - b : type === 'date' ? (a < b ? -1 : a > b ? 1 : 0) : collator.compare(a, b);
+                    return compared === 0 ? positions.get(left) - positions.get(right) : compared * (direction === 'descending' ? -1 : 1);
+                });
+            }
+            let index = 0;
+            // Keep explanatory/empty rows in place and restore the exact initial order on Default.
+            original.forEach((row) => body.append(row.hasAttribute('data-sort-row') ? ordered[index++] : row));
+        }
+
         function update() {
+            table.dataset.sortColumn = active === null ? '' : String(active);
+            table.dataset.sortDirection = direction;
             controls.forEach(({ header, button, indicator, label, column, type }) => {
                 const current = active === column ? direction : 'default';
                 const first = type === 'text' ? 'ascending' : 'descending';
@@ -92,6 +100,18 @@
             });
             if (active === null) status.textContent = 'Sorting: Default';
         }
+        const restoredColumn = Number(table.dataset.sortColumn);
+        const restoredDirection = table.dataset.sortDirection;
+        const restored = controls.find((control) => control.column === restoredColumn);
+        if (table.dataset.sortColumn !== undefined && table.dataset.sortColumn !== '' && restored
+            && ['ascending', 'descending'].includes(restoredDirection)) {
+            active = restoredColumn;
+            direction = restoredDirection;
+            orderRows(active, restored.type);
+        }
         update();
     });
+    }
+    initialize();
+    document.addEventListener('reports:updated', initialize);
 })();

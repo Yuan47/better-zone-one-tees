@@ -2,7 +2,7 @@
 @section('title', 'Sales & Growth Forecast')
 @section('crumb', 'Sales & Growth Forecast')
 @section('content')
-<div class="forecast-workspace">
+<div class="forecast-workspace" data-report-live data-report-refresh-url="{{ $reportRefreshUrl }}" data-report-login-url="{{ route('admin.login') }}" data-report-interval="15000">
 <style>
     .forecast-chart-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;margin:26px 0 30px}
     .forecast-chart-card{min-width:0;margin:0;padding:24px 20px;background:#fff;border:1px solid var(--border);border-radius:12px}
@@ -18,7 +18,9 @@
     @media(max-width:600px){.forecast-chart-grid{gap:20px;margin-top:22px}.forecast-chart-card{padding:20px 14px}.forecast-chart-total{font-size:25px}.forecast-chart-card .forecast-details{font-size:14px}.forecast-chart-legend,.forecast-chart-note{font-size:13px}}
 </style>
 <div class="section-heading"><div><span class="eyebrow">PLAN AHEAD</span><h1>Sales &amp; Growth Forecast</h1><p class="muted">Demand estimates for {{ $revenueForecast['target'] }}.</p></div><a class="button" href="{{ route('admin.dashboard') }}#reports">← Sales reports</a></div>
-<section class="panel forecast-panel">
+@include('admin.partials.sales-reports', ['showChannels' => false])
+<p class="muted report-total-note">The selected dates above show actual sales. Forecasts below use completed calendar months and keep their own monthly forecast period.</p>
+<section data-report-region="forecast-models" class="panel forecast-panel">
     <p class="muted">Uses up to 6 completed calendar months of verified paid orders. The current month is forecast from completed months, so partial sales do not distort the estimate. Historical growth needs 2 months with a nonzero earlier month; regression needs 3 completed months. Estimates are not guarantees.</p>
     @php
         $historyMonths = array_values($revenueForecast['months']);

@@ -116,13 +116,38 @@ class ReportsController extends Controller
         unset($row);
         $otherMethodCount = (int) $invoiceCounts->where('payment_status', 'paid')->whereNotIn('delivery_method', ['pickup', 'lalamove'])->sum('invoice_count');
 
-        return view('admin.dashboard', compact('revenue', 'ordersCount', 'invoiceSummary', 'customers', 'toPack', 'lowStock', 'lowStockCount', 'chart', 'best', 'recent', 'period', 'salesChart', 'salesScope',
+        return $this->reportPage($request, 'admin.dashboard', compact('revenue', 'ordersCount', 'invoiceSummary', 'customers', 'toPack', 'lowStock', 'lowStockCount', 'chart', 'best', 'recent', 'period', 'salesChart', 'salesScope',
             'invoiceFilters', 'invoiceScope', 'paymentRows', 'paymentTotal', 'otherPaymentCount', 'methodRows', 'methodTotal', 'otherMethodCount', 'widgetStats', 'widgetLinks', 'taskCards', 'orderCharts'));
     }
 
-    public function forecast(Forecast $forecast)
+    public function forecast(Request $request, Forecast $forecast, SalesReport $report)
     {
-        return view('admin.forecast', ['forecasts' => $forecast->rows(), 'revenueForecast' => $forecast->revenue()]);
+        $filters = $report->filters($request->only(['period', 'start_date', 'end_date']));
+        $period = $filters['period'];
+        $salesChart = $report->chart($period, $filters['start_date'], $filters['end_date']);
+
+        return $this->reportPage($request, 'admin.forecast', [
+            'forecasts' => $forecast->rows(), 'revenueForecast' => $forecast->revenue(),
+            'period' => $period, 'salesChart' => $salesChart, 'chart' => $salesChart['rows'],
+        ]);
+    }
+
+    private function reportPage(Request $request, string $view, array $data)
+    {
+        $data['reportUpdatedAt'] = CarbonImmutable::now('Asia/Manila');
+        $data['reportRefreshUrl'] = route($request->routeIs('admin.forecast') ? 'admin.forecast' : 'admin.dashboard', array_filter([
+            'period' => $data['period'], 'start_date' => $data['salesChart']['start_date'], 'end_date' => $data['salesChart']['end_date'],
+        ], static fn ($value) => $value !== null));
+
+        // Refreshes use the same authenticated, verified role checks and sales
+        // calculation as navigation. They cannot confirm a payment themselves.
+        if ($request->expectsJson() && $request->header('X-Report-Refresh') === '1') {
+            return response()->json(['html' => view($view, $data)->render(),
+                'checked_at' => $data['reportUpdatedAt']->toIso8601String()])
+                ->header('Cache-Control', 'no-store, private');
+        }
+
+        return response()->view($view, $data)->header('Cache-Control', 'no-store, private');
     }
 
     public function inventoryAttention(Request $request)

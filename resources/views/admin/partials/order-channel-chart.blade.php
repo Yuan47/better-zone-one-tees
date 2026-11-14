@@ -1,4 +1,4 @@
-<section class="panel dashboard-payment-panel" aria-labelledby="order-channel-heading">
+<section data-report-region="order-channels" class="panel dashboard-payment-panel" aria-labelledby="order-channel-heading">
     <div class="section-heading"><div><h2 id="order-channel-heading">Walk-in &amp; online orders</h2><p class="muted">Last 4 months · {{ $orderCharts['range'] }}</p></div></div>
     <svg class="dashboard-payment-donut" viewBox="0 0 180 180" role="img" aria-labelledby="channel-chart-title channel-chart-desc">
         <title id="channel-chart-title">Confirmed orders by sales channel</title>

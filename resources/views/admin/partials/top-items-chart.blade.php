@@ -1,4 +1,4 @@
-<section class="panel top-items-panel" aria-labelledby="top-items-heading">
+<section data-report-region="top-items" class="panel top-items-panel" aria-labelledby="top-items-heading">
     <div class="section-heading"><div><h2 id="top-items-heading">Top 5 most bought items</h2><p class="muted">Last 4 months · {{ $orderCharts['range'] }} · pieces per month</p></div></div>
     @if(count($orderCharts['series']))
     <div class="top-items-plot"><svg viewBox="0 0 780 280" role="img" aria-labelledby="top-items-title top-items-desc">

@@ -12,6 +12,7 @@
 @if(\App\Services\AccountNavigation::workspace(auth()->user()) && ((request()->routeIs('admin.*') && !request()->routeIs('admin.login','admin.login.submit')) || request()->routeIs('account*','orders.show')))
 <link rel="stylesheet" href="{{ asset('table-sort.css') }}?v={{ filemtime(public_path('table-sort.css')) }}"><script src="{{ asset('table-sort.js') }}?v={{ filemtime(public_path('table-sort.js')) }}" defer></script>
 @endif
+@if(request()->routeIs('admin.dashboard', 'admin.forecast'))<link rel="stylesheet" href="{{ asset('reports-live.css') }}?v={{ filemtime(public_path('reports-live.css')) }}"><script src="{{ asset('reports-live.js') }}?v={{ filemtime(public_path('reports-live.js')) }}" defer></script>@endif
 @if(auth()->check() && auth()->user()->role === 'customer')<link rel="stylesheet" href="{{ asset('customer-session.css') }}?v={{ filemtime(public_path('customer-session.css')) }}">@endif
 </head>
 @php($isAdmin=\App\Services\AccountNavigation::workspace(auth()->user()) && ((request()->routeIs('admin.*') && !request()->routeIs('admin.login','admin.login.submit')) || request()->routeIs('account*','orders.show')))

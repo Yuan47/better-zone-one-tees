@@ -45,6 +45,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
   fitChatToViewport();fitScrollableRegions();
   window.addEventListener('resize',function(){fitChatToViewport();fitScrollableRegions();});
+  document.addEventListener('reports:updated',fitScrollableRegions);
   if(window.visualViewport){window.visualViewport.addEventListener('resize',fitChatToViewport);window.visualViewport.addEventListener('scroll',fitChatToViewport);}
   document.addEventListener('toggle',function(){window.requestAnimationFrame(fitScrollableRegions);},true);
   var chatPending=false, suggestions=document.querySelectorAll('.chat-suggestion');
