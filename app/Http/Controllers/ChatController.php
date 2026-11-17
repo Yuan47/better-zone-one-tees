@@ -99,6 +99,11 @@ class ChatController extends Controller
 
                 return $order->number.': '.str_replace('_', ' ', $order->status).'; payment '.$order->payment_status.'.';
             })->join("\n") : 'Sign in and share your full order number (ZOT-…). You can also open My Purchases for its status and balance.';
+        } elseif (! ($staff && $matched && $matched->audience !== 'customer')
+            && ! preg_match('/\b(?:fees?|costs?|prices?|charges?|refunds?|returns?)\b/i', $message)
+            && preg_match('/\b(?:expected|estimated)\s+delivery\b|\bdelivery\s+(?:estimate|time|days?)\b|\bhow\s+(?:long|many\s+days)\b.{0,35}\b(?:deliver(?:y|ed)?|arriv(?:e|al))\b|\bwhen\b.{0,35}\b(?:arrive|be\s+delivered)\b/iu', $message)) {
+            $protectedReply = true;
+            $reply = app(\App\Services\DeliveryEstimates::class)->description($storeInfo);
         } elseif (preg_match('/payments?.*confirm|confirm.*payments?|proof.of.payment|payment.screenshot/i', $message)) {
             $protectedReply = true;
             $reply = StoreKnowledge::PAYMENT_HELP;

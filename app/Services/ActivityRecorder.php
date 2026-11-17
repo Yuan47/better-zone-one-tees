@@ -15,7 +15,7 @@ class ActivityRecorder
         'name', 'username', 'avatar_path', 'phone', 'street_address', 'city', 'province', 'postal_code', 'country', 'lat', 'lng',
         'description', 'active', 'image_path', 'size_chart', 'size_chart_note', 'size', 'color', 'color_group', 'stock', 'reorder_level',
         'retail_price', 'wholesale_price', 'reseller_price', 'question', 'answer', 'keywords', 'sort_order', 'audience',
-        'opening_hours', 'pickup_address', 'pickup_instructions', 'support_email', 'support_phone', 'store_note',
+        'opening_hours', 'pickup_address', 'pickup_instructions', 'expected_delivery_days', 'support_email', 'support_phone', 'store_note',
     ];
 
     private const STATUSES = ['awaiting_payment', 'to_pack', 'packing', 'ready', 'delivery_booking', 'delivery_attention', 'out_for_delivery', 'completed', 'cancelled'];

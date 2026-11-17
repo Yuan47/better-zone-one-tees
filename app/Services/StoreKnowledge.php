@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\ChatbotFaq;
 use App\Models\Product;
+use App\Rules\ExpectedDeliveryDays;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -13,10 +14,13 @@ class StoreKnowledge
         'opening_hours' => 'Opening hours',
         'pickup_address' => 'Store / pickup address',
         'pickup_instructions' => 'Pickup instructions',
+        'expected_delivery_days' => 'Expected delivery days after confirmed payment',
         'support_email' => 'Support email',
         'support_phone' => 'Support phone',
         'store_note' => 'Additional approved store information',
     ];
+
+    public const DEFAULT_EXPECTED_DELIVERY_DAYS = '1-2';
 
     public const QUANTITY_PRICING = 'Total pieces across the cart: 1–5 Retail/SRP, 6–50 Wholesale, 51–100 Re-seller, 101+ Bulk with 5% off the Re-seller clothing subtotal. Delivery is separate.';
 
@@ -43,6 +47,9 @@ class StoreKnowledge
         foreach (self::INFO_FIELDS as $field => $label) {
             $info[$field] = is_string($saved[$field] ?? null) ? $saved[$field] : '';
         }
+        if (! ExpectedDeliveryDays::valid($info['expected_delivery_days'])) {
+            $info['expected_delivery_days'] = self::DEFAULT_EXPECTED_DELIVERY_DAYS;
+        }
 
         return $info;
     }
@@ -52,7 +59,9 @@ class StoreKnowledge
         $previous = $this->info();
         $next = [];
         foreach (self::INFO_FIELDS as $field => $label) {
-            $next[$field] = trim((string) ($data[$field] ?? ''));
+            $next[$field] = $field === 'expected_delivery_days'
+                ? (string) ($data[$field] ?? $previous[$field])
+                : trim((string) ($data[$field] ?? ''));
         }
         $changed = array_keys(array_filter($next, fn ($value, $field) => $value !== $previous[$field], ARRAY_FILTER_USE_BOTH));
         if ($changed !== []) {
@@ -73,6 +82,7 @@ class StoreKnowledge
         // Audience filtering is the privacy boundary. This only keeps explicit
         // internal-data requests out of the customer AI flow as well.
         return (bool) preg_match('/\b(?:admin(?:istrator)?|staff|owner|internal)\b.{0,45}\b(?:dashboard|workspace|reports?|settings?|accounts?|context|faqs?|instructions?|guides?|data|information|passwords?|credentials?)\b'
+            .'|\b(?:admin(?:istrator)?|staff|owner)\b.{0,30}\b(?:change|set|edit|configure)\b.{0,30}\b(?:expected\s+delivery|delivery\s+(?:days?|estimate))\b'
             .'|\b(?:sales\s+reports?|sales\s+forecasts?|revenue\s+reports?|activity\s+logs?|customer\s+list|all\s+customer\s+emails|staff\s+accounts?)\b'
             .'|\b(?:reveal|show|print|dump|give|list)\b.{0,50}\b(?:api\s+keys?|secret\s+keys?|system\s+prompt|private\s+context|passwords?|other\s+customers?)\b/iu', $message);
     }

@@ -33,6 +33,9 @@ class OrderFlow
             $details['payment_plan'] = 'full';
             $details['due_at'] = null;
             $details['original_due_at'] = $details['due_at'] ?? null;
+            if ($details['delivery_method'] === 'lalamove' && ($details['sales_channel'] ?? 'online') === 'online') {
+                $details['expected_delivery_days'] = app(DeliveryEstimates::class)->current();
+            }
             $order = Order::create(array_merge($details, ['number' => 'ZOT-'.now()->format('ymd').'-'.strtoupper(Str::random(8)), 'user_id' => $userId,
                 'tier' => $price['tier'], 'quantity' => $price['quantity'], 'subtotal' => $price['subtotal'], 'merchandise_base' => $price['base'], 'discount' => $price['discount'], 'total' => $price['subtotal'] + $details['shipping']]));
             foreach ($price['lines'] as $line) {

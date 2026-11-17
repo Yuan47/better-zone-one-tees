@@ -421,6 +421,7 @@ class AdminController extends Controller
         $data = $r->validate([
             'opening_hours' => 'nullable|string|max:1000', 'pickup_address' => 'nullable|string|max:2000',
             'pickup_instructions' => 'nullable|string|max:2000', 'support_email' => 'nullable|email:rfc|max:254',
+            'expected_delivery_days' => ['sometimes', 'required', 'string', 'max:7', new \App\Rules\ExpectedDeliveryDays],
             'support_phone' => ['nullable', 'string', 'max:40', 'regex:/^[+0-9().\s-]{7,40}$/'],
             'store_note' => 'nullable|string|max:5000',
         ]);

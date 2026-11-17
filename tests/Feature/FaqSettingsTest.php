@@ -187,7 +187,7 @@ class FaqSettingsTest extends TestCase
         $this->login();
         config(['shop.groq.key' => null]);
         $data = ['opening_hours' => 'Monday to Friday, 9 AM to 5 PM', 'pickup_address' => '123 Sample Street',
-            'pickup_instructions' => 'Bring your order number.', 'support_email' => 'support@example.test', 'support_phone' => '09123456789', 'store_note' => 'Approved sample note.'];
+            'pickup_instructions' => 'Bring your order number.', 'expected_delivery_days' => '1-2', 'support_email' => 'support@example.test', 'support_phone' => '09123456789', 'store_note' => 'Approved sample note.'];
         $this->post(route('admin.settings.save'), $data)->assertRedirect()->assertSessionHasNoErrors();
         $this->assertSame($data, app(StoreKnowledge::class)->info());
         $this->chat('What are your opening hours?')->assertOk()->assertSee($data['opening_hours']);

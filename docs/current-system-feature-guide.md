@@ -2,7 +2,7 @@
 
 **Last source inspection: 17 November 2026 · Asia/Manila**
 
-This guide describes source-inspected features and intended workflows. Validation for this update passed **1,965 automated tests with 17,307 assertions** using isolated data, plus phone and tablet browser checks of the new warnings and notification menu. This does not certify a new real-provider payment or inbox test on this date. Hosted publication results are recorded separately with the FAQ update.
+This guide describes source-inspected features and intended workflows. Validation including the delivery-estimate update passed **2,002 automated tests with 17,570 assertions** using isolated data, plus phone and tablet browser checks. Earlier checks also covered the inventory warnings and notification menu. This does not certify a new real-provider payment or inbox test on this date. Hosted publication results are recorded separately for each update.
 
 ## 1. What the system does
 
@@ -58,6 +58,8 @@ In **My addresses**, customers add, edit, remove and choose a default address. A
 For Lalamove delivery, a complete Philippine address and confirmed map pin are required. The customer can tap the map, move the pin, or use the coordinate fallback if the map cannot load. **GPS permission is optional**: “Use my current location” is only a shortcut. The customer must still ensure that the pin marks the correct delivery entrance and agrees with the written address. Required delivery fields are marked with an asterisk.
 
 Checkout can use an owned saved address or another complete address. The customer requests the Lalamove fee before paying. Changing the address or pin requires a fresh quotation. Saving a new profile/address detail does not rewrite the destination of an order already placed. Store pickup does not require a customer delivery pin or a courier fee.
+
+The owner can set **Expected delivery days** in Store settings → Store information. The default is **1-2 days after confirmed full payment**. Enter digits or one ascending range, such as `3` or `1-2`; letters and extra hyphens are rejected. Checkout shows this estimate for Lalamove delivery. New delivery invoices keep the value saved at creation, so a later policy change does not replace it. Older orders without a saved value are labeled with the current store estimate instead. This is an estimate rather than a guaranteed courier arrival time; it does not change the fee, payment confirmation or actual delivery status.
 
 ### Payment and documents
 

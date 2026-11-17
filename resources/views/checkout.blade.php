@@ -18,6 +18,7 @@
         </div>
         <label><span class="field-label">Receive your order <span class="required-mark" aria-hidden="true">*</span></span><select id="delivery-method" name="delivery_method" required><option value="pickup" @selected(\App\Support\FormInput::old('delivery_method') === 'pickup')>Store pickup · Free</option><option value="lalamove" @selected(\App\Support\FormInput::old('delivery_method') === 'lalamove') @disabled(!$deliveryReady)>Lalamove {{ config('shop.lalamove.mode') === 'sandbox' ? 'sandbox' : '' }} delivery{{ !$deliveryReady ? ' · Unavailable' : '' }}</option></select></label>
         <div id="delivery-fields" hidden>
+            @include('partials.expected-delivery', ['deliveryEstimate' => ['days' => app(\App\Services\DeliveryEstimates::class)->current(), 'legacy' => false, 'pending' => true]])
             <h3>Delivery address</h3>
             <label><span class="field-label">Street address <span class="required-mark" aria-hidden="true">*</span></span><input name="street_address" id="address-street" maxlength="200" value="{{ \App\Support\FormInput::old('street_address', auth()->user()->street_address) }}" autocomplete="street-address" placeholder="House / unit, building, street, barangay"></label>
             <div class="two-col">
