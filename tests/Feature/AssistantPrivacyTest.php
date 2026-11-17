@@ -111,7 +111,7 @@ class AssistantPrivacyTest extends TestCase
         $this->get(route('store'))->assertOk()->assertSee('data-question="How do I create a customer account?"', false)
             ->assertDontSee('data-question="How does the owner activate a staff account with its setup code?"', false);
         $this->actingAs(User::factory()->create(['role' => 'staff']))->get(route('admin.dashboard'))->assertOk()
-            ->assertSee('data-question="How do staff create a walk-in sale?"', false)
+            ->assertSee('data-question="How do staff create a full-payment walk-in sale?"', false)
             ->assertDontSee('data-question="How does the owner activate a staff account with its setup code?"', false);
         $this->actingAs(User::factory()->create(['role' => 'admin']))->get(route('admin.dashboard'))->assertOk()
             ->assertSee('data-question="How does the owner activate a staff account with its setup code?"', false);

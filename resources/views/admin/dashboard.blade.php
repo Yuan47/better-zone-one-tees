@@ -6,6 +6,7 @@
     <div><h1>{{ auth()->user()->role === 'admin' ? 'Store dashboard' : 'Staff dashboard' }}</h1><p class="muted">{{ auth()->user()->role === 'admin' ? 'Review sales and the orders that need attention.' : 'Prepare paid orders and keep deliveries moving.' }}</p></div>
     <div class="dashboard-heading-actions"><a class="button dark" href="{{ route('admin.walk-in.create') }}">＋ Walk-in sale</a><a class="button" href="{{ route('admin.reports.export', $salesChart['custom_range'] ? ['period' => $period, 'start_date' => $salesChart['start_date'], 'end_date' => $salesChart['end_date']] : []) }}">↓ Export sales</a></div>
 </div>
+@include('admin.partials.inventory-warnings')
 <section data-report-region="needs-attention" class="panel dashboard-task-panel" aria-labelledby="dashboard-task-heading">
     <div class="section-heading"><h2 id="dashboard-task-heading">Needs attention</h2><a class="text-link" href="{{ route('admin.operations') }}">Orders &amp; delivery →</a></div>
     <div class="dashboard-task-list">

@@ -89,16 +89,16 @@ class ChatController extends Controller
             $reply = $orders->isNotEmpty() ? $orders->map(function ($order) use ($balanceIntent) {
                 if ($balanceIntent) {
                     if ($order->inventory_released || $order->status === 'cancelled') {
-                        return $order->number.': this unpaid invoice is closed. No payment is due on this closed invoice. Open it in My orders for details.';
+                        return $order->number.': this unpaid invoice is closed. No payment is due on this closed invoice. Open it in My Purchases for details.';
                     }
                     $money = fn (int $amount) => '₱'.number_format($amount / 100, 2);
 
                     return $order->number.': invoice total '.$money((int) $order->total).'; payment received '.$money($order->paidAmount()).'; outstanding balance '.$money($order->outstandingBalance()).'.'
-                        .($order->due_at ? ' Due: '.$order->due_at->timezone('Asia/Manila')->format('M j, Y g:i A').' (Philippine time).' : '').' Open this invoice in My orders for payment details.';
+                        .($order->due_at ? ' Due: '.$order->due_at->timezone('Asia/Manila')->format('M j, Y g:i A').' (Philippine time).' : '').' Open this invoice in My Purchases for payment details.';
                 }
 
                 return $order->number.': '.str_replace('_', ' ', $order->status).'; payment '.$order->payment_status.'.';
-            })->join("\n") : 'Sign in and share your full order number (ZOT-…). You can also open My orders for its status and balance.';
+            })->join("\n") : 'Sign in and share your full order number (ZOT-…). You can also open My Purchases for its status and balance.';
         } elseif (preg_match('/payments?.*confirm|confirm.*payments?|proof.of.payment|payment.screenshot/i', $message)) {
             $protectedReply = true;
             $reply = StoreKnowledge::PAYMENT_HELP;

@@ -9,6 +9,7 @@ use App\Models\Refund;
 use App\Models\User;
 use App\Models\Variant;
 use App\Services\Forecast;
+use App\Services\InventoryWarnings;
 use App\Services\SalesReport;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -33,7 +34,8 @@ class ReportsController extends Controller
         $salesScope = $salesChart['custom_range'] ? $salesChart['history'] : 'All time';
         $customers = User::where('role', 'customer')->count();
         $attention = $this->inventoryQuery();
-        $lowStockCount = (clone $attention)->count();
+        $inventoryWarnings = app(InventoryWarnings::class)->counts();
+        $lowStockCount = array_sum($inventoryWarnings);
         $lowStock = $this->urgentFirst($attention)->limit(6)->get();
         $best = OrderItem::query()->join('orders', 'orders.id', '=', 'order_items.order_id')
             ->leftJoin('variants', 'variants.id', '=', 'order_items.variant_id')
@@ -116,7 +118,7 @@ class ReportsController extends Controller
         unset($row);
         $otherMethodCount = (int) $invoiceCounts->where('payment_status', 'paid')->whereNotIn('delivery_method', ['pickup', 'lalamove'])->sum('invoice_count');
 
-        return $this->reportPage($request, 'admin.dashboard', compact('revenue', 'ordersCount', 'invoiceSummary', 'customers', 'toPack', 'lowStock', 'lowStockCount', 'chart', 'best', 'recent', 'period', 'salesChart', 'salesScope',
+        return $this->reportPage($request, 'admin.dashboard', compact('revenue', 'ordersCount', 'invoiceSummary', 'customers', 'toPack', 'lowStock', 'lowStockCount', 'inventoryWarnings', 'chart', 'best', 'recent', 'period', 'salesChart', 'salesScope',
             'invoiceFilters', 'invoiceScope', 'paymentRows', 'paymentTotal', 'otherPaymentCount', 'methodRows', 'methodTotal', 'otherMethodCount', 'widgetStats', 'widgetLinks', 'taskCards', 'orderCharts'));
     }
 
