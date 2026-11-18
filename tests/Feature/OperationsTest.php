@@ -81,6 +81,24 @@ class OperationsTest extends TestCase
         Http::assertNothingSent();
     }
 
+    public function test_staff_and_owner_operations_use_date_filters_without_comparison_panels_or_a_trend_selector(): void
+    {
+        foreach (['staff', 'admin'] as $role) {
+            $this->login($role);
+            $this->get($this->url())->assertOk()
+                ->assertSee('Orders placed from')->assertSee('Through')->assertSee('Apply dates')
+                ->assertSee('name="start_date"', false)->assertSee('name="end_date"', false)
+                ->assertDontSee('Trend view')->assertDontSee('name="period"', false)
+                ->assertDontSee('Invoice payments &amp; delivery methods', false)
+                ->assertDontSee('Fully paid vs outstanding invoices')
+                ->assertDontSee('Confirmed paid orders by delivery method')
+                ->assertSee('Where are our deliveries?')->assertSee('Current fulfillment status')
+                ->assertSee('Orders & refund confirmations over time', false)
+                ->assertSee('grouped automatically for the selected dates');
+        }
+        Http::assertNothingSent();
+    }
+
     public function test_paid_fulfillment_counts_partition_orders_and_exclude_pending_payments(): void
     {
         $this->login();
@@ -321,7 +339,7 @@ class OperationsTest extends TestCase
         $this->order('2026-09-01 00:00:00');
         $this->order('2026-10-05 23:59:59');
         $this->order('2026-10-06 00:00:00');
-        $this->get($this->url(['start_date' => '2026-07-15', 'end_date' => '2026-10-05', 'period' => 'monthly']))->assertOk()
+        $this->get($this->url(['start_date' => '2026-07-15', 'end_date' => '2026-10-05']))->assertOk()
             ->assertViewHas('chart', fn ($rows) => array_column($rows, 'orders') === [1, 0, 1, 1]
                 && $rows[0]['range'] === 'Jul 15, 2026 – Jul 31, 2026' && $rows[3]['range'] === 'Oct 1, 2026 – Oct 5, 2026')
             ->assertSee('<svg class="operations-chart"', false)->assertSee('operations-trend-description')->assertSee('View exact order and refund figures');
@@ -343,7 +361,7 @@ class OperationsTest extends TestCase
         return [[['start_date' => '2026-02-30'], 'start_date'], [['end_date' => '2026-10-13'], 'end_date'],
             [['start_date' => '2026-10-13'], 'start_date'], [['start_date' => '2026-10-11', 'end_date' => '2026-10-10'], 'end_date'],
             [['start_date' => '2025-10-12', 'end_date' => '2026-10-13'], 'end_date'],
-            [['start_date' => '2025-10-11', 'end_date' => '2026-10-12'], 'end_date'], [['period' => 'yearly'], 'period']];
+            [['start_date' => '2025-10-11', 'end_date' => '2026-10-12'], 'end_date']];
     }
 
     #[DataProvider('invalidDateRanges')]
@@ -356,9 +374,26 @@ class OperationsTest extends TestCase
     public function test_maximum_366_day_range_and_end_only_filters_are_supported(): void
     {
         $this->login();
-        $this->get($this->url(['start_date' => '2025-10-12', 'end_date' => '2026-10-12', 'period' => 'daily']))->assertOk()
-            ->assertViewHas('chart', fn ($rows) => count($rows) === 366);
+        $this->get($this->url(['start_date' => '2025-10-12', 'end_date' => '2026-10-12']))->assertOk()
+            ->assertViewHas('period', 'monthly')->assertViewHas('chart', fn ($rows) => count($rows) === 13);
         $this->get(route('admin.operations', ['end_date' => '2026-09-30']))->assertOk()
             ->assertViewHas('startDate', '2026-09-01')->assertViewHas('endDate', '2026-09-30');
+    }
+
+    public function test_chart_grouping_is_automatic_at_the_62_day_boundary_and_ignores_legacy_period_parameters(): void
+    {
+        $this->login();
+        foreach (['monthly', 'daily', 'yearly', ['monthly']] as $legacyPeriod) {
+            $this->get($this->url(['start_date' => '2026-08-12', 'end_date' => '2026-10-12', 'period' => $legacyPeriod]))
+                ->assertOk()->assertViewHas('period', 'daily')->assertViewHas('chart', fn ($rows) => count($rows) === 62)
+                ->assertDontSee('name="period"', false);
+            $this->get($this->url(['start_date' => '2026-08-11', 'end_date' => '2026-10-12', 'period' => $legacyPeriod]))
+                ->assertOk()->assertViewHas('period', 'monthly')->assertViewHas('chart', fn ($rows) => count($rows) === 3)
+                ->assertDontSee('name="period"', false);
+        }
+        $this->assertDatabaseCount('orders', 0);
+        $this->assertDatabaseCount('refunds', 0);
+        $this->assertDatabaseCount('activity_logs', 0);
+        Http::assertNothingSent();
     }
 }

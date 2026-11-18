@@ -18,7 +18,8 @@
 @if(auth()->user()->role!=='customer' && $order->payment_status==='paid' && !$order->inventory_released && $order->status!=='cancelled')
 @if($order->fulfillmentOnHold())<div class="notice">Fulfillment is paused for an approved or processing refund, or a fully refunded payment. Review the refund request before another packing or booking action.</div>@endif
 @php($next=in_array($order->status,['to_pack','packing'])?'ready':null)
-@if($next && !$order->fulfillmentOnHold())<form action="{{ route('admin.orders.status',$order) }}" method="post">@csrf @method('PATCH')<label class="order-change-reason">Reason for this change<textarea name="reason" required minlength="10" maxlength="1000" rows="2" placeholder="Explain why this order is ready, for example: all pieces packed and checked.">{{ \App\Support\FormInput::old('reason') }}</textarea></label><button class="button dark" name="status" value="{{ $next }}">Mark Ready for delivery</button></form>@endif
+@if($next && !$order->fulfillmentOnHold())<form action="{{ route('admin.orders.status',$order) }}" method="post">@csrf @method('PATCH')<p><strong>Marked by:</strong> {{ auth()->user()->name }}</p><button class="button dark" name="status" value="{{ $next }}">Mark Ready for delivery</button></form>
+@elseif($readyMark ?? null)<p><strong>Marked by:</strong> {{ $readyMark->actor_name }}<br><small>Ready for delivery · {{ $readyMark->occurred_at->format('M d, Y · g:i A') }}</small></p>@endif
 @if($order->status==='ready' && $order->delivery_method==='lalamove' && !$order->delivery_id && !$order->fulfillmentOnHold())
 <form action="{{ route('admin.orders.delivery',$order) }}" method="post">@csrf<button class="button dark">Book Lalamove {{ config('shop.lalamove.mode')==='sandbox'?'sandbox':'' }} delivery</button></form>
 @if(auth()->user()->role==='admin')

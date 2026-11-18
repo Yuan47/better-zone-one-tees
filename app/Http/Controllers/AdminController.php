@@ -278,7 +278,7 @@ class AdminController extends Controller
 
     public function status(Request $r, Order $order, ActivityRecorder $audit, ReadyOrderNotifications $notifications)
     {
-        $data = $r->validate(['status' => 'required|in:packing,ready', 'reason' => 'required|string|min:10|max:1000']);
+        $data = $r->validate(['status' => 'required|in:packing,ready']);
         $previousStatus = null;
         DB::transaction(function () use ($r, $order, $data, $audit, $notifications, &$previousStatus) {
             $locked = Order::whereKey($order->id)->lockForUpdate()->firstOrFail();
@@ -289,7 +289,7 @@ class AdminController extends Controller
             abort_unless($locked->payment_status === 'paid' && in_array($data['status'], $allowed[$locked->status] ?? []), 422);
             $previousStatus = $locked->status;
             $locked->update(['status' => $data['status']]);
-            if (! $audit->record($r->user(), 'order.status_changed', $locked, ['previous_status' => $previousStatus, 'status' => $data['status'], 'reason' => $data['reason']])) {
+            if (! $audit->record($r->user(), 'order.status_changed', $locked, ['previous_status' => $previousStatus, 'status' => $data['status']])) {
                 throw new \RuntimeException('The order change could not be audited.');
             }
             if ($data['status'] === 'ready') {

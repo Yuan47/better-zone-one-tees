@@ -157,23 +157,69 @@ class OrderIntegrityTest extends TestCase
         $this->assertDatabaseCount('order_reviews', 1);
     }
 
-    public function test_manual_change_needs_a_reason_and_replay_cannot_create_a_second_change(): void
+    public function test_ready_change_uses_authenticated_actor_and_replay_cannot_create_a_second_change(): void
     {
         $order = $this->order();
         $order->update(['status' => 'packing', 'provider_completed_at' => null]);
-        $staff = User::factory()->create(['role' => 'staff']);
-        foreach (['', '   ', 'short', str_repeat('x', 1001)] as $reason) {
-            $this->actingAs($staff)->patch('/admin/orders/'.$order->id, ['status' => 'ready', 'reason' => $reason])->assertSessionHasErrors('reason');
-            $this->assertSame('packing', $order->fresh()->status);
-        }
-        $this->assertSame(0, ActivityLog::where('action', 'order.status_changed')->count());
-        $payload = ['status' => 'ready', 'reason' => 'All pieces were counted, packed and checked.'];
-        $this->patch('/admin/orders/'.$order->id, $payload)->assertSessionHasNoErrors();
+        $staff = User::factory()->create(['role' => 'staff', 'name' => 'Actual Ready Marker']);
+        $before = $this->invoice($order);
+        $payload = ['status' => 'ready', 'actor_id' => $order->user_id, 'actor_name' => 'Forged Owner',
+            'actor_role' => 'admin', 'marked_by' => 'Forged Owner', 'reason' => 'A forged explanation must not become an actor or reason.'];
+        $this->actingAs($staff)->patch('/admin/orders/'.$order->id, $payload)->assertSessionHasNoErrors();
         $event = ActivityLog::where('action', 'order.status_changed')->sole();
-        $this->assertSame($payload['reason'], $event->metadata['reason']);
-        $this->assertSame('packing', $event->metadata['previous_status']);
+        $this->assertSame($staff->id, $event->actor_id);
+        $this->assertSame('Actual Ready Marker', $event->actor_name);
+        $this->assertSame('staff', $event->actor_role);
+        $this->assertSame(['previous_status' => 'packing', 'status' => 'ready'], $event->metadata);
+        $this->assertSame($before, $this->invoice($order));
         $this->patchJson('/admin/orders/'.$order->id, $payload)->assertUnprocessable();
         $this->assertSame(1, ActivityLog::where('action', 'order.status_changed')->count());
+    }
+
+    public static function workspaceRoles(): array
+    {
+        return [['staff'], ['admin']];
+    }
+
+    #[DataProvider('workspaceRoles')]
+    public function test_ready_form_names_the_signed_in_marker_and_saved_identity_is_private_and_historical(string $role): void
+    {
+        $order = $this->order('pickup');
+        $order->update(['status' => 'packing']);
+        $markerName = 'Ready Marker '.ucfirst($role);
+        $actor = User::factory()->create(['role' => $role, 'name' => $markerName]);
+        $this->actingAs($actor)->get('/orders/'.$order->id)->assertOk()->assertSee('Marked by:')->assertSee($markerName)
+            ->assertSee('Mark Ready for delivery')->assertDontSee('Reason for this change')
+            ->assertDontSee('name="marked_by"', false)->assertDontSee('name="actor_id"', false);
+        $this->from('/orders/'.$order->id)->patch('/admin/orders/'.$order->id, ['status' => 'ready'])
+            ->assertRedirect('/orders/'.$order->id)->assertSessionHasNoErrors();
+        $actor->update(['name' => 'Renamed account after marking']);
+        $this->get('/orders/'.$order->id)->assertOk()->assertSee('Marked by:')->assertSee($markerName)
+            ->assertDontSee('Reason for this change')->assertDontSee('Mark Ready for delivery');
+        $this->actingAs($order->user)->get('/orders/'.$order->id)->assertOk()->assertDontSee($markerName)->assertDontSee('Marked by:');
+        $this->assertDatabaseHas('activity_logs', ['action' => 'order.status_changed', 'target_id' => $order->id,
+            'actor_id' => $actor->id, 'actor_name' => $markerName, 'actor_role' => $role]);
+        Http::assertNothingSent();
+    }
+
+    public function test_saved_ready_marker_is_scoped_to_the_order_and_ready_action_in_later_fulfillment_stages(): void
+    {
+        $order = $this->order();
+        $order->update(['status' => 'packing', 'provider_completed_at' => null]);
+        $marker = User::factory()->create(['role' => 'staff', 'name' => 'Original Packed Order Marker']);
+        $this->actingAs($marker)->patch('/admin/orders/'.$order->id, ['status' => 'ready'])->assertSessionHasNoErrors();
+        $otherOrder = $this->order();
+        $otherMarker = User::factory()->create(['role' => 'admin', 'name' => 'Other Order Marker']);
+        $this->travel(1)->minutes();
+        app(ActivityRecorder::class)->record($otherMarker, 'order.status_changed', $otherOrder,
+            ['previous_status' => 'packing', 'status' => 'ready']);
+        $order->update(['status' => 'out_for_delivery']);
+        app(ActivityRecorder::class)->record($order->user, 'order.received', $order,
+            ['previous_status' => 'out_for_delivery', 'status' => 'completed']);
+        $this->actingAs($otherMarker)->get('/orders/'.$order->id)->assertOk()
+            ->assertSee('Marked by:')->assertSee($marker->name)->assertDontSee('Marked by: '.$otherMarker->name);
+        $this->travelBack();
+        Http::assertNothingSent();
     }
 
     public static function auditFailures(): array

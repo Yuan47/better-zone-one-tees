@@ -1,8 +1,8 @@
 # Zone One Tee’s: current system feature guide
 
-**Last source inspection: 17 November 2026 · Asia/Manila**
+**Last source inspection: 18 November 2026 · Asia/Manila**
 
-This guide describes source-inspected features and intended workflows. Validation including the delivery-estimate update passed **2,002 automated tests with 17,570 assertions** using isolated data, plus phone and tablet browser checks. Earlier checks also covered the inventory warnings and notification menu. This does not certify a new real-provider payment or inbox test on this date. Hosted publication results are recorded separately for each update.
+This guide describes source-inspected features and intended workflows. Validation including the simplified workspace and automatic readiness marking passed **2,008 automated tests with 17,691 assertions** using isolated data, plus phone and tablet browser checks. Earlier checks also covered the inventory warnings and notification menu. This does not certify a new real-provider payment or inbox test on this date. Hosted publication results are recorded separately for each update.
 
 ## 1. What the system does
 
@@ -94,11 +94,11 @@ A fully received walk-in payment completes its handover and marks that sale Deli
 | To Ship | A courier booking is active. Open the order for its latest Lalamove details; the label alone does not mean the rider has arrived. |
 | Delivered | The online customer confirmed receipt with a star rating, or the separate fully paid walk-in handover rule completed. |
 
-Packing/ready changes require a reason. The booking flow checks the order’s payment and readiness. If the outcome of a booking is uncertain, staff reconcile or recover that booking before creating another one. If a refreshed courier price exceeds the customer’s already-paid delivery fee, the owner may approve covering the difference with a reason and cost limit; the customer invoice stays unchanged. Do not tell a customer to make an unrecorded extra payment.
+Routine packing/ready changes automatically record the signed-in staff member or owner in the activity log. Marked by shows that name; no routine reason entry is needed. The booking flow checks the order’s payment and readiness. If the outcome of a booking is uncertain, staff reconcile or recover that booking before creating another one. If a refreshed courier price exceeds the customer’s already-paid delivery fee, the owner may approve covering the difference with a reason and cost limit; the customer invoice stays unchanged. Do not tell a customer to make an unrecorded extra payment.
 
 Ready-for-delivery notification/email is prepared through the store notification workflow. Its recorded sending status should be checked rather than assuming that “sent” means the customer has read it. Courier updates show progress, but courier completion alone does not close an online customer order.
 
-For demonstrations, verify **PayMongo Test Mode and Lalamove Sandbox** before proceeding. Use only test outcomes, virtual test credit and the approved TEST contact. Pack a fully paid test order, mark it ready with a reason, book once, simulate progress in the Sandbox portal and reconcile the store status. Never claim that a simulated booking physically delivered clothing or that a test payment moved real money.
+For demonstrations, verify **PayMongo Test Mode and Lalamove Sandbox** before proceeding. Use only test outcomes, virtual test credit and the approved TEST contact. Pack a fully paid test order, choose Mark Ready for delivery, check the automatically recorded name, book once, simulate progress in the Sandbox portal and reconcile the store status. Never claim that a simulated booking physically delivered clothing or that a test payment moved real money.
 
 ### Receipt, reviews and returns
 
@@ -125,6 +125,8 @@ The owner also has **Notifications** in the workspace header. Its badge counts c
 Start with Needs attention, then the labeled totals and graphs. **Total Sales / Confirmed Clothing sale** uses fully paid clothing subtotals after discounts, **before refunds and excluding delivery**. It is neither profit nor the full amount collected including delivery. Average order value is the corresponding clothing sales divided by the paid-order count. Refunds and paid invoices after refunds are shown separately.
 
 Reports provide quick dates, custom From/To dates, Daily/Weekly/Monthly/Yearly grouping, exact-value tables and a payment CSV export. Dates use Asia/Manila; weeks begin Monday. Read the scope shown beside each widget: current delivery queues, current-month sales, selected-period sales and the four-month top-item/channel graphs have different purposes. Their counts need not be identical.
+
+Orders & delivery keeps its date range and delivery/fulfillment information. Its removed invoice-payment and delivery-method comparison panels do not remove payment receipts or delivery details from the original order. Its order/refund graph chooses daily grouping for up to 62 days and monthly grouping for longer ranges automatically.
 
 While a report page is visible, online and active, it checks for saved updates every **15 seconds**; Refresh data is also available. Payment confirmation must reach the system first. Editing filters pauses refresh until applied; connection failures retain the last loaded figures with retry guidance, and expired/denied access clears private report data. This is near-live updating, not a guarantee of instant delivery from an external service.
 

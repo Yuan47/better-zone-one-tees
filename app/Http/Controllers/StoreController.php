@@ -342,7 +342,12 @@ class StoreController extends Controller
     {
         abort_unless($r->user()->id === $order->user_id || in_array($r->user()->role, ['admin', 'staff']), 403);
         $order->load('items', 'user', 'refunds.paymentAttempt', 'review', 'payments.recorder');
+        $readyMark = in_array($r->user()->role, ['admin', 'staff'], true)
+            ? \App\Models\ActivityLog::where('target_type', 'order')->where('target_id', $order->id)
+                ->where('action', 'order.status_changed')->where('metadata->status', 'ready')
+                ->whereIn('actor_role', ['admin', 'staff'])->latest('id')->first()
+            : null;
 
-        return view('order', compact('order'));
+        return view('order', compact('order', 'readyMark'));
     }
 }

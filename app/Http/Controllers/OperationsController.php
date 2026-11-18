@@ -6,7 +6,6 @@ use App\Models\Order;
 use App\Models\Refund;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class OperationsController extends Controller
@@ -20,7 +19,6 @@ class OperationsController extends Controller
         $data = $request->validate([
             'start_date' => ['nullable', 'date_format:Y-m-d', 'before_or_equal:'.$today],
             'end_date' => ['nullable', 'date_format:Y-m-d', 'before_or_equal:'.$today],
-            'period' => ['nullable', Rule::in(['daily', 'monthly'])],
         ]);
         $end = CarbonImmutable::createFromFormat('!Y-m-d', $data['end_date'] ?? $today, 'Asia/Manila');
         $start = isset($data['start_date']) ? CarbonImmutable::createFromFormat('!Y-m-d', $data['start_date'], 'Asia/Manila') : $end->subDays(29);
@@ -36,7 +34,7 @@ class OperationsController extends Controller
         $endExclusive = $end->addDay()->format('Y-m-d H:i:s');
         $from = $start->format('Y-m-d H:i:s');
         $asOf = $now->format('Y-m-d H:i:s');
-        $period = $data['period'] ?? ($days > 62 ? 'monthly' : 'daily');
+        $period = $days > 62 ? 'monthly' : 'daily';
         $chart = $this->buckets($start, $end, $period);
         $lookup = array_flip(array_column($chart, 'key'));
         $stats = ['placed_orders' => 0, 'paid_orders' => 0, 'paid_pieces' => 0, 'pickup' => 0, 'lalamove' => 0, 'other_delivery' => 0,
@@ -47,30 +45,12 @@ class OperationsController extends Controller
         $statusCounts = array_fill_keys(array_keys(self::STATUSES), 0);
         $deliveryCounts = $statusCounts;
         $deliveryAttention = 0;
-        $paymentCounts = ['paid' => 0, 'partially_paid' => 0, 'pending' => 0];
-        $methodCounts = ['pickup' => 0, 'lalamove' => 0];
-        $otherPaymentCount = 0;
-        $otherMethodCount = 0;
         Order::where('created_at', '>=', $from)->where('created_at', '<', $endExclusive)->where('created_at', '<=', $asOf)
             ->select(['id', 'created_at', 'payment_status', 'status', 'delivery_method', 'quantity', 'customer_confirmed_at',
                 'sales_channel', 'walk_in_received_at', 'total', 'amount_paid', 'due_at', 'inventory_released'])
-            ->chunkById(500, function ($orders) use (&$stats, &$statusCounts, &$deliveryCounts, &$deliveryAttention, &$paymentCounts, &$methodCounts, &$otherPaymentCount, &$otherMethodCount, &$chart, $lookup, $period, $now) {
+            ->chunkById(500, function ($orders) use (&$stats, &$statusCounts, &$deliveryCounts, &$deliveryAttention, &$chart, $lookup, $period, $now) {
                 foreach ($orders as $order) {
                     $stats['placed_orders']++;
-                    if ($order->status !== 'cancelled' && ! $order->inventory_released) {
-                        if (array_key_exists($order->payment_status, $paymentCounts)) {
-                            $paymentCounts[$order->payment_status]++;
-                        } else {
-                            $otherPaymentCount++;
-                        }
-                        if ($order->payment_status === 'paid') {
-                            if (array_key_exists($order->delivery_method, $methodCounts)) {
-                                $methodCounts[$order->delivery_method]++;
-                            } else {
-                                $otherMethodCount++;
-                            }
-                        }
-                    }
                     if ($order->payment_status !== 'paid') {
                         $unpaid = $order->status === 'cancelled' ? 'cancelled_unpaid'
                             : match ($order->payment_status) {
@@ -142,20 +122,6 @@ class OperationsController extends Controller
         $stats['open_refund_requests'] = Refund::whereIn('status', ['requested', 'approved', 'pending', 'processing'])
             ->where('created_at', '>=', $from)->where('created_at', '<', $endExclusive)->where('created_at', '<=', $asOf)->count();
         $filters = ['start_date' => $startDate, 'end_date' => $endDate];
-        $paymentTotal = array_sum($paymentCounts);
-        $paymentRows = [];
-        foreach (['paid' => ['Fully paid', '#621708'], 'partially_paid' => ['Partially paid', '#BC3908'], 'pending' => ['Unpaid', '#F6AA1C']] as $status => [$label, $color]) {
-            $paymentRows[] = ['status' => $status, 'label' => $label, 'count' => $paymentCounts[$status], 'color' => $color,
-                'percentage' => $paymentTotal ? $paymentCounts[$status] / $paymentTotal * 100 : 0,
-                'url' => route('admin.orders', $filters + ['exclude_cancelled' => 1, 'payment_status' => $status])];
-        }
-        $methodTotal = array_sum($methodCounts);
-        $methodRows = [];
-        foreach (['pickup' => ['Store pickup', '#941B0C'], 'lalamove' => ['Lalamove', '#F6AA1C']] as $method => [$label, $color]) {
-            $methodRows[] = ['method' => $method, 'label' => $label, 'count' => $methodCounts[$method], 'color' => $color,
-                'percentage' => $methodTotal ? $methodCounts[$method] / $methodTotal * 100 : 0,
-                'url' => route('admin.orders', $filters + ['exclude_cancelled' => 1, 'payment_status' => 'paid', 'delivery_method' => $method])];
-        }
         $statusRows = [];
         foreach (self::STATUSES as $status => $label) {
             $statusRows[] = ['status' => $status, 'label' => $label, 'count' => $statusCounts[$status], 'color' => Order::DELIVERY_STAGE_COLORS[$status],
@@ -179,8 +145,7 @@ class OperationsController extends Controller
         $deliveryTotals = ['total' => $deliveryTotal, 'completed' => $deliveryCounts['delivered'],
             'active' => $deliveryTotal - $deliveryCounts['delivered'], 'attention' => $deliveryAttention, 'ready' => $deliveryCounts['ready']];
 
-        return view('admin.operations', compact('stats', 'statusRows', 'deliveryRows', 'deliveryTotals', 'chart', 'startDate', 'endDate', 'period', 'now', 'today', 'filters',
-            'paymentRows', 'paymentTotal', 'otherPaymentCount', 'methodRows', 'methodTotal', 'otherMethodCount'));
+        return view('admin.operations', compact('stats', 'statusRows', 'deliveryRows', 'deliveryTotals', 'chart', 'startDate', 'endDate', 'period', 'now', 'today', 'filters'));
     }
 
     private function buckets(CarbonImmutable $start, CarbonImmutable $end, string $period): array

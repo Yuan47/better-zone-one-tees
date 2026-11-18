@@ -46,7 +46,7 @@ class ReadyOrderNotificationTest extends TestCase
     private function markReady(Order $order, ?User $actor = null)
     {
         return $this->actingAs($actor ?? $this->actor())->from(route('orders.show', $order))->patch(route('admin.orders.status', $order), [
-            'status' => 'ready', 'reason' => 'All sizes and colors have been packed and checked.',
+            'status' => 'ready',
             'recipient' => 'Attacker', 'email' => 'attacker@example.test', 'contact_email' => 'attacker@example.test',
         ]);
     }
@@ -148,14 +148,13 @@ class ReadyOrderNotificationTest extends TestCase
         Http::assertNothingSent();
     }
 
-    public function test_guests_customers_unpaid_orders_and_missing_reason_cannot_trigger_ready_email(): void
+    public function test_guests_customers_and_unpaid_orders_cannot_trigger_ready_email(): void
     {
         $order = $this->order();
-        $data = ['status' => 'ready', 'reason' => 'Order packed and checked by staff.'];
+        $data = ['status' => 'ready'];
         $this->patch(route('admin.orders.status', $order), $data)->assertRedirect('/admin/login');
         $this->actingAs($order->user)->patch(route('admin.orders.status', $order), $data)->assertForbidden();
         $staff = $this->actor();
-        $this->actingAs($staff)->patch(route('admin.orders.status', $order), ['status' => 'ready'])->assertSessionHasErrors('reason');
         foreach (['pending', 'partially_paid'] as $status) {
             $order->update(['payment_status' => $status]);
             $this->markReady($order, $staff)->assertStatus(422);

@@ -3,7 +3,7 @@
 @section('crumb','Activity Log')
 @section('content')
 <div class="page-heading"><span class="eyebrow">STORE OVERSIGHT</span><h1>Activity Log</h1><p class="muted">A record of completed account, shopping, and store actions. {{ number_format($logs->total()) }} matching entries.</p></div>
-<form action="{{ route('admin.activity.index') }}" class="panel stack" method="get">
+<form action="{{ route('admin.activity.index') }}" class="panel stack workspace-filter-panel" method="get">
 @foreach(['sort','direction'] as $sortField)
     @if(request()->filled($sortField))
         <input type="hidden" name="{{ $sortField }}" value="{{ request($sortField) }}">

@@ -97,14 +97,19 @@ class DashboardCountsTest extends TestCase
             $this->invoice(['created_at' => $outside]);
         }
         $response = $this->get(route('admin.operations', ['start_date' => '2026-10-14', 'end_date' => '2026-10-15']))->assertOk()
-            ->assertViewHas('paymentTotal', 4)->assertViewHas('methodTotal', 2)
+            ->assertViewHas('stats', fn ($stats) => $stats['paid_orders'] === 3 && $stats['fulfillment_orders'] === 2
+                && $stats['partially_paid'] === 1 && $stats['placed_orders'] === 6)
             ->assertViewHas('deliveryTotals', ['total' => 1, 'completed' => 0, 'active' => 1, 'attention' => 0, 'ready' => 1])
             ->assertViewHas('statusRows', fn ($rows) => array_column($rows, 'count') === [0, 1, 0, 1])
-            ->assertSeeInOrder(['Delivery status at a glance', 'Confirmed paid orders', 'Fully paid vs outstanding invoices']);
-        $this->assertDrilldowns($response->viewData('paymentRows'), [
-            'paid' => [$pickup->id, $courier->id], 'partially_paid' => [$partial->id], 'pending' => [$pending->id],
-        ]);
-        $this->assertDrilldowns($response->viewData('methodRows'), ['pickup' => [$pickup->id], 'lalamove' => [$courier->id]]);
+            ->assertSeeInOrder(['Delivery status at a glance', 'Confirmed paid orders', 'Current fulfillment status'])
+            ->assertDontSee('Fully paid vs outstanding invoices')->assertDontSee('Confirmed paid orders by delivery method');
+        $expected = ['packing' => [], 'ready' => [$courier->id], 'courier' => [], 'delivered' => [$pickup->id]];
+        foreach ($response->viewData('statusRows') as $row) {
+            $orders = $this->get($row['url'])->assertOk()->viewData('orders');
+            $this->assertSame(count($expected[$row['status']]), $row['count']);
+            $this->assertSame($row['count'], $orders->total());
+            $this->assertEqualsCanonicalizing($expected[$row['status']], $orders->getCollection()->modelKeys());
+        }
         Http::assertNothingSent();
     }
 
@@ -139,14 +144,20 @@ class DashboardCountsTest extends TestCase
 
     public function test_empty_count_charts_show_zero_counts_and_safe_percentages_without_changing_data(): void
     {
-        foreach (['admin.dashboard', 'admin.operations'] as $route) {
-            $response = $this->get(route($route))->assertOk()->assertViewHas('paymentTotal', 0)->assertViewHas('methodTotal', 0)
-                ->assertSee($route === 'admin.dashboard' ? 'No confirmed walk-in or online orders in the last 4 months.' : 'No paid or outstanding invoices in these placed dates')
-                ->assertSee('No fully paid pickup or Lalamove orders in these placed dates');
-            foreach (array_merge($response->viewData('paymentRows'), $response->viewData('methodRows')) as $row) {
-                $this->assertSame(0, $row['count']);
-                $this->assertEquals(0, $row['percentage']);
-            }
+        $response = $this->get(route('admin.dashboard'))->assertOk()->assertViewHas('paymentTotal', 0)->assertViewHas('methodTotal', 0)
+            ->assertSee('No confirmed walk-in or online orders in the last 4 months.')
+            ->assertSee('No fully paid pickup or Lalamove orders in these placed dates');
+        foreach (array_merge($response->viewData('paymentRows'), $response->viewData('methodRows')) as $row) {
+            $this->assertSame(0, $row['count']);
+            $this->assertEquals(0, $row['percentage']);
+        }
+        $operations = $this->get(route('admin.operations'))->assertOk()
+            ->assertViewHas('stats', fn ($stats) => $stats['paid_orders'] === 0 && $stats['placed_orders'] === 0)
+            ->assertSee('No confirmed paid orders were placed in these dates.')
+            ->assertDontSee('Fully paid vs outstanding invoices')->assertDontSee('NaN')->assertDontSee('Infinity');
+        foreach (array_merge($operations->viewData('deliveryRows'), $operations->viewData('statusRows')) as $row) {
+            $this->assertSame(0, $row['count']);
+            $this->assertEquals(0, $row['percentage']);
         }
         $this->assertDatabaseCount('orders', 0);
         $this->assertDatabaseCount('payment_attempts', 0);

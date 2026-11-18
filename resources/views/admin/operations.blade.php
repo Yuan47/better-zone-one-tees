@@ -10,7 +10,6 @@
 <form method="get" action="{{ route('admin.operations') }}" class="filters operations-filters" aria-label="Operations date range">
     <label>Orders placed from<input type="date" name="start_date" value="{{ $startDate }}" max="{{ $today }}" required></label>
     <label>Through<input type="date" name="end_date" value="{{ $endDate }}" max="{{ $today }}" required></label>
-    <label>Trend view<select name="period"><option value="daily" @selected($period === 'daily')>Daily</option><option value="monthly" @selected($period === 'monthly')>Monthly</option></select></label>
     <button class="button small">Apply dates</button><a class="text-link" href="{{ route('admin.operations') }}">Last 30 days</a>
 </form>
 <p class="muted operations-period-note">{{ \Carbon\CarbonImmutable::parse($startDate)->format('M j, Y') }} – {{ \Carbon\CarbonImmutable::parse($endDate)->format('M j, Y') }} · Asia/Manila · up to 366 days. Current order status as of {{ $now->format('M j, Y · g:i A') }}.@if($endDate === $today) Today is still in progress.@endif</p>
@@ -22,41 +21,6 @@
     <article class="panel stat operations-card"><span>Verified / recorded refunds</span><h2>{{ $stats['confirmed_refunds'] ? '₱'.number_format($stats['refund_amount'] / 100, 2) : '—' }}</h2><small>{{ $stats['confirmed_refunds'] ? number_format($stats['provider_refunds']).' PayMongo-confirmed · '.number_format($stats['cash_refunds']).' recorded cash refunds' : 'No verified or recorded refunds in this range' }}</small><a class="text-link" href="{{ route('admin.refunds.index') }}">Open refund queue →</a></article>
 </div>
 @if($stats['other_delivery'])<p class="muted">{{ number_format($stats['other_delivery']) }} paid orders use another delivery method.</p>@endif
-<section class="report-count-section" aria-labelledby="operations-payment-heading">
-    <div class="section-heading"><div><h2 id="operations-payment-heading">Invoice payments &amp; delivery methods</h2><p class="muted">Current payment status of orders placed from {{ $startDate }} through {{ $endDate }}. Cancelled and released invoices are excluded from these comparisons.</p></div></div>
-    <div class="report-count-grid">
-        <section class="panel report-count-panel" aria-labelledby="operations-payment-chart-heading">
-            <div class="section-heading"><div><h3 id="operations-payment-chart-heading">Fully paid vs outstanding invoices</h3><p class="muted">{{ number_format($paymentTotal) }} invoices · outstanding means payment is still due</p></div></div>
-            <ul class="report-count-chart" aria-label="Invoice payment status counts and order links">
-                @foreach($paymentRows as $row)
-                    <li class="report-count-row">
-                        <div class="report-count-label"><a class="text-link" href="{{ $row['url'] }}"><i class="report-count-key" style="background:{{ $row['color'] }}" aria-hidden="true"></i>{{ $row['label'] }} →</a><strong>{{ number_format($row['count']) }} <small>{{ $row['count'] === 1 ? 'invoice' : 'invoices' }}</small></strong></div>
-                        <div class="report-count-track" aria-hidden="true"><span style="width:{{ $row['percentage'] }}%;background:{{ $row['color'] }}"></span></div>
-                        <p class="report-count-share">{{ number_format($row['percentage'], 1) }}% of invoices shown</p>
-                    </li>
-                @endforeach
-            </ul>
-            @if(!$paymentTotal)<p class="empty-note">No paid or outstanding invoices in these placed dates.</p>@endif
-            @if($otherPaymentCount)<p class="muted">{{ number_format($otherPaymentCount) }} invoices with other unconfirmed payment statuses are excluded from this comparison.</p>@endif
-            <p class="muted">Only fully settled invoices count as confirmed clothing sales and delivery orders. New orders require full payment.</p>
-        </section>
-        <section class="panel report-count-panel" aria-labelledby="operations-method-chart-heading">
-            <div class="section-heading"><div><h3 id="operations-method-chart-heading">Confirmed paid orders by delivery method</h3><p class="muted">{{ number_format($methodTotal) }} fully paid pickup / Lalamove orders</p></div></div>
-            <ul class="report-count-chart" aria-label="Fully paid order delivery method counts and order links">
-                @foreach($methodRows as $row)
-                    <li class="report-count-row">
-                        <div class="report-count-label"><a class="text-link" href="{{ $row['url'] }}"><i class="report-count-key" style="background:{{ $row['color'] }}" aria-hidden="true"></i>{{ $row['label'] }} →</a><strong>{{ number_format($row['count']) }} <small>{{ $row['count'] === 1 ? 'order' : 'orders' }}</small></strong></div>
-                        <div class="report-count-track" aria-hidden="true"><span style="width:{{ $row['percentage'] }}%;background:{{ $row['color'] }}"></span></div>
-                        <p class="report-count-share">{{ number_format($row['percentage'], 1) }}% of paid pickup / Lalamove orders</p>
-                    </li>
-                @endforeach
-            </ul>
-            @if(!$methodTotal)<p class="empty-note">No fully paid pickup or Lalamove orders in these placed dates.</p>@endif
-            @if($otherMethodCount)<p class="muted">{{ number_format($otherMethodCount) }} fully paid orders use another delivery method and are excluded from this comparison.</p>@endif
-            <p class="muted">Paid online and walk-in orders are included. Cancelled paid invoices remain in the financial cards above for reconciliation.</p>
-        </section>
-    </div>
-</section>
 <section aria-labelledby="fulfillment-heading">
     <div class="section-heading"><div><h2 id="fulfillment-heading">Current fulfillment status</h2><p class="muted">Only paid, non-cancelled orders placed in the selected dates. Each order appears in exactly one stage. Pickup orders in Ready for delivery are ready for collection.</p></div></div>
     @if($stats['cancelled_paid'])<p class="muted">{{ number_format($stats['cancelled_paid']) }} cancelled paid orders are excluded from fulfillment stages and remain in paid-order totals for reconciliation.</p>@endif
@@ -100,7 +64,7 @@
     </section>
 </div>
 <section class="panel operations-trend-panel">
-    <div class="section-heading"><div><h3>Orders & refund confirmations over time</h3><p class="muted">{{ ucfirst($period) }} counts · independent series; do not add them together</p></div></div>
+    <div class="section-heading"><div><h3>Orders & refund confirmations over time</h3><p class="muted">{{ ucfirst($period) }} counts · grouped automatically for the selected dates. Independent series; do not add them together.</p></div></div>
     <div class="operations-legend"><span><i class="operations-order-key" aria-hidden="true"></i>Paid orders · date placed</span><span><i class="operations-refund-key" aria-hidden="true"></i>Verified / recorded refunds · date confirmed or recorded</span></div>
     @php($chartMax = max(4, (int) (ceil(max(array_merge(array_column($chart, 'orders'), array_column($chart, 'refunds'))) / 4) * 4)))
     @php($points = count($chart))
