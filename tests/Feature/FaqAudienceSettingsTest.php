@@ -179,6 +179,7 @@ class FaqAudienceSettingsTest extends TestCase
             $retired = in_array($guide->question, [
                 'How do I choose partial payment and pay the balance later?',
                 'How do staff create a walk-in sale?',
+                'What do forecast history and accuracy warnings mean?',
             ], true);
             $this->assertSame(! $retired, $guide->active, $guide->question);
         }
