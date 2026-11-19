@@ -12,7 +12,7 @@ The staff/owner dashboard and Sales & Growth Forecast page now share a simple ac
 
 Total Sales adds fully paid clothing subtotals after quantity discounts, before refunds and without delivery charges. It includes confirmed online and recorded walk-in cash sales. Pending invoices and browser payment-return parameters do not count as confirmed sales. A new payment is reflected only after the existing trusted payment workflow records it.
 
-With no dates selected, the chart retains its established recent window: 7 days, 8 weeks, 12 months or 5 years. Dashboard top sales cards retain their clearly labelled all-time scope until explicit dates are selected. Current delivery/balance cards, this-month sales and four-month product/channel graphs retain their own stated scope.
+With no dates selected, the chart retains its established recent window: 7 days, 8 weeks, 12 months or 5 years. Dashboard top sales cards use **Annual Sales**: January 1 through today in Asia/Manila, until both explicit dates are selected. The top **Export sales** button uses those same annual summary dates by default. Customers counts registered accounts rather than annual sales. Current delivery/balance cards, this-month sales and four-month product/channel graphs retain their own stated scope.
 
 ## Automatic updates
 
@@ -29,7 +29,7 @@ This is near-live polling, rather than a direct payment-provider stream. A provi
 
 Total Sales and the actual-sales chart appear above the existing forecast charts. The selected report dates filter actual sales; they do not redefine the forecasting model's training history.
 
-Historical growth and linear regression retain up to six completed calendar months. A new payment in the current month updates actual sales and current inventory/reorder information, while the monthly sales estimate continues to use completed history. This avoids feeding an unfinished month into a completed-month trend. Forecast charts distinguish actual paid sales from the estimated period, show two-decimal money values and retain the insufficient-history messages and historical-error checks.
+Historical growth and linear regression retain up to six completed calendar months. A new payment in the current month updates actual sales and current inventory/reorder information, while the monthly sales estimate continues to use completed history. This avoids feeding an unfinished month into a completed-month trend. Forecast charts distinguish actual paid sales from the estimated period, show two-decimal money values and retain insufficient-history messages and expandable calculation inputs. Historical Error panels are no longer displayed; the page emphasizes actual sales, the estimate and its eligible monthly inputs.
 
 ## Verification
 

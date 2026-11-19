@@ -49,7 +49,12 @@ class ChatController extends Controller
             'approved_faqs' => $knowledge->relevantFaqs($message, $faqs)->map(fn ($faq) => $faq->only(['question', 'answer', 'keywords']))->values(),
             'store_information' => array_filter($storeInfo, fn ($value) => filled($value))];
         if ($staff && preg_match('/\b(?:forecast|forecasting|growth|demand|reorder|predictions?|slope|intercept)\b/i', $message)) {
-            $context['forecast'] = app(Forecast::class)->rows();
+            // Assistance follows the simplified workspace; internal validation
+            // metrics are retained by the model, not sent as display guidance.
+            $context['forecast'] = array_map(static fn (array $row) => \Illuminate\Support\Arr::only($row, [
+                'name', 'months', 'values', 'target', 'regression', 'growth', 'sold',
+                'observed_history', 'history_basis', 'forecast', 'available', 'reorder',
+            ]), app(Forecast::class)->rows());
         }
         $reply = 'I can help with the catalog, quantity pricing, order status, and approved store FAQs. Please ask a specific question. Store staff can confirm anything not supplied here.';
         $matched = $knowledge->match($message, $faqs);

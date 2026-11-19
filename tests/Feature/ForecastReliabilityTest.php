@@ -175,8 +175,9 @@ class ForecastReliabilityTest extends TestCase
         $this->assertSame('available', $row['backtest']['regression']['status']);
         $this->actingAs(User::factory()->create(['role' => 'staff']))->get('/admin/forecast')->assertOk()
             ->assertSee('confirmed clothing sales before refunds')->assertSee('fully paid pieces before returns')
-            ->assertSee('How well did past estimates perform?')->assertSee('Average miss: ₱0.00')
-            ->assertSee('0.00% error')->assertDontSee('100% accurate');
+            ->assertDontSee('How well did past estimates perform?')->assertDontSee('Average miss: ₱0.00')
+            ->assertDontSee('Historical forecast error')->assertDontSee('Relative error (WAPE)')
+            ->assertSee('history and calculation inputs')->assertDontSee('100% accurate');
         $this->assertSame(20000, Refund::firstOrFail()->amount);
         Http::assertNothingSent();
     }
@@ -201,7 +202,7 @@ class ForecastReliabilityTest extends TestCase
             }
         }
         $this->actingAs(User::factory()->create(['role' => 'admin']))->get('/admin/forecast')->assertOk()
-            ->assertSee('Accuracy not measured yet')->assertSee('Needs sales history')
+            ->assertDontSee('Accuracy not measured yet')->assertSee('Needs sales history')
             ->assertSee('zero demand is not assumed.')->assertDontSee('Average miss: ₱0.00');
         Http::assertNothingSent();
     }

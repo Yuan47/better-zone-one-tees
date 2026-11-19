@@ -18,8 +18,6 @@ class ForecastHelpFaqTest extends TestCase
         'How do staff read the two forecast charts?',
         'How is the historical growth forecast calculated?',
         'What do intercept, slope, and x mean in the sales forecast?',
-        'What do Average miss and Relative error mean in historical error?',
-        'Why does regression historical error need at least five completed months?',
         'Which sales months are included in the forecast history?',
         'What do Historical units and Available mean in the product demand table?',
         'How should staff use Suggested reorder?',
@@ -62,12 +60,10 @@ class ForecastHelpFaqTest extends TestCase
         Http::preventStrayRequests();
         $this->actingAs(User::factory()->create(['role' => 'staff']));
         foreach ([
-            'Explain the average miss and relative error.' => self::QUESTIONS[3],
-            'Why do we need five completed months?' => self::QUESTIONS[4],
-            'Explain historical units meaning.' => self::QUESTIONS[6],
-            'Explain suggested reorder limitations.' => self::QUESTIONS[7],
-            'Can you explain simulated sales accuracy?' => self::QUESTIONS[10],
-            'How do I sort forecast table rows highest to lowest?' => self::QUESTIONS[9],
+            'Explain historical units meaning.' => self::QUESTIONS[4],
+            'Explain suggested reorder limitations.' => self::QUESTIONS[5],
+            'Can you explain simulated sales accuracy?' => self::QUESTIONS[8],
+            'How do I sort forecast table rows highest to lowest?' => self::QUESTIONS[7],
         ] as $message => $question) {
             $answer = ChatbotFaq::where('question', $question)->firstOrFail()->answer;
             $this->postJson(route('chat'), ['message' => $message, 'side' => 'staff'])
@@ -108,7 +104,7 @@ class ForecastHelpFaqTest extends TestCase
 
     public function test_repeated_migration_and_rollback_preserve_owner_edits_inactivity_and_audiences(): void
     {
-        $faq = ChatbotFaq::where('question', self::QUESTIONS[3])->firstOrFail();
+        $faq = ChatbotFaq::where('question', 'What do Average miss and Relative error mean in historical error?')->firstOrFail();
         $faq->update(['answer' => 'Owner-approved revised error explanation.', 'keywords' => 'custom forecast wording',
             'audience' => 'owner', 'active' => false, 'sort_order' => 42]);
         $before = ChatbotFaq::orderBy('id')->get()->toArray();

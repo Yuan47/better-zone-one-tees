@@ -188,7 +188,7 @@ class PurchaseWorkspaceRevisionTest extends TestCase
         $archived->variants()->create(['sku' => 'ARCHIVED-TASK', 'size' => 'M', 'color' => 'White', 'stock' => 0, 'retail_price' => 10000, 'wholesale_price' => 9000, 'reseller_price' => 8000]);
         $response = $this->actingAs(User::factory()->create(['role' => 'staff']))->get(route('admin.dashboard'))->assertOk();
         $cards = collect($response->viewData('taskCards'));
-        $this->assertSame(1, $cards->firstWhere('label', 'To pack')['count']);
+        $this->assertSame(1, $cards->firstWhere('label', 'For packaging')['count']);
         $this->assertSame(1, $cards->firstWhere('label', 'Ready for delivery')['count']);
         $this->assertSame(0, $cards->firstWhere('label', 'Low-stock variants')['count']);
         $response->assertSee('Staff dashboard')->assertDontSee('Archived shirt');

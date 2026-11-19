@@ -11,8 +11,8 @@
                 <td data-label="Payment"><span>{{ $order->payment_status === 'paid' ? 'Fully paid' : ($invoiceClosed ? 'Closed invoice' : 'Payment due') }}</span><small>Payment received ₱{{ number_format($order->paidAmount() / 100, 2) }}</small>
                     @if($invoiceClosed)<small>No payment due</small>@elseif($order->outstandingBalance() > 0)<small class="purchase-balance">Outstanding: ₱{{ number_format($order->outstandingBalance() / 100, 2) }}</small>@if($order->due_at)<small>Due {{ $order->due_at->format('M d, Y') }}{{ $order->invoiceOverdue() ? ' · Overdue' : '' }}</small>@endif @endif
                 </td>
-                <td data-label="Status"><span class="badge {{ $order->customerDeliveryBadgeClass() }}">{{ $invoiceClosed ? 'Cancelled' : ($order->payment_status === 'paid' ? $order->customerDeliveryLabel() : 'To Pay') }}</span>@if(($order->refunds_count ?? 0) > 0)<small>Return / refund on record</small>@endif</td>
-                <td data-label="Details"><a class="button small" href="{{ route('orders.show', $order) }}">View order <span aria-hidden="true">→</span></a></td>
+                <td data-label="Status"><span class="badge {{ $order->customerDeliveryBadgeClass() }}">{{ $invoiceClosed ? 'Cancelled' : ($order->payment_status === 'paid' ? $order->customerDeliveryLabel() : 'To Pay') }}</span>@if(!$invoiceClosed && $order->payment_status === 'paid' && $order->deliveryConfirmed())<small>Order received {{ ($order->customer_confirmed_at ?? $order->walk_in_received_at)?->format('M d, Y') }}</small>@endif @if(($order->refunds_count ?? 0) > 0)<small>Return / refund on record</small>@endif</td>
+                <td data-label="Details"><div class="purchase-row-actions">@include('partials.customer-order-next-step', ['receiptLocation' => 'list'])<a class="button small" href="{{ route('orders.show', $order) }}">View order <span aria-hidden="true">→</span></a></div></td>
             </tr>
         @endforeach
         </tbody>

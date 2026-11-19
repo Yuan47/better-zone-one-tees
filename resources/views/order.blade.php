@@ -15,6 +15,7 @@
 <div class="pricing-badge">Payment: {{ str_replace('_',' ',$order->payment_status) }}</div>
 @if($order->inventory_released || $order->status==='cancelled')<p>This unpaid invoice is closed. No payment is due.@if($order->inventory_released) Reserved stock has been released.@endif</p>@elseif($order->payment_status==='paid')<p>Payment received in full {{ $order->paid_at?->format('M d, Y · g:i A') }}.</p>@else<p>The balance remains on this original invoice. See payments below.</p>@endif
 <a class="text-link" href="{{ route('orders.show',$order) }}">Refresh order status ↻</a>
+@include('partials.customer-order-next-step')
 @if(auth()->user()->role!=='customer' && $order->payment_status==='paid' && !$order->inventory_released && $order->status!=='cancelled')
 @if($order->fulfillmentOnHold())<div class="notice">Fulfillment is paused for an approved or processing refund, or a fully refunded payment. Review the refund request before another packing or booking action.</div>@endif
 @php($next=in_array($order->status,['to_pack','packing'])?'ready':null)
@@ -34,6 +35,7 @@
 @if($order->delivery_id && in_array($order->status,['out_for_delivery','delivery_attention','delivery_booking','completed']))<form action="{{ route('admin.orders.delivery.refresh',$order) }}" method="post">@csrf<button class="button">Check delivery with Lalamove</button></form>@endif
 @if($order->status==='delivery_booking' && !$order->delivery_id)<div class="notice">The delivery booking response is uncertain. Check the original booking in Lalamove before requesting another courier.</div><form class="stack" action="{{ route('admin.orders.delivery.recover',$order) }}" method="post">@csrf<label>Lalamove delivery ID<input name="delivery_id" required maxlength="100" pattern="[A-Za-z0-9_-]+"></label><button class="button">Verify and recover delivery</button></form>@endif
 @endif</aside></div>
+@include('partials.order-receipt')
 @include('partials.invoice-payments')
 @include('admin.partials.lalamove-demo-note')
 @include('admin.partials.invoice-reminders')
@@ -42,17 +44,19 @@
 <section class="panel"><h2>Private customer invoice</h2><p>Share this link only with this walk-in customer. It allows viewing this invoice, paying its balance and requesting an eligible refund without an account.</p><a class="button" href="{{ \Illuminate\Support\Facades\URL::temporarySignedRoute('guest.orders.show',now()->addDays(30),['order'=>$order->id]) }}">Open private customer invoice →</a><small>The link expires in 30 days. This staff page can create another link when needed.</small></section>
 @endif
 @if($order->sales_channel==='walk_in' && $order->deliveryConfirmed())<section class="panel"><h2>Walk-in · Payment received</h2><p>Full payment was received on {{ $order->walk_in_received_at->format('M d, Y · g:i A') }}. This walk-in sale is Delivered. The walk-in sale is complete.</p></section>@endif
-@include('partials.order-receipt')
 @if($order->payment_status==='paid' && $order->deliveryConfirmed())
-<section class="panel refund-order"><h2>Refunds & returns</h2>
+<section class="panel refund-order" id="refunds-returns" aria-labelledby="refunds-returns-heading"><h2 id="refunds-returns-heading">Refunds & returns</h2>
 @include('partials.return-policy')
+@if(auth()->user()->id===$order->user_id && auth()->user()->role==='customer')
+<div class="customer-refund-instructions"><h3>How to request a return or refund</h3><ol><li>When a new request is available, choose <strong>Request a refund or return</strong> below on this original order. If you already sent a request, check its status here.</li><li>Explain the issue and upload the required clear photo of the clothing. Keep the clothing for the store's return and inspection instructions.</li><li>Send the request for review, then check this section for the store response. Approval is separate from the money being returned; an online refund is complete only after PayMongo confirms it.</li></ol></div>
+@endif
 @include('partials.refund-summary')
 @forelse($order->refunds->sortByDesc('id') as $refund)<article><h3>Request #{{ $refund->id }} · {{ $refund->label() }}</h3><p>Requested ₱{{ number_format($refund->requested_amount/100,2) }} on {{ $refund->created_at->format('M d, Y') }}.</p>
 @include('partials.return-request-policy')
 <p class="preserve-lines">Your request: {{ $refund->reason }}</p>@if($refund->decision_note)<p class="preserve-lines">Store response: {{ $refund->decision_note }}</p>@endif @if($refund->approved_amount!==null)<p>Approved for processing: ₱{{ number_format($refund->approved_amount/100,2) }}.</p>@endif @if($refund->status==='succeeded')<p>{{ $refund->isCash()?'Cash refund recorded':'PayMongo confirmed' }} ₱{{ number_format($refund->amount/100,2) }} on {{ $refund->confirmed_at?->format('M d, Y') }}.</p>@endif @if(auth()->user()->role!=='customer')<a class="text-link" href="{{ route('admin.refunds.show',$refund) }}">Review refund →</a>@endif</article>@empty<p class="muted">No refund request for this order.</p>@endforelse
 @php($remainingRefund=\App\Models\Refund::remainingForOrder($order))
 @if(auth()->user()->id===$order->user_id && auth()->user()->role==='customer' && $remainingRefund>=100 && !$order->refunds->whereIn('status',['requested','approved','pending','processing'])->count())
-<details><summary>Request a refund or return</summary><p>The store owner reviews eligibility and the amount after inspecting the returned clothing. A request does not yet confirm a refund.</p><form class="stack" action="{{ route('orders.refunds.store',$order) }}" method="post" enctype="multipart/form-data">@csrf<label>Reason<textarea name="reason" required minlength="10" maxlength="2000" rows="3" placeholder="Tell us what happened with your order.">{{ \App\Support\FormInput::old('reason') }}</textarea></label><label>Required photo proof (JPG, PNG or WebP; up to 3 MB)<input type="file" name="customer_photo" accept="image/jpeg,image/png,image/webp" required aria-describedby="refund-photo-help"></label><p class="muted" id="refund-photo-help">Upload a clear photo showing the clothing and the issue. Photos are private and accessible only to authorized store staff and the owner. Select the photo again if the form reports an error.</p><button class="button">Send request for review</button></form></details>
+<details class="customer-refund-request"><summary>Request a refund or return</summary><p>The store owner reviews eligibility and the amount after inspecting the returned clothing. A request does not yet confirm a refund.</p><form class="stack" action="{{ route('orders.refunds.store',$order) }}" method="post" enctype="multipart/form-data">@csrf<label>Reason<textarea name="reason" required minlength="10" maxlength="2000" rows="3" placeholder="Tell us what happened with your order.">{{ \App\Support\FormInput::old('reason') }}</textarea></label><label>Required photo proof (JPG, PNG or WebP; up to 3 MB)<input type="file" name="customer_photo" accept="image/jpeg,image/png,image/webp" required aria-describedby="refund-photo-help"></label><p class="muted" id="refund-photo-help">Upload a clear photo showing the clothing and the issue. Photos are private and accessible only to authorized store staff and the owner. Select the photo again if the form reports an error.</p><button class="button">Send request for review</button></form></details>
 @endif
 </section>
 @endif

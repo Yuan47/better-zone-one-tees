@@ -4,9 +4,8 @@
 <div class="store-dashboard" data-report-live data-report-refresh-url="{{ $reportRefreshUrl }}" data-report-login-url="{{ route('admin.login') }}" data-report-interval="15000">
 <div class="section-heading dashboard-heading">
     <div><h1>{{ auth()->user()->role === 'admin' ? 'Store dashboard' : 'Staff dashboard' }}</h1><p class="muted">{{ auth()->user()->role === 'admin' ? 'Review sales and the orders that need attention.' : 'Prepare paid orders and keep deliveries moving.' }}</p></div>
-    <div class="dashboard-heading-actions"><a class="button dark" href="{{ route('admin.walk-in.create') }}">＋ Walk-in sale</a><a class="button" href="{{ route('admin.reports.export', $salesChart['custom_range'] ? ['period' => $period, 'start_date' => $salesChart['start_date'], 'end_date' => $salesChart['end_date']] : []) }}">↓ Export sales</a></div>
+    <div class="dashboard-heading-actions"><a class="button dark" href="{{ route('admin.walk-in.create') }}">＋ Walk-in sale</a><a class="button" href="{{ route('admin.reports.export', $salesExportFilters) }}">↓ Export sales</a></div>
 </div>
-@include('admin.partials.inventory-warnings')
 <section data-report-region="needs-attention" class="panel dashboard-task-panel" aria-labelledby="dashboard-task-heading">
     <div class="section-heading"><h2 id="dashboard-task-heading">Needs attention</h2><a class="text-link" href="{{ route('admin.operations') }}">Orders &amp; delivery →</a></div>
     <div class="dashboard-task-list">
@@ -19,9 +18,9 @@
     <a class="panel stat dashboard-stat-link" href="#reports"><span>Confirmed Clothing sale <i aria-hidden="true">↗</i></span><h2>₱{{ number_format($revenue / 100, 2) }}</h2><small>{{ $salesScope }} · paid orders after discounts · excludes delivery</small></a>
     <a class="panel stat dashboard-stat-link" href="#reports"><span>Paid orders <i aria-hidden="true">▤</i></span><h2>{{ number_format($ordersCount) }}</h2><small>{{ $salesScope }} · Current packing queue: {{ $toPack }} orders</small></a>
     @if(auth()->user()->role === 'admin')
-        <a class="panel stat dashboard-stat-link" href="{{ route('admin.customers') }}"><span>Customers <i aria-hidden="true">♧</i></span><h2>{{ number_format($customers) }}</h2><small>All time · registered customer accounts</small></a>
+        <a class="panel stat dashboard-stat-link" href="{{ route('admin.customers') }}"><span>Customers <i aria-hidden="true">♧</i></span><h2>{{ number_format($customers) }}</h2><small>Registered customer accounts</small></a>
     @else
-        <article class="panel stat"><span>Customers <i aria-hidden="true">♧</i></span><h2>{{ number_format($customers) }}</h2><small>All time · registered customer accounts</small></article>
+        <article class="panel stat"><span>Customers <i aria-hidden="true">♧</i></span><h2>{{ number_format($customers) }}</h2><small>Registered customer accounts</small></article>
     @endif
     <article class="panel stat"><span>Average order value <i>◇</i></span><h2>₱{{ number_format($ordersCount ? $revenue / $ordersCount / 100 : 0, 2) }}</h2><small>{{ $salesScope }} · confirmed clothing sale ÷ paid orders</small></article>
 </div>
@@ -35,30 +34,12 @@
     <a class="panel stat dashboard-stat-link" href="{{ $widgetLinks['outstanding'] }}"><span>Outstanding payment <i aria-hidden="true">↗</i></span><h2>₱{{ number_format($widgetStats['outstanding_payment'] / 100, 2) }}</h2><small>Total still owed · includes guest invoices</small></a>
     <a class="panel stat dashboard-stat-link" href="{{ $widgetLinks['month_sales'] }}"><span>Total sales this month <i aria-hidden="true">↗</i></span><h2>₱{{ number_format($widgetStats['month_sales'] / 100, 2) }}</h2><small>{{ $widgetStats['month_label'] }} · confirmed clothing sales</small></a>
 </div>
-<p class="muted dashboard-snapshot-note">Delivery and balances show the current position across all dates. This month’s sales use the current calendar month in Asia/Manila. The sales date filters below apply to the first sales cards and charts.</p>
+<p class="muted dashboard-snapshot-note">Annual Sales covers January 1 through today in Asia/Manila unless sales dates are selected. Delivery and balances show the current position across all dates. This month’s sales use the current calendar month in Asia/Manila. The sales date filters below apply to the first sales cards and charts.</p>
 <details class="dashboard-help"><summary>How the summary figures are calculated</summary>
 <p class="muted">Confirmed clothing sales include fully paid online and walk-in invoices, after discounts and before refunds. Average order value uses this same clothing amount before refunds. <a class="text-link" href="{{ route('admin.operations') }}">View outstanding invoices in Operations →</a></p>
 </details>
 @include('admin.partials.sales-reports', ['showChannels' => true])
 @include('admin.partials.top-items-chart')
-<div data-report-region="delivery-methods" class="dashboard-grid dashboard-secondary-charts" id="invoice-status">
-        <section class="panel report-count-panel dashboard-method-panel" aria-labelledby="invoice-method-heading">
-            <div class="section-heading"><div><h3 id="invoice-method-heading">Confirmed paid orders by delivery method</h3><p class="muted">{{ $invoiceScope }} · {{ number_format($methodTotal) }} fully paid pickup / Lalamove orders · order placement dates</p></div></div>
-            <ul class="report-count-chart" aria-label="Fully paid order delivery method counts and order links">
-                @foreach($methodRows as $row)
-                    <li class="report-count-row">
-                        <div class="report-count-label"><a class="text-link" href="{{ $row['url'] }}"><i class="report-count-key" style="background:{{ $row['color'] }}" aria-hidden="true"></i>{{ $row['label'] }} →</a><strong>{{ number_format($row['count']) }} <small>{{ $row['count'] === 1 ? 'order' : 'orders' }}</small></strong></div>
-                        <div class="report-count-track" aria-hidden="true"><span style="width:{{ $row['percentage'] }}%;background:{{ $row['color'] }}"></span></div>
-                        <p class="report-count-share">{{ number_format($row['percentage'], 1) }}% of paid pickup / Lalamove orders</p>
-                    </li>
-                @endforeach
-            </ul>
-            @if(!$methodTotal)<p class="empty-note">No fully paid pickup or Lalamove orders in these placed dates.</p>@endif
-            @if($otherMethodCount)<p class="muted">{{ number_format($otherMethodCount) }} fully paid orders use another delivery method and are excluded from this comparison.</p>@endif
-            <p class="muted">Includes fully paid online and walk-in orders at every fulfillment stage.</p>
-        </section>
-
-</div>
 <div data-report-region="recent-inventory" class="dashboard-grid">
     <section class="panel">
         <div class="section-heading"><h3>Recent orders</h3><a class="text-link" href="{{ route('admin.orders') }}">View all →</a></div>
@@ -76,7 +57,6 @@
         <a class="text-link" href="{{ route('admin.inventory-attention') }}">View all {{ number_format($lowStockCount) }} shortages →</a>
     </section>
 </div>
-<section class="panel"><div class="section-heading"><div><h3>Sales &amp; Growth Forecast</h3><p class="muted">Explore historical demand, growth estimates, and suggested reorder quantities.</p></div><a class="button small" href="{{ route('admin.forecast') }}">Open forecast →</a></div></section>
 <section data-report-region="invoice-refunds" class="panel report-count-section dashboard-refunds" aria-labelledby="invoice-refund-heading">
     <div class="section-heading"><div><h2 id="invoice-refund-heading">Paid invoices after refunds</h2><p class="muted">{{ $salesScope }} · invoices selected by payment completion date · includes delivery</p></div></div>
     <div class="invoice-totals">

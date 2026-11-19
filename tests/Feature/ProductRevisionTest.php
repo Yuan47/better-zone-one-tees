@@ -221,7 +221,7 @@ class ProductRevisionTest extends TestCase
             ->assertDontSee('name="image_url"', false);
         $this->get(route('admin.products.edit', $product))->assertOk()->assertDontSee('<th>Reserved</th>', false)
             ->assertDontSee('name="reserved"', false)->assertDontSee('name="sku"', false)->assertSee('Automatic SKU')
-            ->assertDontSee('name="color_group"', false)->assertDontSee('WHITE &amp; COLORED', false)->assertSee('All variants');
+            ->assertDontSee('name="color_group"', false)->assertDontSee('WHITE &amp; COLORED', false)->assertSee('Sizes & colors', false);
     }
 
     public function test_posted_legacy_group_cannot_replace_the_actual_color_and_case_duplicates_are_rejected(): void

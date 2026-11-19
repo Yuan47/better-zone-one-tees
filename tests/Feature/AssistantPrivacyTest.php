@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\ChatbotFaq;
 use App\Models\User;
+use App\Services\Forecast;
 use App\Services\StoreKnowledge;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -94,6 +95,38 @@ class AssistantPrivacyTest extends TestCase
                 && ! str_contains(json_encode($context), 'INTERNAL_STAFF_GUIDE')
                 && ! str_contains(json_encode($context), 'INTERNAL_OWNER_GUIDE');
         });
+    }
+
+    public function test_staff_and_owner_forecast_context_keeps_displayed_estimates_without_internal_error_metrics(): void
+    {
+        $row = ['name' => 'Isolated forecast tee', 'months' => ['2026-07', '2026-08', '2026-09'],
+            'values' => [1, 2, 3], 'target' => 'October 2026', 'forecast' => 4, 'available' => 2, 'reorder' => 2,
+            'regression' => ['a' => 0, 'b' => 1, 'prediction' => 4, 'status' => 'available'],
+            'growth' => ['rate' => 0.5, 'prediction' => 4.5, 'status' => 'available'],
+            'backtest' => ['regression' => ['mae' => 0, 'wape' => 0, 'tested_months' => 3,
+                'points' => [['absolute_error' => 0]]]]];
+        $this->mock(Forecast::class, function ($mock) use ($row) {
+            $mock->shouldReceive('rows')->twice()->andReturn([$row]);
+        });
+        foreach (['staff', 'admin'] as $role) {
+            $this->actingAs(User::factory()->create(['role' => $role]));
+            $this->postJson(route('chat'), ['side' => 'staff', 'message' => 'Please interpret a demand prediction.'])
+                ->assertOk()->assertJsonPath('mode', 'groq');
+            $request = Http::recorded()->last()[0];
+            $context = $this->context($request['messages'][0]['content']);
+            $forecast = $context['forecast'][0];
+            $expected = $row;
+            unset($expected['backtest']);
+            $this->assertSame($expected, $forecast);
+            foreach (['backtest', 'mae', 'wape', 'tested_months', 'absolute_error'] as $field) {
+                $this->assertStringNotContainsString('"'.$field.'"', json_encode($forecast));
+            }
+        }
+        Http::assertSentCount(2);
+        $this->postJson(route('chat'), ['side' => 'customer', 'message' => 'Please interpret a demand prediction.'])
+            ->assertOk()->assertJsonPath('mode', 'groq');
+        $request = Http::recorded()->last()[0];
+        $this->assertArrayNotHasKey('forecast', $this->context($request['messages'][0]['content']));
     }
 
     public function test_default_faq_service_is_public_and_inactive_internal_guides_stay_hidden(): void

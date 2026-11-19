@@ -133,7 +133,8 @@ class ReportsTest extends TestCase
 
     public function test_admin_and_staff_can_open_period_views_and_forecast_is_separate(): void
     {
-        $this->order('2025-01-01 12:00:00', 12345);
+        $this->travelTo(Carbon::parse('2026-10-12 12:00:00', 'Asia/Manila'));
+        $this->order('2026-01-01 12:00:00', 12345);
         foreach (['admin', 'staff'] as $role) {
             $this->actingAs($this->user($role));
             foreach (SalesReport::PERIODS as $period) {
@@ -147,6 +148,64 @@ class ReportsTest extends TestCase
                 ->assertSee('Previous period sales ×')->assertSee('y = a + bx')
                 ->assertDontSee('Category demand')->assertViewIs('admin.forecast');
         }
+        $this->travelBack();
+    }
+
+    public function test_annual_summary_uses_manila_year_boundaries_paid_dates_and_verified_invoice_refunds(): void
+    {
+        // UTC is still December 31; the store's calendar has reached January 1.
+        $this->travelTo(Carbon::parse('2026-12-31 16:30:00', 'UTC'));
+        $oldVariant = $this->variant($this->product('Prior year tee', '2026-01-01'));
+        $currentVariant = $this->variant($this->product('Current year tee', '2026-01-01'));
+        $old = $this->order('2026-12-31 23:59:59', 9000);
+        $first = $this->order('2027-01-01 00:00:00', 10000);
+        $now = $this->order('2027-01-01 00:30:00', 20000);
+        $first->update(['created_at' => '2026-12-30 10:00:00']);
+        $this->item($old, $oldVariant, 99);
+        $this->item($first, $currentVariant, 2);
+        $this->item($now, $currentVariant, 3);
+        $this->order('2027-01-01 00:30:01', 70000);
+        $this->order('2027-01-01 00:20:00', 80000, 'pending');
+        $missing = $this->order('2027-01-01 00:20:00', 90000);
+        $missing->update(['paid_at' => null]);
+        foreach ([[$old, 500], [$first, 2000]] as [$order, $amount]) {
+            $order->refunds()->create(['requested_amount' => $amount, 'approved_amount' => $amount,
+                'amount' => $amount, 'status' => 'succeeded', 'provider_refund_id' => 'ref_annual_'.$order->id,
+                'reason' => 'Isolated annual report fixture', 'confirmed_at' => '2027-01-01 00:10:00']);
+        }
+        $first->refunds()->create(['requested_amount' => 3000, 'amount' => 3000, 'status' => 'requested',
+            'reason' => 'Not a confirmed refund']);
+        $this->actingAs($this->user('admin'));
+        foreach (SalesReport::PERIODS as $period) {
+            $response = $this->get('/admin?period='.$period)->assertOk()
+                ->assertViewHas('salesScope', 'Annual Sales · 2027')->assertViewHas('revenue', 30000)
+                ->assertViewHas('ordersCount', 2)->assertSee('Registered customer accounts')
+                ->assertViewHas('invoiceSummary', fn ($summary) => $summary['original_invoice'] === 60000
+                    && $summary['confirmed_refunds'] === 2000 && $summary['net_invoice'] === 58000);
+            $best = $response->viewData('best');
+            $this->assertCount(1, $best);
+            $this->assertSame($currentVariant->product_id, (int) $best[0]->product_id);
+            $this->assertSame(5, (int) $best[0]->units);
+            if ($period === 'yearly') {
+                $this->assertSame(39000, $response->viewData('salesChart')['total'], 'Yearly graph keeps its multi-year history.');
+            }
+        }
+        $exportFilters = ['period' => 'yearly', 'start_date' => '2027-01-01', 'end_date' => '2027-01-01'];
+        $this->assertSame($exportFilters, $response->viewData('salesExportFilters'));
+        $response->assertSee(route('admin.reports.export', $exportFilters));
+        $export = $this->get(route('admin.reports.export', $exportFilters))->assertOk()->streamedContent();
+        $this->assertStringContainsString($first->number, $export);
+        $this->assertStringContainsString($now->number, $export);
+        $this->assertStringNotContainsString($old->number, $export);
+        $this->get('/admin?start_date=2026-12-31&end_date=2026-12-31')->assertOk()
+            ->assertViewHas('revenue', 9000)->assertViewHas('ordersCount', 1)
+            ->assertViewHas('invoiceSummary', fn ($summary) => $summary['original_invoice'] === 24000
+                && $summary['confirmed_refunds'] === 500 && $summary['net_invoice'] === 23500)
+            ->assertViewHas('salesScope', 'Dec 31, 2026 – Dec 31, 2026');
+        $refresh = $this->getJson('/admin?period=monthly', ['X-Report-Refresh' => '1'])->assertOk()->json('html');
+        $this->assertStringContainsString('Annual Sales · 2027', $refresh);
+        $this->assertStringContainsString('₱300.00', $refresh);
+        $this->travelBack();
     }
 
     public function test_report_access_requires_staff_or_admin_and_rejects_invalid_period(): void
@@ -431,7 +490,7 @@ class ReportsTest extends TestCase
         $this->travelBack();
     }
 
-    public function test_all_time_sales_cards_bestsellers_and_export_exclude_unconfirmed_payment_dates(): void
+    public function test_annual_sales_cards_bestsellers_and_export_exclude_unconfirmed_payment_dates(): void
     {
         $this->travelTo(Carbon::parse('2026-10-12 12:00:00', 'Asia/Manila'));
         $verified = $this->order('2026-10-12 11:59:59', 10000);

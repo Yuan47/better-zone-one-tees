@@ -15,6 +15,7 @@
         <button class="button" type="submit">Search</button>
         @if($filters['q'] !== '')<a class="text-link" href="{{ route('orders', ['status' => $filters['status']]) }}">Clear search</a>@endif
     </form>
+    <details class="purchase-receipt-help"><summary>How do I confirm receipt or request a refund?</summary><p>Open the order using View order. When the fully paid order is ready for pickup or its courier completion is verified, choose Order received. Select 1–5 stars, optionally write a review, tick I have received my order, and choose Confirm Delivered. After saving, the order shows Delivered in Completed purchases.</p><p>For a return, open that Delivered order and follow Return / refund instructions. You will need a reason and a clear photo of the clothing and the issue. The store reviews and inspects returns before approval.</p></details>
     <div class="panel purchase-list-panel">
         @if($orders->count())
             @include('partials.customer-purchase-table', ['purchaseOrders' => $orders])

@@ -40,21 +40,7 @@ class DashboardCountsTest extends TestCase
         ]);
     }
 
-    private function assertDrilldowns(array $rows, array $expectedIds): void
-    {
-        foreach ($rows as $row) {
-            $key = $row['status'] ?? $row['method'];
-            $orders = $this->get($row['url'])->assertOk()->viewData('orders');
-            $this->assertSame(count($expectedIds[$key]), $row['count']);
-            $this->assertSame($row['count'], $orders->total());
-            $this->assertSame(collect($expectedIds[$key])->sort()->values()->all(),
-                $orders->getCollection()->pluck('id')->sort()->values()->all());
-            parse_str(parse_url($row['url'], PHP_URL_QUERY), $query);
-            $this->assertSame('1', $query['exclude_cancelled']);
-        }
-    }
-
-    public function test_dashboard_count_charts_use_placed_dates_and_exact_drilldowns_without_changing_paid_date_sales(): void
+    public function test_dashboard_keeps_paid_date_sales_and_channels_without_redundant_delivery_charts(): void
     {
         $pickup = $this->invoice(['created_at' => '2026-10-14 00:00:00']);
         $courier = $this->invoice(['created_at' => '2026-10-15 23:59:59', 'paid_at' => '2026-10-16 10:00:00',
@@ -70,16 +56,15 @@ class DashboardCountsTest extends TestCase
         $this->invoice(['payment_status' => 'failed', 'amount_paid' => 0, 'paid_at' => null]);
         $filters = ['start_date' => '2026-10-14', 'end_date' => '2026-10-15'];
 
-        $response = $this->get(route('admin.dashboard', $filters))->assertOk()
-            ->assertViewHas('paymentTotal', 4)->assertViewHas('methodTotal', 2)->assertViewHas('otherPaymentCount', 1)
+        $this->get(route('admin.dashboard', $filters))->assertOk()
             ->assertViewHas('ordersCount', 3)->assertViewHas('revenue', 110000)
-            ->assertSee('Walk-in &amp; online orders', false)->assertSee('Confirmed paid orders by delivery method')
+            ->assertSee('Walk-in &amp; online orders', false)
+            ->assertDontSee('Confirmed paid orders by delivery method')
+            ->assertDontSee('Fully paid vs outstanding invoices')
+            ->assertDontSee('data-report-region="delivery-methods"', false)
+            ->assertDontSee('Open forecast →')->assertDontSee('Inventory needs attention')
+            ->assertSee('Inventory attention')->assertSee('For packaging')
             ->assertSee('Counts fully paid invoices by payment date');
-        $this->assertDrilldowns($response->viewData('paymentRows'), [
-            'paid' => [$pickup->id, $courier->id], 'partially_paid' => [$partial->id], 'pending' => [$pending->id],
-        ]);
-        $this->assertDrilldowns($response->viewData('methodRows'), ['pickup' => [$pickup->id], 'lalamove' => [$courier->id]]);
-        $this->assertSame([50.0, 25.0, 25.0], array_column($response->viewData('paymentRows'), 'percentage'));
         Http::assertNothingSent();
     }
 
@@ -113,30 +98,28 @@ class DashboardCountsTest extends TestCase
         Http::assertNothingSent();
     }
 
-    public function test_all_time_dashboard_counts_include_older_invoices_and_report_legacy_methods_without_inventing_a_chart_category(): void
+    public function test_annual_dashboard_excludes_older_paid_invoices_and_still_counts_legacy_methods_as_sales(): void
     {
-        $old = $this->invoice(['created_at' => '2020-01-01 10:00:00', 'paid_at' => '2020-01-02 10:00:00']);
-        $legacy = $this->invoice(['delivery_method' => 'legacy_courier']);
+        $this->invoice(['created_at' => '2020-01-01 10:00:00', 'paid_at' => '2020-01-02 10:00:00']);
+        $this->invoice(['delivery_method' => 'legacy_courier']);
         $this->invoice(['created_at' => '2026-10-16 12:00:01', 'paid_at' => null, 'payment_status' => 'pending', 'amount_paid' => 0]);
-        $response = $this->get(route('admin.dashboard'))->assertOk()->assertViewHas('invoiceScope', 'All time')
-            ->assertViewHas('paymentTotal', 2)->assertViewHas('methodTotal', 1)->assertViewHas('otherMethodCount', 1)
-            ->assertSee('fully paid orders use another delivery method and are excluded')
-            ->assertViewHas('salesChart', fn ($chart) => $chart['orders'] === 1);
-        $this->assertDrilldowns($response->viewData('paymentRows'), ['paid' => [$old->id, $legacy->id], 'partially_paid' => [], 'pending' => []]);
-        $this->assertDrilldowns($response->viewData('methodRows'), ['pickup' => [$old->id], 'lalamove' => []]);
+        $this->get(route('admin.dashboard'))->assertOk()->assertViewHas('salesScope', 'Annual Sales · 2026')
+            ->assertViewHas('ordersCount', 1)->assertViewHas('revenue', 20000)
+            ->assertViewHas('salesChart', fn ($chart) => $chart['orders'] === 1)
+            ->assertDontSee('Confirmed paid orders by delivery method');
         Http::assertNothingSent();
     }
 
-    public function test_yearly_dashboard_drilldowns_support_the_full_valid_ten_year_range_and_reject_one_day_beyond_it(): void
+    public function test_yearly_dashboard_explicit_dates_support_full_valid_ten_year_range_and_reject_one_day_beyond_it(): void
     {
         $old = $this->invoice(['created_at' => '2016-10-16 00:00:00', 'paid_at' => '2016-10-17 10:00:00']);
         $this->invoice(['created_at' => '2016-10-15 23:59:59', 'paid_at' => '2016-10-15 23:59:59']);
         $partial = $this->invoice(['created_at' => '2022-01-01 10:00:00', 'payment_status' => 'partially_paid',
             'amount_paid' => 5000, 'paid_at' => null]);
         $filters = ['period' => 'yearly', 'start_date' => '2016-10-16', 'end_date' => '2026-10-16'];
-        $response = $this->get(route('admin.dashboard', $filters))->assertOk()->assertViewHas('paymentTotal', 2);
-        $this->assertDrilldowns($response->viewData('paymentRows'), ['paid' => [$old->id], 'partially_paid' => [$partial->id], 'pending' => []]);
-        $this->assertDrilldowns($response->viewData('methodRows'), ['pickup' => [$old->id], 'lalamove' => []]);
+        $this->get(route('admin.dashboard', $filters))->assertOk()
+            ->assertViewHas('ordersCount', 1)->assertViewHas('revenue', 20000)
+            ->assertViewHas('salesChart', fn ($chart) => $chart['custom_range'] && $chart['orders'] === 1);
         $this->getJson(route('admin.orders', ['start_date' => '2016-10-15', 'end_date' => '2026-10-16']))
             ->assertUnprocessable()->assertJsonValidationErrors('end_date');
         Http::assertNothingSent();
@@ -144,13 +127,9 @@ class DashboardCountsTest extends TestCase
 
     public function test_empty_count_charts_show_zero_counts_and_safe_percentages_without_changing_data(): void
     {
-        $response = $this->get(route('admin.dashboard'))->assertOk()->assertViewHas('paymentTotal', 0)->assertViewHas('methodTotal', 0)
+        $this->get(route('admin.dashboard'))->assertOk()->assertViewHas('ordersCount', 0)->assertViewHas('revenue', 0)
             ->assertSee('No confirmed walk-in or online orders in the last 4 months.')
-            ->assertSee('No fully paid pickup or Lalamove orders in these placed dates');
-        foreach (array_merge($response->viewData('paymentRows'), $response->viewData('methodRows')) as $row) {
-            $this->assertSame(0, $row['count']);
-            $this->assertEquals(0, $row['percentage']);
-        }
+            ->assertDontSee('Confirmed paid orders by delivery method')->assertDontSee('NaN')->assertDontSee('Infinity');
         $operations = $this->get(route('admin.operations'))->assertOk()
             ->assertViewHas('stats', fn ($stats) => $stats['paid_orders'] === 0 && $stats['placed_orders'] === 0)
             ->assertSee('No confirmed paid orders were placed in these dates.')
@@ -172,10 +151,10 @@ class DashboardCountsTest extends TestCase
         }
         $this->invoice(['payment_status' => 'partially_paid', 'status' => 'cancelled', 'amount_paid' => 5000, 'paid_at' => null]);
         $filters = ['start_date' => '2026-10-15', 'end_date' => '2026-10-15'];
-        $response = $this->get(route('admin.dashboard', $filters))->assertOk()->assertViewHas('paymentTotal', 21)
+        $this->get(route('admin.dashboard', $filters))->assertOk()
             ->assertViewHas('ordersCount', 0)->assertViewHas('revenue', 0);
-        $partial = collect($response->viewData('paymentRows'))->firstWhere('status', 'partially_paid');
-        $orders = $this->get($partial['url'])->assertOk()->viewData('orders');
+        $orders = $this->get(route('admin.orders', $filters + ['exclude_cancelled' => 1, 'payment_status' => 'partially_paid']))
+            ->assertOk()->viewData('orders');
         $this->assertSame(21, $orders->total());
         $this->assertSame(20, $orders->count());
         parse_str(parse_url($orders->nextPageUrl(), PHP_URL_QUERY), $query);

@@ -34,13 +34,18 @@ class AdminController extends Controller
 {
     public function products(Request $r)
     {
+        $data = $r->validate(['filter' => ['nullable', 'string', Rule::in(['all', 'low', 'hidden'])]]);
+        $catalogFilter = $data['filter'] ?? 'all';
         $search = FormInput::query('q');
         $products = Product::with('variants')
             ->when($r->boolean('archived'), fn ($query) => $query->whereNotNull('archived_at'), fn ($query) => $query->whereNull('archived_at'))
-            ->when(! $r->boolean('archived') && ! $r->boolean('hidden'), fn ($query) => $query->where('active', true))
-            ->when(filled($search), fn ($query) => $query->where('name', 'like', '%'.$search.'%'))->get();
+            ->when(! $r->boolean('archived') && $catalogFilter === 'hidden', fn ($query) => $query->where('active', false))
+            ->when(! $r->boolean('archived') && $catalogFilter === 'low', fn ($query) => $query->whereHas('variants', fn ($variants) => $variants
+                ->whereNull('archived_at')->whereRaw('CASE WHEN stock > reserved THEN stock - reserved ELSE 0 END <= CASE WHEN reorder_level > 0 THEN reorder_level ELSE 0 END')))
+            ->when(filled($search), fn ($query) => $query->where('name', 'like', '%'.$search.'%'))
+            ->orderBy('name')->orderBy('id')->get();
 
-        return view('admin.products', compact('products'));
+        return view('admin.products', compact('products', 'catalogFilter'));
     }
 
     public function edit(Request $r, Product $product)

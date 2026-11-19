@@ -47,10 +47,15 @@ class StoreOrderCharts
             $series[] = ['product_id' => (int) $leader->product_id, 'name' => $leader->name, 'total' => (int) $leader->units,
                 'values' => $values, 'color' => $colors[$index]];
         }
-        $ceiling = max(4, (int) ceil($max / 4) * 4);
+        // Keep quantities exact; only the scale uses readable whole-piece steps.
+        $rawStep = max(1, $max / 4);
+        $magnitude = 10 ** floor(log10($rawStep));
+        $fraction = $rawStep / $magnitude;
+        $step = (int) (($fraction <= 1 ? 1 : ($fraction <= 2 ? 2 : ($fraction <= 5 ? 5 : 10))) * $magnitude);
+        $ceiling = $step * 4;
         $ticks = [];
         for ($i = 0; $i <= 4; $i++) {
-            $ticks[] = ['value' => $ceiling / 4 * $i, 'y' => 230 - 180 * $i / 4];
+            $ticks[] = ['value' => $step * $i, 'y' => 230 - 180 * $i / 4];
         }
         foreach ($series as &$line) {
             $line['points'] = array_map(fn ($value, $index) => ['x' => 90 + 210 * $index, 'y' => round(230 - $value / $ceiling * 180, 2), 'value' => $value], $line['values'], array_keys($line['values']));

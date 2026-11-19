@@ -39,7 +39,7 @@ class AssistantGuideTest extends TestCase
                 'How do staff handle a pending or uncertain payment?',
                 'How do staff read and export sales reports?',
                 'How do staff understand the forecast formulas?',
-                'What do forecast history and accuracy warnings mean?',
+                'Why does a forecast show Needs history?',
             ],
             'owner' => [
                 'How does the owner add a product and its size and color variants?',

@@ -5,6 +5,7 @@
 <link rel="stylesheet" href="{{ asset('shop.css') }}?v={{ filemtime(public_path('shop.css')) }}"><script src="{{ asset('shop.js') }}?v={{ filemtime(public_path('shop.js')) }}" defer></script>
 <link rel="stylesheet" href="{{ asset('workspace-revision.css') }}?v={{ filemtime(public_path('workspace-revision.css')) }}">
 <link rel="stylesheet" href="{{ asset('catalog-management.css') }}?v={{ filemtime(public_path('catalog-management.css')) }}">
+@if(request()->routeIs('admin.products.edit','admin.products.create'))<script src="{{ asset('catalog-editor.js') }}?v={{ filemtime(public_path('catalog-editor.js')) }}" defer></script>@endif
 <link rel="stylesheet" href="{{ asset('catalog-photos.css') }}?v={{ filemtime(public_path('catalog-photos.css')) }}">
 <link rel="stylesheet" href="{{ asset('checkout-revision.css') }}?v={{ filemtime(public_path('checkout-revision.css')) }}">
 @if(request()->routeIs('checkout'))<script src="{{ asset('checkout.js') }}?v={{ filemtime(public_path('checkout.js')) }}" defer></script>@endif
