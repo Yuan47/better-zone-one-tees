@@ -17,6 +17,15 @@ class CatalogPhotoPreview
     ];
 
     private const STYLES = [
+        // Original demo styles keep their matching previews when hidden or reactivated.
+        'everyday-cotton-tee' => 'round-neck',
+        'the-classic-crew' => 'round-neck',
+        'relaxed-pocket-tee' => 'pocket-tee-v1',
+        'essential-polo' => 'polo',
+        'active-dri-fit-tee' => 'athletic-tee-v1',
+        'weekend-oversized-tee' => 'oversized-tee-v1',
+        'everyday-kids-tee' => 'round-neck-kids',
+        'classic-pique-polo' => 'polo',
         'dannon-round-neck-v-neck' => 'round-neck',
         'dannon-v-neck' => 'v-neck',
         'dannon-round-neck-v-neck-kids' => 'round-neck-kids',
