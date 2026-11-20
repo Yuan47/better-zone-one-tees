@@ -91,7 +91,8 @@ class CustomerReceiptGuidanceTest extends TestCase
         $this->actingAs($order->user)->get(route('orders.show', $order))->assertOk()
             ->assertSee('Order received? View instructions')
             ->assertSee('Receipt confirmation is not available yet.')
-            ->assertSee('ask store staff to check the original order.')
+            ->assertSee('choose Check latest delivery status below.')
+            ->assertSee('If completion still cannot be verified, contact the store for help.')
             ->assertDontSee('action="'.route('orders.receipt', $order).'"', false);
         Http::assertNothingSent();
     }

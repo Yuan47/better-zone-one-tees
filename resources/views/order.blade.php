@@ -3,6 +3,15 @@
 @section('content')
 @if(str_starts_with($order->number,'ZOT-DEMO-'))<div class="notice">SIMULATED / TEST ORDER · For demonstration. No real money or physical delivery is represented by this record.</div>@endif
 <div class="page-heading"><span class="eyebrow">ORDER DETAILS</span><h1>{{ $order->number }}</h1><span class="badge {{ $order->customerDeliveryBadgeClass() }}">{{ $order->payment_status==='paid' && $order->status!=='cancelled' ? $order->customerDeliveryLabel() : ucfirst(str_replace('_',' ',$order->status)) }}</span></div>
+@if($order->payment_status==='paid' && !$order->inventory_released && $order->delivery_method==='lalamove' && $order->provider_completed_at && !$order->customer_confirmed_at && $order->status==='out_for_delivery')
+<div class="notice" role="status">
+@if(auth()->user()->role==='customer' && auth()->id()===$order->user_id)
+<strong>Courier completed · confirm receipt</strong><p>Lalamove has confirmed delivery completion. After receiving and checking your clothing, choose your stars and confirm receipt below.</p><a class="button dark" href="#order-receipt">Order received · confirm here</a>
+@else
+<strong>Courier completed · awaiting customer confirmation</strong><p>Lalamove has confirmed delivery completion. The customer must open this original order, choose their stars and confirm receipt. It stays To Ship until the customer completes that step; staff cannot confirm on their behalf.</p>
+@endif
+</div>
+@endif
 @if($order->sales_channel !== 'walk_in' && $order->status !== 'cancelled' && !$order->inventory_released)
 @include('partials.checkout-progress', ['checkoutStage' => $order->payment_status === 'paid' ? 4 : 3])
 @endif

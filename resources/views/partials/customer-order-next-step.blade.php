@@ -18,7 +18,7 @@
 @elseif(! $receiptClosed && $order->payment_status === 'paid' && $order->sales_channel !== 'walk_in')
     <div class="customer-order-next-step">
         <a class="button {{ $receiptCanConfirm ? 'dark' : '' }}" href="#order-receipt">{{ $receiptCanConfirm ? 'Order received · confirm here' : 'Order received? View instructions' }}</a>
-        <p>{{ $receiptCanConfirm ? 'After receiving and checking your clothing, choose a star rating and confirm receipt.' : ($order->delivery_method === 'pickup' ? 'Receipt confirmation opens when your paid pickup order is ready. Confirm only after collecting your clothing.' : 'Receipt confirmation opens after Lalamove delivery completion is verified. Confirm only after receiving your clothing.') }}</p>
+        <p>{{ $receiptCanConfirm ? ($order->delivery_method === 'lalamove' ? 'Courier completed · confirm receipt. After receiving and checking your clothing, choose a star rating and confirm receipt.' : 'After receiving and checking your clothing, choose a star rating and confirm receipt.') : ($order->delivery_method === 'pickup' ? 'Receipt confirmation opens when your paid pickup order is ready. Confirm only after collecting your clothing.' : 'Receipt confirmation opens after Lalamove delivery completion is verified. Use Check latest delivery status below if the courier has already arrived. Confirm only after receiving your clothing.') }}</p>
     </div>
 @endif
 @endif

@@ -85,6 +85,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/checkout', [StoreController::class, 'place'])->middleware('throttle:10,1')->block(40, 40)->name('checkout.place');
     Route::get('/orders', [StoreController::class, 'orders'])->name('orders');
     Route::get('/orders/{order}', [StoreController::class, 'order'])->name('orders.show');
+    Route::post('/orders/{order}/delivery/refresh', [DeliveryRecoveryController::class, 'refresh'])->middleware('throttle:6,1,customer-delivery-refresh')->name('orders.delivery.refresh');
     Route::post('/orders/{order}/receipt', [OrderReceiptController::class, 'store'])->middleware('throttle:3,1')->name('orders.receipt');
     Route::post('/orders/{order}/payments', [InvoicePaymentController::class, 'online'])->middleware('throttle:6,1,invoice-online')->block(40, 40)->name('orders.payments.store');
     Route::post('/orders/{order}/payment/check', [PaymentRecoveryController::class, 'check'])->middleware('throttle:6,1')->name('orders.payment.check');

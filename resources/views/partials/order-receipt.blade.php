@@ -1,5 +1,9 @@
 @if($order->payment_status==='paid' && $order->status!=='cancelled' && !$order->inventory_released && $order->sales_channel!=='walk_in')
 <section class="panel receipt-panel" id="order-receipt" aria-labelledby="order-receipt-heading"><h2 id="order-receipt-heading">Order received</h2>
+@if(auth()->user()->role==='customer' && auth()->id()===$order->user_id)
+@error('delivery')<p class="notice" role="alert">{{ $message }}</p>@enderror
+@error('receipt')<p class="notice" role="alert">{{ $message }}</p>@enderror
+@endif
 @if($order->deliveryConfirmed())
 <p class="receipt-success"><strong>Order received · Delivered</strong><br>Confirmed by the customer on {{ $order->customer_confirmed_at?->format('M d, Y · g:i A') }}.</p>
 @if($order->review)
@@ -29,7 +33,11 @@
 <small class="muted">Your stars and optional review will appear on the purchased products with your name masked. Please leave out addresses, contact details and payment information.</small>
 <label class="receipt-check receipt-confirmation"><input type="checkbox" name="received" value="1" required @checked(\App\Support\FormInput::old('received'))><span><strong>I have received my order.</strong><small>Confirm only after you have received and checked your clothing.</small></span></label>
 <button class="button dark">Confirm Delivered</button></form>
-@else<p class="muted">Receipt confirmation is not available yet. Your order must be fully paid and its courier completion verified, or its store pickup marked ready. Check the delivery status above; if you already have the clothing and this still appears, ask store staff to check the original order.</p><p class="muted">When confirmation opens here, choose 1–5 stars, optionally add a written review, tick I have received my order, and choose Confirm Delivered. Return / refund instructions will then appear on this order.</p>@endif
+@else<p class="muted">Receipt confirmation is not available yet. Your order must be fully paid and its courier completion verified, or its store pickup marked ready. If your courier has already arrived, choose Check latest delivery status below. If completion still cannot be verified, contact the store for help.</p>
+@if($order->payment_id && $order->inventory_committed && $order->delivery_method==='lalamove' && $order->delivery_id && !$order->customer_confirmed_at && in_array($order->status,['out_for_delivery','delivery_attention'],true))
+<form action="{{ route('orders.delivery.refresh',$order) }}" method="post">@csrf<button class="button">Check latest delivery status</button><p class="muted">This checks Lalamove's saved booking. It does not book another courier or confirm receipt for you.</p></form>
+@endif
+<p class="muted">When confirmation opens here, choose 1–5 stars, optionally add a written review, tick I have received my order, and choose Confirm Delivered. Return / refund instructions will then appear on this order.</p>@endif
 @else<p class="muted">Only the customer can confirm receipt and choose their rating. A written review is optional.</p>@endif
 </section>
 @endif
