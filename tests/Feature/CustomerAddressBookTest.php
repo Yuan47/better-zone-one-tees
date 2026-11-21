@@ -45,7 +45,7 @@ class CustomerAddressBookTest extends TestCase
         $this->patch('/account/addresses/'.$work->id.'/default')->assertRedirect('/account/addresses');
         $this->assertTrue($work->fresh()->is_default);
         $this->assertSame(1, CustomerAddress::where('user_id', $user->id)->where('is_default', true)->count());
-        $this->patch('/account/addresses/'.$work->id, $this->address(['label' => 'Office', 'street_address' => '21 Office Street']))->assertRedirect('/account/addresses');
+        $this->patch('/account/addresses/'.$work->id, $this->address(['label' => 'Work', 'street_address' => '21 Office Street']))->assertRedirect('/account/addresses');
         $this->assertSame('21 Office Street', $work->fresh()->street_address);
         $this->assertTrue($work->fresh()->is_default);
         $this->delete('/account/addresses/'.$work->id)->assertRedirect('/account/addresses');
@@ -61,6 +61,69 @@ class CustomerAddressBookTest extends TestCase
             $this->post('/account/addresses', $this->address($invalid))->assertSessionHasErrors(array_keys($invalid));
         }
         $this->assertDatabaseCount('customer_addresses', 0);
+    }
+
+    public function test_customer_can_create_and_update_each_of_the_three_address_labels(): void
+    {
+        $this->actingAs($this->customer());
+        foreach (['Home', 'Work', 'Dropoff Point'] as $label) {
+            $this->post('/account/addresses', $this->address(['label' => $label]))
+                ->assertRedirect('/account/addresses')->assertSessionHasNoErrors();
+            $saved = CustomerAddress::latest('id')->firstOrFail();
+            $this->assertSame($label, $saved->label);
+            $before = $saved->fresh()->getAttributes();
+            $this->patch('/account/addresses/'.$saved->id, $this->address(['label' => $label]))
+                ->assertRedirect('/account/addresses')->assertSessionHasNoErrors();
+            $this->assertSame(array_diff_key($before, ['updated_at' => true]),
+                array_diff_key($saved->fresh()->getAttributes(), ['updated_at' => true]));
+        }
+        $this->assertDatabaseCount('customer_addresses', 3);
+    }
+
+    public function test_unlisted_address_labels_are_rejected_on_both_create_and_update_without_changing_saved_details(): void
+    {
+        $user = $this->customer();
+        $saved = app(CustomerAddresses::class)->save($user, array_diff_key($this->address(), ['pin_confirmed' => true]));
+        $before = $saved->fresh()->getAttributes();
+        $this->actingAs($user);
+        foreach (['Office', 'home', 'Drop-off Point', '', null, ['Home']] as $label) {
+            $this->post('/account/addresses', $this->address(['label' => $label]))->assertSessionHasErrors('label');
+            $this->patch('/account/addresses/'.$saved->id, $this->address(['label' => $label, 'street_address' => 'Must not be saved']))
+                ->assertSessionHasErrors('label');
+            $this->assertDatabaseCount('customer_addresses', 1);
+            $this->assertSame($before, $saved->fresh()->getAttributes());
+        }
+    }
+
+    public function test_form_has_only_allowed_label_choices_and_legacy_labels_require_an_explicit_choice_without_get_writes(): void
+    {
+        $user = $this->customer();
+        $legacy = app(CustomerAddresses::class)->save($user, array_diff_key($this->address(['label' => 'Office']), ['pin_confirmed' => true]));
+        $before = $legacy->fresh()->getAttributes();
+        $this->actingAs($user);
+        foreach (['/account/addresses/create', '/account/addresses/'.$legacy->id.'/edit'] as $url) {
+            $response = $this->get($url)->assertOk();
+            $document = new \DOMDocument;
+            @$document->loadHTML($response->getContent());
+            $xpath = new \DOMXPath($document);
+            $this->assertSame(1, $xpath->query('//label/select[@name="label"][@required]')->length);
+            $this->assertSame(0, $xpath->query('//input[@name="label"]|//datalist[@id="address-labels"]')->length);
+            $labels = array_map(fn ($option) => $option->getAttribute('value'), iterator_to_array($xpath->query('//select[@name="label"]/option[@value!=""]')));
+            $this->assertSame(['Home', 'Work', 'Dropoff Point'], $labels);
+            if (str_ends_with($url, '/edit')) {
+                $this->assertSame(1, $xpath->query('//select[@name="label"]/option[@value=""][@selected][@disabled]')->length);
+                $response->assertSee('Choose Home, Work, or Dropoff Point before saving this address.');
+            } else {
+                $this->assertSame(1, $xpath->query('//select[@name="label"]/option[@value="Home"][@selected]')->length);
+            }
+        }
+        $this->assertSame($before, $legacy->fresh()->getAttributes());
+        $this->patch('/account/addresses/'.$legacy->id, $this->address(['label' => 'Office']))->assertSessionHasErrors('label');
+        $this->patch('/account/addresses/'.$legacy->id, $this->address(['label' => 'Dropoff Point']))
+            ->assertRedirect('/account/addresses')->assertSessionHasNoErrors();
+        $this->assertSame('Dropoff Point', $legacy->fresh()->label);
+        $this->assertSame(array_diff_key($before, ['label' => true, 'updated_at' => true]),
+            array_diff_key($legacy->fresh()->getAttributes(), ['label' => true, 'updated_at' => true]));
     }
 
     public function test_other_accounts_cannot_read_edit_delete_or_choose_an_address(): void

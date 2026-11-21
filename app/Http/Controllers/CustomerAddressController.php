@@ -8,6 +8,7 @@ use App\Services\ActivityRecorder;
 use App\Services\CustomerAddresses;
 use App\Services\StructuredAddress;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class CustomerAddressController extends Controller
 {
@@ -85,7 +86,7 @@ class CustomerAddressController extends Controller
     {
         $rules = app(StructuredAddress::class)->rules();
         $data = $request->validate([
-            'label' => ['required', 'string', 'max:40'],
+            'label' => ['required', 'string', 'max:40', Rule::in(CustomerAddress::LABELS)],
             'recipient' => ['required', 'string', 'max:100'],
             'phone' => ['required', new PhilippineMobileNumber],
             ...$rules,
@@ -94,7 +95,8 @@ class CustomerAddressController extends Controller
             'lng' => ['required', 'numeric', 'between:-180,180'],
             'pin_confirmed' => ['accepted'],
             'is_default' => ['sometimes', 'boolean'],
-        ], ['pin_confirmed.accepted' => 'Confirm that the pin marks your delivery entrance.']);
+        ], ['pin_confirmed.accepted' => 'Confirm that the pin marks your delivery entrance.',
+            'label.in' => 'Choose Home, Work, or Dropoff Point for the address label.']);
         unset($data['pin_confirmed']);
         foreach (['label', 'recipient', ...StructuredAddress::FIELDS] as $field) {
             $data[$field] = trim($data[$field]);

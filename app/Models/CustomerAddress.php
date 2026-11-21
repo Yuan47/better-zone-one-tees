@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class CustomerAddress extends Model
 {
+    public const LABELS = ['Home', 'Work', 'Dropoff Point'];
+
     protected $guarded = ['id', 'user_id'];
 
     protected function casts(): array

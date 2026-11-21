@@ -11,13 +11,13 @@
     <div class="panel stack">
         <h2>Contact & delivery</h2>
         <p class="required-note"><span class="required-mark" aria-hidden="true">*</span> Required information</p>
-        @include('partials.checkout-address-selector')
         <div class="two-col">
             <label><span class="field-label">Recipient name <span class="required-mark" aria-hidden="true">*</span></span><input name="recipient" required maxlength="100" value="{{ \App\Support\FormInput::old('recipient', auth()->user()->name) }}" autocomplete="name"></label>
             <label><span class="field-label">Mobile number <span class="required-mark" aria-hidden="true">*</span></span><input name="phone" type="tel" inputmode="numeric" required pattern="09[0-9]{9}" minlength="11" maxlength="11" placeholder="09xxxxxxxxx" value="{{ \App\Support\FormInput::old('phone', \App\Rules\PhilippineMobileNumber::local(auth()->user()->phone)) }}" autocomplete="tel"><small>11 digits, beginning with 09.</small></label>
         </div>
         <label><span class="field-label">Receive your order <span class="required-mark" aria-hidden="true">*</span></span><select id="delivery-method" name="delivery_method" required><option value="pickup" @selected(\App\Support\FormInput::old('delivery_method') === 'pickup')>Store pickup · Free</option><option value="lalamove" @selected(\App\Support\FormInput::old('delivery_method') === 'lalamove') @disabled(!$deliveryReady)>Lalamove {{ config('shop.lalamove.mode') === 'sandbox' ? 'sandbox' : '' }} delivery{{ !$deliveryReady ? ' · Unavailable' : '' }}</option></select></label>
         <div id="delivery-fields" hidden>
+            @include('partials.checkout-address-selector')
             @include('partials.expected-delivery', ['deliveryEstimate' => ['days' => app(\App\Services\DeliveryEstimates::class)->current(), 'legacy' => false, 'pending' => true]])
             <h3>Delivery address</h3>
             <label><span class="field-label">Street address <span class="required-mark" aria-hidden="true">*</span></span><input name="street_address" id="address-street" maxlength="200" value="{{ \App\Support\FormInput::old('street_address', auth()->user()->street_address) }}" autocomplete="street-address" placeholder="House / unit, building, street, barangay"></label>

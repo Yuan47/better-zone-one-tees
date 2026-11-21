@@ -52,6 +52,57 @@ class SavedAddressCheckoutTest extends TestCase
         return '12 Test Street, Imus, Cavite, 4103, Philippines';
     }
 
+    public function test_saved_and_new_address_controls_are_scoped_to_the_hidden_delivery_section(): void
+    {
+        $customer = User::factory()->create(['role' => 'customer', 'name' => 'Pickup Contact', 'phone' => '09987654321']);
+        $variant = $this->variant();
+        $this->mock(PayMongo::class, fn (MockInterface $mock) => $mock->shouldReceive('ready')->andReturn(true));
+        $this->mock(Lalamove::class, fn (MockInterface $mock) => $mock->shouldReceive('ready')->andReturn(true));
+        $this->actingAs($customer)->withSession(['cart' => [$variant->id => 1]]);
+        foreach ([false, true] as $hasSavedAddress) {
+            if ($hasSavedAddress) {
+                $this->address($customer);
+            }
+            $response = $this->get('/checkout')->assertOk();
+            $document = new \DOMDocument;
+            @$document->loadHTML($response->getContent());
+            $xpath = new \DOMXPath($document);
+            $this->assertSame(1, $xpath->query('//div[@id="delivery-fields"][@hidden]')->length);
+            $this->assertSame(0, $xpath->query('//select[@name="address_id"][not(ancestor::div[@id="delivery-fields"])]')->length);
+            $this->assertSame(1, $xpath->query('//div[@id="delivery-fields"]//a[contains(@href,"/account/addresses")]')->length);
+            $this->assertSame($hasSavedAddress ? 1 : 0, $xpath->query('//div[@id="delivery-fields"]//select[@name="address_id"]')->length);
+            $this->assertSame(1, $xpath->query('//input[@name="recipient"][@value="Pickup Contact"][not(ancestor::div[@id="delivery-fields"])]')->length);
+            $this->assertSame(1, $xpath->query('//input[@name="phone"][@value="09987654321"][not(ancestor::div[@id="delivery-fields"])]')->length);
+        }
+    }
+
+    public function test_pickup_ignores_a_stale_saved_delivery_address_and_keeps_the_customer_contact_and_free_pickup(): void
+    {
+        $customer = User::factory()->create(['role' => 'customer']);
+        $foreignAddress = $this->address(User::factory()->create(['role' => 'customer']));
+        $variant = $this->variant();
+        $this->mock(Lalamove::class, fn (MockInterface $mock) => $mock->shouldNotReceive('quote'));
+        $this->mock(PayMongo::class, function (MockInterface $mock) {
+            $mock->shouldReceive('ready')->andReturn(true);
+            $mock->shouldReceive('create')->once()->andReturnUsing(function (Order $order) {
+                $this->assertSame('Pickup Contact', $order->recipient);
+                $this->assertSame('09987654321', $order->phone);
+                $this->assertSame('Store pickup', $order->address);
+                $this->assertSame(0, $order->shipping);
+                $this->assertSame(15000, $order->total);
+                $this->assertNull($order->lat);
+                $this->assertNull($order->lng);
+
+                return ['checkout_session_id' => 'cs_pickup_address', 'checkout_url' => 'https://checkout.paymongo.com/pickup-address'];
+            });
+        });
+        $this->actingAs($customer)->post('/cart', ['variant_id' => $variant->id, 'quantity' => 1]);
+        $this->post('/checkout', ['delivery_method' => 'pickup', 'recipient' => 'Pickup Contact', 'phone' => '09987654321',
+            'address_id' => $foreignAddress->id, 'terms' => '1'])
+            ->assertRedirect('https://checkout.paymongo.com/pickup-address');
+        $this->assertDatabaseCount('orders', 1);
+    }
+
     public function test_saved_address_checkout_uses_current_owned_details_and_full_delivery_total_once(): void
     {
         $customer = User::factory()->create(['role' => 'customer']);

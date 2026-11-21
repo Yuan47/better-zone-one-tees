@@ -97,6 +97,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const delivery = method.value === 'lalamove';
         fields.hidden = !delivery;
         fields.querySelectorAll('input').forEach(input => { input.disabled = !delivery; input.required = delivery; });
+        fields.querySelectorAll('select,button').forEach(control => { control.disabled = !delivery; });
         changeDestination();
         if (delivery) showMap();
     }
@@ -111,9 +112,9 @@ document.addEventListener('DOMContentLoaded', () => {
         navigator.geolocation.getCurrentPosition(position => {
             setPin({lat:position.coords.latitude, lng:position.coords.longitude}, true);
             map?.setView([Number(lat.value), Number(lng.value)], 17);
-            locate.disabled = false;
+            locate.disabled = method.value !== 'lalamove';
         }, () => {
-            locate.disabled = false;
+            locate.disabled = method.value !== 'lalamove';
             pinStatus.textContent = 'Location unavailable or permission declined. Tap the delivery entrance on the map.';
         }, {enableHighAccuracy:true, timeout:10000, maximumAge:60000});
     });
@@ -165,7 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
             expiryTimer = setTimeout(() => { resetQuote(); result.textContent = 'Delivery fee expired. Get a fresh fee before paying.'; }, Math.min(remaining, 2147483647));
         } catch (error) {
             if (requestedRevision === revision) result.textContent = error.message;
-        } finally { quoteButton.disabled = false; }
+        } finally { quoteButton.disabled = method.value !== 'lalamove'; }
     });
     form.addEventListener('submit', event => {
         if (!form.checkValidity() || !detailsReady()) {

@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', function () {
     const select = document.getElementById('checkout-address-id');
     if (!select) return;
+    const method = document.getElementById('delivery-method');
 
     const fields = {
         recipient:document.querySelector('#checkout-form [name="recipient"]'),
@@ -15,6 +16,7 @@ document.addEventListener('DOMContentLoaded', function () {
     };
 
     function applyAddress() {
+        if (method.value !== 'lalamove') return;
         const option = select.selectedOptions[0];
         if (!option || !option.dataset.address) return;
         const address = JSON.parse(option.dataset.address);
@@ -29,6 +31,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     select.addEventListener('change', applyAddress);
+    method.addEventListener('change', applyAddress);
     document.getElementById('checkout-form').addEventListener('delivery-pin-changed', () => { select.value = ''; });
     Object.values(fields).filter(Boolean).forEach(function (input) {
         input.addEventListener('input', function (event) {
