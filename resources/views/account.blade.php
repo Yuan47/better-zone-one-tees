@@ -16,7 +16,7 @@
 @if($user->avatar_path)<img class="account-avatar" src="{{ asset($user->avatar_path) }}" alt="Your profile photo">@else<div class="account-avatar account-avatar-placeholder" aria-label="No profile photo">{{ mb_strtoupper(mb_substr($user->name,0,1)) }}</div>@endif
 <label>Upload profile photo<input type="file" name="avatar" accept="image/jpeg,image/png,image/webp"><small class="muted">JPG, PNG, or WebP · Up to 2 MB</small></label>
 </div>
-@if($user->avatar_path)<label class="checkbox-label"><span><input type="checkbox" name="remove_avatar" value="1"> Remove current photo</span></label>@endif
+@if($user->avatar_path)<label class="checkbox-label"><input type="checkbox" name="remove_avatar" value="1"><span>Remove current photo</span></label>@endif
 <div class="two-col"><label>Username<input name="username" required minlength="3" maxlength="40" pattern="[a-z0-9_.\-]+" value="{{ \App\Support\FormInput::old('username',$suggestedUsername) }}" autocomplete="username"><small class="muted">Lowercase letters, numbers, dots, underscores, or hyphens.</small></label><label>Full name<input name="name" required maxlength="100" value="{{ \App\Support\FormInput::old('name',$user->name) }}" autocomplete="name"></label></div>
 <label>Email<input type="email" value="{{ $user->email }}" readonly aria-readonly="true" autocomplete="email"><small class="muted">Your sign-in email is fixed.</small></label>
 <div class="verification-account"><span class="badge">{{ $user->email_verified_at ? 'Email verified' : 'Email not verified' }}</span>@if(!$user->email_verified_at)<a class="text-link" href="{{ route('verification.notice') }}">Verify email →</a>@endif</div>

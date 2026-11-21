@@ -25,7 +25,7 @@ class PayMongo
         if (! $this->ready()) {
             throw ValidationException::withMessages(['payment' => 'PayMongo test checkout is not configured yet. Your cart has been saved.']);
         }
-        $lines = $order->items->map(fn ($i) => ['name' => $i->name.' / '.$i->size.' / '.$i->color, 'amount' => $i->unit_price, 'quantity' => $i->quantity, 'currency' => 'PHP'])->all();
+        $lines = $order->items->map(fn ($i) => ['name' => $i->name.' / '.VariantSizes::label($i->size).' / '.$i->color, 'amount' => $i->unit_price, 'quantity' => $i->quantity, 'currency' => 'PHP'])->all();
         if ($order->discount) {
             $lines = [['name' => 'Clothing · '.$order->quantity.' pieces · Bulk 5% discount applied', 'amount' => $order->subtotal, 'quantity' => 1, 'currency' => 'PHP']];
         }

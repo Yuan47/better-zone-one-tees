@@ -134,7 +134,7 @@ class CatalogExpansionTest extends TestCase
             $variant->update(['stock' => 2]);
             $this->withSession(['cart' => []])->post(route('cart.add'), ['variant_id' => $variant->id, 'quantity' => 1])
                 ->assertRedirect(route('cart'))->assertSessionHasNoErrors()->assertSessionHas('cart', [$variant->id => 1]);
-            $this->get(route('cart'))->assertOk()->assertSee($size.' / '.$color);
+            $this->get(route('cart'))->assertOk()->assertSee(ltrim($size, '#').' / '.$color);
         }
     }
 
@@ -143,9 +143,11 @@ class CatalogExpansionTest extends TestCase
         app(CatalogBatch::class)->import();
         $sizes = $this->get('/')->assertOk()->viewData('sizes')->all();
         $adult = ['TN', 'XS', 'S', 'M', 'L', 'XL', '2X', '2XL', '3X', '3XL', '4XL', '5X', '5XL', 'Free Size'];
-        $kids = ['#4', '#6', '#8', '#10', '#12', '#14', '#16', '#18', '#20'];
+        $kids = ['4', '5', '6', '8', '9', '10', '11', '12', '14', '16', '18', '20'];
+        $sizeLabels = array_map(fn ($size) => ltrim($size, '#'), $sizes);
         $this->assertSame($adult, array_values(array_intersect($sizes, $adult)));
-        $this->assertSame($kids, array_values(array_intersect($sizes, $kids)));
+        $this->assertSame($kids, array_values(array_intersect($sizeLabels, $kids)));
+        $this->assertSame(count(array_unique($sizeLabels)), count($sizeLabels));
 
         foreach ([
             'yalex-round-neck' => ['XS', 'S', 'M', 'L', 'XL', '2X', '3X', '5X'],

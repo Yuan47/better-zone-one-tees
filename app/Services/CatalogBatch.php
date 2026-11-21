@@ -43,9 +43,11 @@ class CatalogBatch
                     $variant = $product->variants()->where('sku', Sku::forVariant($product, $lineVariant['size'], $lineVariant['color']))->first();
                     if (! $variant) {
                         // An owner may already have added this size/color with a different SKU.
-                        $variant = $product->variants()->firstOrCreate([
-                            'size' => $lineVariant['size'], 'color' => $lineVariant['color'],
-                        ], $lineVariant + [
+                        $variant = $product->variants()->whereIn('size', VariantSizes::aliases($lineVariant['size']))
+                            ->whereRaw('LOWER(color) = ?', [mb_strtolower($lineVariant['color'])])->orderBy('id')->first();
+                    }
+                    if (! $variant) {
+                        $variant = $product->variants()->create($lineVariant + [
                             'sku' => Sku::forNewVariant($product, $lineVariant['size'], $lineVariant['color']),
                             'stock' => 0, 'reserved' => 0,
                         ]);

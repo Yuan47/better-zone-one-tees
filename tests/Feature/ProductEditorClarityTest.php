@@ -238,7 +238,7 @@ class ProductEditorClarityTest extends TestCase
 
         $xpath = $this->xpath($this->get(route('admin.products.edit', $product))->assertOk()->getContent());
         $sizes = array_map(fn ($node) => $node->textContent, iterator_to_array($xpath->query('//tbody[@data-variant-color="White"]/tr/td[2]/b')));
-        $this->assertSame(['#4', '#6', '#8', '#10', '#12', '#14', '#16', '#18', '#20'], $sizes);
+        $this->assertSame(['4', '6', '8', '10', '12', '14', '16', '18', '20'], $sizes);
         Http::assertNothingSent();
     }
 }

@@ -12,7 +12,7 @@
                 @csrf @method('DELETE')
                 <p class="muted">Permanent deletion is available when the product has no order history or reserved pieces. Items linked to orders stay archived for traceable invoices.</p>
                 <label>Reason for permanent deletion *<input name="reason" required minlength="5" maxlength="1000"></label>
-                <label class="check"><input name="confirm_delete" type="checkbox" value="1" required> I understand this permanently deletes the archived product and its unused variants.</label>
+                <label class="checkbox-label"><input name="confirm_delete" type="checkbox" value="1" required><span>I understand this permanently deletes the archived product and its unused variants.</span></label>
                 <button class="button catalog-delete">Delete permanently</button>
             </form>
         </div>

@@ -49,7 +49,7 @@
             <h3>Record cash received</h3>
             <label>Full amount received (₱)<input name="amount" type="number" step="0.01" value="{{ number_format($balance/100,2,'.','') }}" readonly required></label>
             <label>Receipt note / reason<textarea name="reason" required minlength="10" maxlength="1000" rows="2"></textarea></label>
-            <label class="receipt-check"><input type="checkbox" name="payment_received" value="1" required>I confirm this cash payment has been received.</label>
+            <label class="receipt-check"><input type="checkbox" name="payment_received" value="1" required><span>I confirm this cash payment has been received.</span></label>
             <button class="button">Record payment received</button>
         </form>
         @endif

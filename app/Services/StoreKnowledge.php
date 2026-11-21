@@ -189,7 +189,7 @@ class StoreKnowledge
         if (count($sizes) !== 1 || count($colors) !== 1 || preg_match('/\bor\b/i', $message)) {
             return $product->name.': please specify one size and one color from its product page. Prices and availability depend on that exact combination. '.self::QUANTITY_PRICING;
         }
-        $variant = $product->variants->whereNull('archived_at')->first(fn ($variant) => strcasecmp($variant->size, $sizes[0]) === 0 && strcasecmp($variant->color, $colors[0]) === 0);
+        $variant = $product->variants->whereNull('archived_at')->first(fn ($variant) => strcasecmp(VariantSizes::label($variant->size), $sizes[0]) === 0 && strcasecmp($variant->color, $colors[0]) === 0);
         $label = $product->name.' · '.$sizes[0].' / '.$colors[0];
         if (! $variant) {
             return $label.' is not an offered variant. Choose a size and color listed on its product page. Size chart references do not establish availability.';
@@ -217,15 +217,15 @@ class StoreKnowledge
 
         return $selected->where('active', true)->whereNull('archived_at')->take(3)->map(function ($product) use ($message) {
             [$sizes, $colors] = $this->requestedOptions($message, $product);
-            $variants = $product->variants->whereNull('archived_at')->filter(fn ($variant) => ($sizes === [] || in_array($variant->size, $sizes, true)) && ($colors === [] || in_array($variant->color, $colors, true)));
+            $variants = $product->variants->whereNull('archived_at')->filter(fn ($variant) => ($sizes === [] || in_array(VariantSizes::label($variant->size), $sizes, true)) && ($colors === [] || in_array($variant->color, $colors, true)));
 
             return [
-                'name' => $product->name, 'size_chart' => $product->size_chart, 'size_chart_note' => $product->size_chart_note,
+                'name' => $product->name, 'size_chart' => collect($product->size_chart)->map(fn ($row) => array_replace($row, ['size' => VariantSizes::label($row['size'] ?? '')]))->all(), 'size_chart_note' => $product->size_chart_note,
                 'currency' => 'PHP', 'price_unit' => 'integer centavos per piece',
                 'variant_scope' => ['sizes' => $sizes, 'colors' => $colors],
                 'matching_variant_count' => $variants->count(), 'variants_complete' => $variants->count() <= 40,
                 'variants' => $variants->sortByDesc(fn ($variant) => $variant->available())->take(40)->map(fn ($variant) => [
-                    'size' => $variant->size, 'color' => $variant->color, 'available_pieces' => $variant->available(),
+                    'size' => VariantSizes::label($variant->size), 'color' => $variant->color, 'available_pieces' => $variant->available(),
                     'retail_price' => $variant->retail_price, 'wholesale_price' => $variant->wholesale_price, 'reseller_price' => $variant->reseller_price,
                 ])->values(),
             ];
@@ -254,7 +254,7 @@ class StoreKnowledge
     private function requestedOptions(string $message, Product $product): array
     {
         $knownSizes = $product->variants->whereNull('archived_at')->pluck('size')->merge(collect($product->size_chart)->pluck('size'))
-            ->merge(['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL'])->unique()->all();
+            ->merge(['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL'])->map(fn ($size) => VariantSizes::label($size))->unique()->all();
         $sizes = [];
         foreach ($knownSizes as $size) {
             $size = (string) $size;

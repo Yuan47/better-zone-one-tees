@@ -16,6 +16,7 @@ use App\Services\OrderFlow;
 use App\Services\PayMongo;
 use App\Services\Pricing;
 use App\Services\StructuredAddress;
+use App\Services\VariantSizes;
 use App\Support\FormInput;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -41,7 +42,7 @@ class StoreController extends Controller
             $query->whereHas('variants', function ($q) use ($r, $size, $color) {
                 $q->whereNull('archived_at');
                 if (filled($size)) {
-                    $q->where('size', $size);
+                    $q->whereIn('size', VariantSizes::aliases($size));
                 }
                 if (filled($color)) {
                     $q->where('color', $color);
@@ -60,7 +61,7 @@ class StoreController extends Controller
             $products = $products->sortByDesc(fn ($p) => $p->variants->min('retail_price'));
         }
         $filterVariants = Variant::sellable()->get();
-        $sizes = $filterVariants->pluck('size')->unique()->sortBy(fn ($size) => $this->sizeSortKey($size))->values();
+        $sizes = $filterVariants->pluck('size')->unique(fn ($size) => VariantSizes::label($size))->sortBy(fn ($size) => $this->sizeSortKey($size))->values();
         $colors = $filterVariants->pluck('color')->unique()->sort()->values();
         $wishIds = $r->user() ? DB::table('wishlists')->where('user_id', $r->user()->id)->pluck('product_id')->all() : [];
         $paymentAlerts = app(InstallmentCredit::class)->alertsFor($r->user());

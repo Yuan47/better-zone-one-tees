@@ -84,7 +84,7 @@ class AdminController extends Controller
 
                 continue;
             }
-            if (in_array(strtoupper($size), array_column($chart, 'size'), true)) {
+            if (in_array(strtoupper(VariantSizes::label($size)), array_map(fn ($row) => strtoupper(VariantSizes::label($row['size'])), $chart), true)) {
                 throw ValidationException::withMessages(['size_chart' => 'Size chart labels must be unique.']);
             }
             $chart[] = ['size' => strtoupper($size), 'width' => isset($row['width']) ? (float) $row['width'] : null, 'length' => isset($row['length']) ? (float) $row['length'] : null];
@@ -131,7 +131,7 @@ class AdminController extends Controller
         $r->merge(['size' => is_string($size) ? strtoupper(trim($size)) : $size, 'color' => $color]);
         $data = $r->validate([
             'size' => ['required', 'string', Rule::in(VariantSizes::choices($product, $variant))],
-            'color' => ['required', 'string', 'max:80', Rule::unique('variants', 'color')->where(fn ($q) => $q->where('product_id', $product->id)->where('size', $r->input('size')))->ignore($variant?->id)],
+            'color' => ['required', 'string', 'max:80', Rule::unique('variants', 'color')->where(fn ($q) => $q->where('product_id', $product->id)->whereIn('size', VariantSizes::aliases(is_string($r->input('size')) ? $r->input('size') : '')))->ignore($variant?->id)],
             'stock' => 'required|integer|min:0|max:1000000', 'reorder_level' => 'required|integer|min:0|max:1000000',
             'expected_stock' => [Rule::requiredIf($variant !== null), 'nullable', 'integer', 'min:0', 'max:1000000'],
             'retail' => 'required|numeric|min:1|max:100000', 'wholesale' => 'required|numeric|min:1|max:100000', 'reseller' => 'required|numeric|min:1|max:100000',
@@ -153,7 +153,7 @@ class AdminController extends Controller
             if ($lockedProduct->archived_at) {
                 throw ValidationException::withMessages(['catalog' => 'Restore this product before editing its variants.']);
             }
-            if ($product->variants()->where('size', $data['size'])->whereRaw('LOWER(color) = ?', [mb_strtolower($data['color'])])
+            if ($product->variants()->whereIn('size', VariantSizes::aliases($data['size']))->whereRaw('LOWER(color) = ?', [mb_strtolower($data['color'])])
                 ->when($variant, fn ($query) => $query->whereKeyNot($variant->id))->exists()) {
                 throw ValidationException::withMessages(['color' => 'This size and color already exist. Edit the existing variant.']);
             }
@@ -212,7 +212,7 @@ class AdminController extends Controller
                 $colors = $product->variants()->whereNull('archived_at')->orderBy('id')->pluck('color')->unique()->values();
                 $source = filled($data['template_color'] ?? null) ? trim($data['template_color'])
                     : ($colors->first(fn ($name) => strcasecmp($name, 'white') !== 0) ?? $colors->first());
-                $templates = $product->variants()->whereNull('archived_at')->whereRaw('LOWER(color) = ?', [mb_strtolower($source ?? '')])->orderBy('id')->get()->unique('size');
+                $templates = $product->variants()->whereNull('archived_at')->whereRaw('LOWER(color) = ?', [mb_strtolower($source ?? '')])->orderBy('id')->get()->unique(fn ($variant) => VariantSizes::label($variant->size));
                 if ($templates->isEmpty()) {
                     throw ValidationException::withMessages(['template_color' => 'Choose an existing color to copy, or add the first size and color variant below.']);
                 }

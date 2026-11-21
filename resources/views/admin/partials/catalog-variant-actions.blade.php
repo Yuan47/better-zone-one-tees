@@ -9,7 +9,7 @@
         <form method="post" action="{{ route('admin.variants.destroy', [$product, $variant]) }}" class="stack">
             @csrf @method('DELETE')
             <label>Reason for permanent deletion *<input name="reason" required minlength="5" maxlength="1000" aria-label="Reason for deleting {{ $variant->sku }}"></label>
-            <label class="check"><input name="confirm_delete" type="checkbox" value="1" required> Permanently delete this archived variant.</label>
+            <label class="checkbox-label"><input name="confirm_delete" type="checkbox" value="1" required><span>Permanently delete this archived variant.</span></label>
             <button class="button small catalog-delete">Delete permanently</button>
         </form>
     @else

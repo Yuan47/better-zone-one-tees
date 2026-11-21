@@ -10,7 +10,7 @@
 @if(request('wishlist'))<input type="hidden" name="wishlist" value="1">@endif
 <label><span class="sr-only">Search catalog</span><input name="q" placeholder="Search products…" value="{{ \App\Support\FormInput::query('q') }}"></label>
 
-<label><span class="sr-only">Size</span><select name="size"><option value="">All sizes</option>@foreach($sizes as $size)<option @selected(request('size')===$size)>{{ $size }}</option>@endforeach</select></label>
+<label><span class="sr-only">Size</span><select name="size"><option value="">All sizes</option>@foreach($sizes as $size)<option value="{{ $size }}" @selected(\App\Services\VariantSizes::label(\App\Support\FormInput::query('size'))===\App\Services\VariantSizes::label($size))>{{ \App\Services\VariantSizes::label($size) }}</option>@endforeach</select></label>
 <label><span class="sr-only">Color</span><select name="color"><option value="">All colors</option>@foreach($colors as $color)<option @selected(request('color')===$color)>{{ $color }}</option>@endforeach</select></label>
 <label><span class="sr-only">Sort</span><select name="sort"><option value="">Featured</option><option value="price_asc" @selected(request('sort')==='price_asc')>Price: low to high</option><option value="price_desc" @selected(request('sort')==='price_desc')>Price: high to low</option></select></label>
 <label class="check"><input type="checkbox" name="in_stock" value="1" @checked(request('in_stock'))> In stock</label><button class="button small">Apply</button><a class="text-link" href="{{ route('store') }}">Reset</a></form>

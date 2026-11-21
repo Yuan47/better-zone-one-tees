@@ -6,7 +6,7 @@
 @if($order->payments->contains('method', 'paymongo') && $order->status !== 'cancelled' && !$order->inventory_released)
 @include('partials.checkout-progress', ['checkoutStage' => $order->payment_status === 'paid' ? 4 : 3])
 @endif
-<div class="panel table-scroll"><table><thead><tr><th>Clothing</th><th>Quantity</th><th>Amount</th></tr></thead><tbody>@foreach($order->items as $item)<tr><td>{{ $item->name }}<small>{{ $item->size }} / {{ $item->color }}</small></td><td>{{ $item->quantity }}</td><td>₱{{ number_format($item->total/100,2) }}</td></tr>@endforeach</tbody></table></div>
+<div class="panel table-scroll"><table><thead><tr><th>Clothing</th><th>Quantity</th><th>Amount</th></tr></thead><tbody>@foreach($order->items as $item)<tr><td>{{ $item->name }}<small>{{ \App\Services\VariantSizes::label($item->size) }} / {{ $item->color }}</small></td><td>{{ $item->quantity }}</td><td>₱{{ number_format($item->total/100,2) }}</td></tr>@endforeach</tbody></table></div>
 @include('partials.invoice-payments',['guest'=>true])
 @if($order->deliveryConfirmed())<section class="panel"><h2>Refunds & returns</h2>
 @include('partials.refund-summary')

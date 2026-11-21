@@ -64,9 +64,9 @@ document.addEventListener('DOMContentLoaded', function () {
   if(variantData){
     var variants=JSON.parse(variantData.textContent), color=document.getElementById('variant-color'), size=document.getElementById('variant-size');
     var selectedImage=document.getElementById('selected-product-photo'), placeholder=document.getElementById('product-photo-placeholder');
-    function options(select, values, previous){select.replaceChildren();values.forEach(function(value){var opt=document.createElement('option');opt.value=value;opt.textContent=value;select.appendChild(opt);});if(values.includes(previous))select.value=previous;}
+    function options(select, values, previous, label){select.replaceChildren();values.forEach(function(value){var opt=document.createElement('option');opt.value=value;opt.textContent=label?label(value):value;select.appendChild(opt);});if(values.includes(previous))select.value=previous;}
     function refreshColors(){options(color,[...new Set(variants.map(function(v){return v.color;}))],color.value);refreshSizes();}
-    function refreshSizes(){options(size,[...new Set(variants.filter(function(v){return v.color===color.value;}).map(function(v){return v.size;}))],size.value);refreshVariant();}
+    function refreshSizes(){options(size,[...new Set(variants.filter(function(v){return v.color===color.value;}).map(function(v){return v.size;}))],size.value,function(value){var v=variants.find(function(v){return v.color===color.value&&v.size===value;});return v.size_label??value;});refreshVariant();}
     function refreshVariant(){
       var v=variants.find(function(v){return v.color===color.value && v.size===size.value;}), add=document.getElementById('add-to-cart');
       document.getElementById('variant-id').value=v?v.id:'';add.disabled=!v||v.stock===0;

@@ -20,7 +20,7 @@
 @forelse($reviews as $review)
 <tr>
 <td>{{ $review->created_at->format('M d, Y') }}</td>
-<td>@foreach($review->order->items->groupBy(fn($item)=>$item->variant->product_id)->sortBy(fn($items)=>$items->first()->variant->product->name) as $items)@php($product=$items->first()->variant->product)<p><b>{{ $product->name }}</b><small>{{ $items->map(fn($item)=>$item->color.' / '.$item->size)->unique()->implode(', ') }}</small></p>@endforeach</td>
+<td>@foreach($review->order->items->groupBy(fn($item)=>$item->variant->product_id)->sortBy(fn($items)=>$items->first()->variant->product->name) as $items)@php($product=$items->first()->variant->product)<p><b>{{ $product->name }}</b><small>{{ $items->map(fn($item)=>$item->color.' / '.\App\Services\VariantSizes::label($item->size))->unique()->implode(', ') }}</small></p>@endforeach</td>
 <td>{{ $review->buyerLabel() }}</td>
 <td><span role="img" aria-label="{{ $review->rating }} out of 5 stars"><span aria-hidden="true">{{ str_repeat('★',$review->rating) }}{{ str_repeat('☆',5-$review->rating) }}</span></span><small>{{ $review->rating }} / 5 · Order rating</small></td>
 <td>@if(trim($review->comment)!=='')<p class="preserve-lines">{{ $review->comment }}</p>@else<span class="muted">Star rating only; no written review.</span>@endif</td>

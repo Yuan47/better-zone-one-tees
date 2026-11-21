@@ -24,7 +24,7 @@ class WalkInController extends Controller
         $variants = Variant::sellable()->with('product')
             ->orderBy('product_id')->orderBy('id')->get();
         $choices = $variants->map(fn ($variant) => ['id' => $variant->id,
-            'label' => $variant->product->name.' · '.$variant->color.' · '.$variant->size,
+            'label' => $variant->product->name.' · '.$variant->color.' · '.\App\Services\VariantSizes::label($variant->size),
             'available' => $variant->available(), 'retail' => (int) $variant->retail_price,
             'wholesale' => (int) $variant->wholesale_price, 'reseller' => (int) $variant->reseller_price])->values();
         $customers = User::where('role', 'customer')->orderBy('name')->get(['id', 'name']);

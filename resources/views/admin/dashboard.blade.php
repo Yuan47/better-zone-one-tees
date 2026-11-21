@@ -52,7 +52,7 @@
         <div class="section-heading"><h3>Inventory attention</h3><span class="badge">Available stock</span></div>
         <p class="muted">Out-of-stock variants first, then lowest available quantities. {{ number_format($lowStockCount) }} variants at or below their reorder threshold.</p>
         @include('admin.partials.inventory-status-guide')
-        @forelse($lowStock as $v)<div class="rank-row inventory-attention-row"><b>{{ $v->product->name }}<small>{{ $v->size }} / {{ $v->color }}</small></b>@include('admin.partials.inventory-status', ['variant' => $v])</div>
+        @forelse($lowStock as $v)<div class="rank-row inventory-attention-row"><b>{{ $v->product->name }}<small>{{ \App\Services\VariantSizes::label($v->size) }} / {{ $v->color }}</small></b>@include('admin.partials.inventory-status', ['variant' => $v])</div>
         @empty<div class="small-empty"><span>✓</span><h3>All stocked up</h3><p>No variants are below their reorder threshold.</p></div>@endforelse
         <a class="text-link" href="{{ route('admin.inventory-attention') }}">View all {{ number_format($lowStockCount) }} shortages →</a>
     </section>

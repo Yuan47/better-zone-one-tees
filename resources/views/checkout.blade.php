@@ -39,7 +39,7 @@
             <p id="quote-result" role="status"></p>
         </div>
         <p class="mini-note">Pay the full invoice through PayMongo. Packing starts after payment is confirmed.</p>
-        <label class="checkbox-label terms-acceptance"><input type="checkbox" name="terms" value="1" required @checked(\App\Support\FormInput::old('terms'))><span>I agree to the <a class="text-link" href="{{ route('terms') }}" target="_blank" rel="noopener">Terms and Conditions</a>, including the payment, delivery and return/refund process. <span class="required-mark" aria-hidden="true">*</span></span></label>
+        <label class="checkbox-label terms-acceptance"><input type="checkbox" name="terms" value="1" required @checked(\App\Support\FormInput::old('terms'))><span>I agree to the <a class="text-link terms-link" href="{{ route('terms') }}" target="_blank" rel="noopener">Terms and Conditions</a>, including the payment, delivery and return/refund process. <span class="required-mark" aria-hidden="true">*</span></span></label>
     </div>
     <aside class="panel order-summary">
         <h2>Order summary</h2>

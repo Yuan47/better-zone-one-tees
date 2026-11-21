@@ -2,7 +2,7 @@
 @section('title',$product->name)
 @section('content')
 <div class="breadcrumb"><a href="{{ route('store') }}">Shop all</a> / {{ $product->name }}</div>
-@php($variantData=$product->variants->map(fn($v)=>['id'=>$v->id,'size'=>$v->size,'color'=>$v->color,'stock'=>$v->available(),'retail'=>$v->retail_price,'wholesale'=>$v->wholesale_price,'reseller'=>$v->reseller_price,'photo'=>$v->photoUrl($product),'demo_photo'=>$v->usesDemoPhoto($product),'photo_color'=>$v->photoColor(),'sku'=>$v->sku])->values())
+@php($variantData=$product->variants->map(fn($v)=>['id'=>$v->id,'size'=>$v->size,'size_label'=>\App\Services\VariantSizes::label($v->size),'color'=>$v->color,'stock'=>$v->available(),'retail'=>$v->retail_price,'wholesale'=>$v->wholesale_price,'reseller'=>$v->reseller_price,'photo'=>$v->photoUrl($product),'demo_photo'=>$v->usesDemoPhoto($product),'photo_color'=>$v->photoColor(),'sku'=>$v->sku])->values())
 @php($styleOptions=$product->variants->isNotEmpty() && $product->variants->every(fn($variant)=>in_array($variant->color,['Plain','Reflector'],true)))
 <div class="product-detail"><div class="detail-art">
 <x-catalog-photo :product="$product" image-id="selected-product-photo" loading="eager"/>
@@ -21,7 +21,7 @@
 <div class="product-information-tables">
 <div class="panel selected-pricing"><b>Prices for your selected variant</b><table><thead><tr><th>Retail / SRP</th><th>Wholesale · 6–50</th><th>Re-seller · 51–100</th></tr></thead><tbody><tr><td id="price-retail">—</td><td id="price-wholesale">—</td><td id="price-reseller">—</td></tr></tbody></table><small>101+ pieces receive 5% off the Re-seller clothing subtotal. Delivery is separate.</small></div>
 <section class="panel size-chart-panel"><div class="section-heading"><div><span class="eyebrow">FIND YOUR FIT</span><h2>Size chart</h2></div><span class="muted">Measurements in inches</span></div>
-<div class="table-scroll"><table><thead><tr><th>Size</th><th>Width (in.)</th><th>Length (in.)</th></tr></thead><tbody>@forelse($product->size_chart??[] as $row)<tr><td>{{ $row['size'] }}</td><td>{{ $row['width']??'To be confirmed' }}</td><td>{{ $row['length']??'To be confirmed' }}</td></tr>@empty<tr><td colspan="3">Measurements will be added by the store.</td></tr>@endforelse</tbody></table></div>@if($product->size_chart_note)<p class="muted chart-note">{{ $product->size_chart_note }}</p>@endif</section>
+<div class="table-scroll"><table><thead><tr><th>Size</th><th>Width (in.)</th><th>Length (in.)</th></tr></thead><tbody>@forelse($product->size_chart??[] as $row)<tr><td>{{ \App\Services\VariantSizes::label($row['size']) }}</td><td>{{ $row['width']??'To be confirmed' }}</td><td>{{ $row['length']??'To be confirmed' }}</td></tr>@empty<tr><td colspan="3">Measurements will be added by the store.</td></tr>@endforelse</tbody></table></div>@if($product->size_chart_note)<p class="muted chart-note">{{ $product->size_chart_note }}</p>@endif</section>
 </div>
 <section class="panel product-reviews" id="product-reviews" aria-labelledby="product-reviews-title">
     <div class="section-heading"><div><span class="eyebrow">FROM OUR CUSTOMERS</span><h2 id="product-reviews-title">Customer reviews</h2></div><span class="muted">{{ number_format($reviewCount) }} {{ $reviewCount===1?'rating':'ratings' }}</span></div>
@@ -48,7 +48,7 @@
                 <article class="product-review-card">
                     <div class="product-review-header"><strong>{{ $review->buyerLabel() }}</strong><span class="product-review-verified">✓ Verified purchase</span><time datetime="{{ $review->created_at->toDateString() }}">{{ $review->created_at->format('M j, Y') }}</time></div>
                     <div class="product-review-stars" role="img" aria-label="{{ $review->rating }} out of 5 stars"><span aria-hidden="true">{{ str_repeat('★',$review->rating) }}<span class="unfilled">{{ str_repeat('☆',5-$review->rating) }}</span></span><small>{{ $review->rating }} / 5 · Order rating</small></div>
-                    <p class="product-review-variants">Purchased: {{ $review->order->items->map(fn($item)=>$item->color.' / '.$item->size)->unique()->implode(', ') }}</p>
+                    <p class="product-review-variants">Purchased: {{ $review->order->items->map(fn($item)=>$item->color.' / '.\App\Services\VariantSizes::label($item->size))->unique()->implode(', ') }}</p>
                     @if(trim($review->comment)!=='')<p class="product-review-comment">{{ $review->comment }}</p>@else<p class="muted product-review-no-comment">This customer left a star rating without a written review.</p>@endif
                 </article>
             @empty
