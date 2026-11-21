@@ -16,7 +16,8 @@
 .policy-page h1{font-family:inherit;font-weight:700;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:.2em;line-height:1.4}
 .policy-page h2{font-family:inherit;font-size:1.2rem;font-weight:700;line-height:1.5;margin-top:1.6rem}
 .policy-page .muted{color:#665044}
-label.checkbox-label,.stack label.checkbox-label,.two-col label.checkbox-label,.three-col label.checkbox-label,label.receipt-check,.stack label.receipt-check{display:flex;flex-direction:row;align-items:flex-start;gap:.65rem;min-height:44px;max-width:100%;line-height:1.6;cursor:pointer}
+label.checkbox-label,.stack label.checkbox-label,.two-col label.checkbox-label,.three-col label.checkbox-label,label.receipt-check,.stack label.receipt-check{display:flex;flex-direction:row;align-items:flex-start;gap:.65rem;min-height:44px;max-width:100%;font-size:14px;line-height:1.6;cursor:pointer}
 label.checkbox-label>input[type=checkbox],label.receipt-check:not(.receipt-confirmation)>input[type=checkbox]{flex:0 0 18px;width:18px;min-width:18px;max-width:18px;height:18px;min-height:18px;padding:0;margin:.2em 0 0;accent-color:#941b0c}
 label.checkbox-label>span,label.receipt-check>span{display:block;flex:1;min-width:0;min-height:0;font-size:inherit;line-height:inherit;overflow-wrap:break-word}
 label.checkbox-label:has(input:focus-visible),label.receipt-check:has(input:focus-visible){outline:2px solid #941b0c;outline-offset:4px;border-radius:4px}
+.stack label.terms-acceptance{font-size:1rem;line-height:1.7}
