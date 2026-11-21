@@ -24,7 +24,7 @@
 .address-default{border:1px solid var(--brand-primary);color:var(--brand-primary);background:#fff}
 .address-pin-warning{color:#941b0c!important;font-size:13px!important;margin:12px 0}
 .required-mark{color:#941b0c}
-.address-book .stack label,.address-book .two-col label{display:block;font-size:14px;font-weight:600}
+.address-book .stack label:not(.checkbox-label),.address-book .two-col label:not(.checkbox-label){display:block;font-size:14px;font-weight:600}
 .address-book label>input:not([type=checkbox]),.address-book label>select{display:block;width:100%;margin-top:7px}
 .address-book label>small{display:block;margin-top:5px;font-weight:400}
 .address-pin-picker{border:1px solid var(--border);border-radius:10px;padding:20px}
