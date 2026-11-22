@@ -35,7 +35,13 @@
                 <details><summary>Enter map coordinates</summary><p class="muted">Use this if the map cannot load.</p><div class="two-col"><label>Latitude<input type="number" id="saved-manual-lat" step="any" min="-90" max="90" value="{{ \App\Support\FormInput::old('lat', $address->lat) }}"></label><label>Longitude<input type="number" id="saved-manual-lng" step="any" min="-180" max="180" value="{{ \App\Support\FormInput::old('lng', $address->lng) }}"></label></div></details>
             </section>
             @php($selectedAddressLabel=\App\Support\FormInput::old('label', $address->label))
-            <div class="two-col"><label><span class="field-label">Address label <span class="required-mark" aria-hidden="true">*</span></span><select name="label" required><option value="" disabled @selected(!in_array($selectedAddressLabel, \App\Models\CustomerAddress::LABELS, true))>Choose address label</option>@foreach(\App\Models\CustomerAddress::LABELS as $addressLabel)<option value="{{ $addressLabel }}" @selected($selectedAddressLabel===$addressLabel)>{{ $addressLabel }}</option>@endforeach</select>@if($address->exists && !in_array($address->label, \App\Models\CustomerAddress::LABELS, true))<small class="muted">Choose Home, Work, or Dropoff Point before saving this address.</small>@endif</label><label class="checkbox-label address-default-option"><input type="checkbox" name="is_default" value="1" @checked(\App\Support\FormInput::old('is_default', $address->is_default))><span>Set as default address</span></label></div>
+            @php($legacyAddressLabel=$address->exists && !in_array($address->label, \App\Models\CustomerAddress::LABELS, true))
+            <div class="address-preferences">
+                <label for="saved-address-label" class="address-label-caption">Address label <span class="required-mark" aria-hidden="true">*</span></label>
+                <select id="saved-address-label" name="label" required @if($legacyAddressLabel) aria-describedby="address-label-help" @endif><option value="" disabled @selected(!in_array($selectedAddressLabel, \App\Models\CustomerAddress::LABELS, true))>Choose address label</option>@foreach(\App\Models\CustomerAddress::LABELS as $addressLabel)<option value="{{ $addressLabel }}" @selected($selectedAddressLabel===$addressLabel)>{{ $addressLabel }}</option>@endforeach</select>
+                <label class="checkbox-label address-default-option"><input type="checkbox" name="is_default" value="1" @checked(\App\Support\FormInput::old('is_default', $address->is_default))><span>Set as default address</span></label>
+            </div>
+            @if($legacyAddressLabel)<p class="muted address-label-help" id="address-label-help">Choose Home, Work, or Dropoff Point before saving this address.</p>@endif
             <button class="button dark" id="save-address">Save address</button>
         </form>
     </section>

@@ -106,13 +106,15 @@ class CustomerAddressBookTest extends TestCase
             $document = new \DOMDocument;
             @$document->loadHTML($response->getContent());
             $xpath = new \DOMXPath($document);
-            $this->assertSame(1, $xpath->query('//label/select[@name="label"][@required]')->length);
+            $this->assertSame(1, $xpath->query('//label[@for="saved-address-label"]')->length);
+            $this->assertSame(1, $xpath->query('//select[@id="saved-address-label"][@name="label"][@required]')->length);
             $this->assertSame(0, $xpath->query('//input[@name="label"]|//datalist[@id="address-labels"]')->length);
             $labels = array_map(fn ($option) => $option->getAttribute('value'), iterator_to_array($xpath->query('//select[@name="label"]/option[@value!=""]')));
             $this->assertSame(['Home', 'Work', 'Dropoff Point'], $labels);
             if (str_ends_with($url, '/edit')) {
                 $this->assertSame(1, $xpath->query('//select[@name="label"]/option[@value=""][@selected][@disabled]')->length);
                 $response->assertSee('Choose Home, Work, or Dropoff Point before saving this address.');
+                $this->assertSame(1, $xpath->query('//select[@name="label"][@aria-describedby="address-label-help"]')->length);
             } else {
                 $this->assertSame(1, $xpath->query('//select[@name="label"]/option[@value="Home"][@selected]')->length);
             }
